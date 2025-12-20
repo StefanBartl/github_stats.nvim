@@ -1,0 +1,532 @@
+*github_stats.txt*  GitHub Traffic Statistics Collector for Neovim
+
+==============================================================================
+CONTENTS                                              *github_stats-contents*
+
+    1. Introduction ........................... |github_stats-introduction|
+    2. Requirements ........................... |github_stats-requirements|
+    3. Installation ........................... |github_stats-installation|
+    4. Configuration .......................... |github_stats-configuration|
+    5. Commands ............................... |github_stats-commands|
+    6. Visualization .......................... |github_stats-visualization|
+    7. Export ................................. |github_stats-export|
+    8. Diff ................................... |github_stats-diff|
+    9. API .................................... |github_stats-api|
+   10. Storage ................................ |github_stats-storage|
+   11. Troubleshooting ........................ |github_stats-troubleshooting|
+   12. License ................................ |github_stats-license|
+
+==============================================================================
+INTRODUCTION                                      *github_stats-introduction*
+
+GitHub Stats is a Neovim plugin for automatic collection and analysis of
+GitHub repository traffic statistics.
+
+Features:~
+  • Automatic daily data collection
+  • Historical JSON storage
+  • Time-range based analytics
+  • ASCII visualizations (sparklines, charts)
+  • Export to CSV and Markdown
+  • Period comparison (diff mode)
+  • Async-first (no UI blocking)
+  • Floating windows for results
+  • Cross-platform (Windows, macOS, Linux)
+
+==============================================================================
+REQUIREMENTS                                      *github_stats-requirements*
+
+• Neovim >= 0.9.0
+• curl (for API requests)
+• GitHub Personal Access Token with `repo` permission
+
+Create token:~
+  1. https://github.com/settings/tokens
+  2. "Generate new token (classic)"
+  3. Select `repo` scope
+  4. Save token securely
+
+==============================================================================
+INSTALLATION                                      *github_stats-installation*
+
+With lazy.nvim:~
+>lua
+    {
+      "StefanBartl/github-stats.nvim",
+      config = function()
+        require("github_stats").setup()
+      end,
+    }
+<
+
+With packer.nvim:~
+>lua
+    use {
+      "StefanBartl/github-stats.nvim",
+      config = function()
+        require("github_stats").setup()
+      end,
+    }
+<
+
+==============================================================================
+CONFIGURATION                                    *github_stats-configuration*
+
+Configuration file: ~/.config/nvim/github-stats/config.json
+
+Example:~
+>json
+    {
+      "repos": [
+        "username/repo1",
+        "username/repo2"
+      ],
+      "token_source": "env",
+      "token_env_var": "GITHUB_TOKEN",
+      "fetch_interval_hours": 24
+    }
+<
+
+Options:~
+  repos                   List of repositories (format: "owner/repo")
+                          Type: string[]
+                          Default: []
+
+  token_source            Token source
+                          Type: "env" | "file"
+                          Default: "env"
+
+  token_env_var           Environment variable name
+                          Type: string
+                          Default: "GITHUB_TOKEN"
+
+  token_file              Path to token file (only when token_source="file")
+                          Type: string
+                          Example: "~/.github_token"
+
+  fetch_interval_hours    Interval between automatic fetches
+                          Type: number
+                          Default: 24
+
+Token Setup:~
+
+Environment Variable (recommended):~
+>bash
+    # In ~/.bashrc, ~/.zshrc, etc.
+    export GITHUB_TOKEN="ghp_your_token_here"
+<
+
+Token File:~
+>bash
+    echo "ghp_your_token_here" > ~/.github_token
+    chmod 600 ~/.github_token
+<
+
+==============================================================================
+COMMANDS                                            *github_stats-commands*
+
+                                                        *:GithubStatsFetch*
+:GithubStatsFetch [force]
+    Fetches statistics for all configured repositories.
+
+    Optional: `force` - Ignores interval and forces immediate fetch
+
+    Autocompletion: `force`
+
+    Examples:~
+        :GithubStatsFetch           " Respects 24h interval
+        :GithubStatsFetch force     " Immediate fetch
+
+                                                        *:GithubStatsShow*
+:GithubStatsShow {repo} {metric} [start_date] [end_date]
+    Shows detailed statistics for a repository and metric.
+
+    Parameters:~
+        {repo}        Repository in "owner/repo" format
+        {metric}      "clones" or "views"
+        [start_date]  Optional start (ISO: YYYY-MM-DD)
+        [end_date]    Optional end (ISO: YYYY-MM-DD)
+
+    Autocompletion: Repository names, metrics
+
+    Examples:~
+        :GithubStatsShow username/repo clones
+        :GithubStatsShow username/repo views 2025-01-01 2025-12-31
+
+                                                     *:GithubStatsSummary*
+:GithubStatsSummary {metric}
+    Shows summary across all configured repositories.
+
+    Parameters:~
+        {metric}      "clones" or "views"
+
+    Autocompletion: Metrics
+
+    Examples:~
+        :GithubStatsSummary clones
+        :GithubStatsSummary views
+
+                                                    *:GithubStatsReferrers*
+:GithubStatsReferrers {repo} [limit]
+    Shows top referrers for a repository.
+
+    Parameters:~
+        {repo}        Repository in "owner/repo" format
+        {limit}       Number of results (default: 10)
+
+    Autocompletion: Repository names
+
+    Examples:~
+        :GithubStatsReferrers username/repo
+        :GithubStatsReferrers username/repo 20
+
+                                                       *:GithubStatsPaths*
+:GithubStatsPaths {repo} [limit]
+    Shows most visited paths in a repository.
+
+    Parameters:~
+        {repo}        Repository in "owner/repo" format
+        {limit}       Number of results (default: 10)
+
+    Autocompletion: Repository names
+
+    Examples:~
+        :GithubStatsPaths username/repo
+        :GithubStatsPaths username/repo 20
+
+                                                       *:GithubStatsChart*
+:GithubStatsChart {repo} {metric} [start_date] [end_date]
+    Displays ASCII sparkline chart for traffic data.
+    NEW in v1.2.0
+
+    Parameters:~
+        {repo}        Repository in "owner/repo" format
+        {metric}      "clones", "views", or "both" (comparison)
+        [start_date]  Optional start (ISO: YYYY-MM-DD)
+        [end_date]    Optional end (ISO: YYYY-MM-DD)
+
+    Autocompletion: Repository names, metrics
+
+    Examples:~
+        :GithubStatsChart username/repo clones
+        :GithubStatsChart username/repo both
+        :GithubStatsChart username/repo views 2025-01-01 2025-12-31
+
+                                                      *:GithubStatsExport*
+:GithubStatsExport {repo|all} {metric} {filepath}
+    Exports data to CSV or Markdown format.
+    NEW in v1.2.0
+
+    Parameters:~
+        {repo|all}    Repository or "all" for summary
+        {metric}      "clones" or "views"
+        {filepath}    Output file (.csv or .md extension)
+
+    Autocompletion: Repository names, metrics, file paths
+
+    Examples:~
+        :GithubStatsExport username/repo clones ~/data.csv
+        :GithubStatsExport username/repo views ~/report.md
+        :GithubStatsExport all clones ~/summary.md
+
+                                                        *:GithubStatsDiff*
+:GithubStatsDiff {repo} {metric} {period1} {period2}
+    Compares metrics between two time periods.
+    NEW in v1.2.0
+
+    Parameters:~
+        {repo}        Repository in "owner/repo" format
+        {metric}      "clones" or "views"
+        {period1}     First period (YYYY-MM or YYYY)
+        {period2}     Second period (YYYY-MM or YYYY)
+
+    Autocompletion: Repository names, metrics, period suggestions
+
+    Examples:~
+        :GithubStatsDiff username/repo clones 2025-01 2025-02
+        :GithubStatsDiff username/repo views 2024 2025
+
+                                                       *:GithubStatsDebug*
+:GithubStatsDebug
+    Shows debug information and tests API connectivity.
+
+    Checks:~
+        • Configuration status
+        • Token availability
+        • Test API call for first repository
+
+                                                      *:checkhealth-github_stats*
+:checkhealth github_stats
+    Performs comprehensive diagnostics.
+
+    Checks:~
+        • Configuration validity
+        • Token access
+        • curl availability (cross-platform)
+        • Storage paths
+        • API connectivity
+
+==============================================================================
+VISUALIZATION                                    *github_stats-visualization*
+
+The visualization module provides ASCII charts and sparklines for traffic
+data visualization directly in Neovim.
+
+Sparklines:~
+  Unicode block characters (▁▂▃▄▅▆▇█) represent data points.
+  Normalized to show relative values across the range.
+
+Bar Charts:~
+  Horizontal bars with numeric labels.
+  Useful for comparing multiple items (e.g., referrers, paths).
+
+Comparison Charts:~
+  Side-by-side sparklines for count vs uniques.
+  Shows both metrics in a single view.
+
+Example Output:~
+>
+    GitHub Stats: username/repo/clones
+    ────────────────────────────────────────────────────────────────
+
+    ▂▃▅▇█▇▅▃▂▁▂▃▅▇█▇▅▃▂▁▂▃▅▇█▇▅▃▂▁▂▃▅▇█▇▅▃▂▁▂▃▅▇█▇▅▃▂▁▂▃▅▇█▇▅▃▂▁
+
+    Period: 2025-11-20 to 2025-12-20 (30 days)
+    Max: 1,234 | Avg: 567 | Min: 123 | Total: 17,010
+<
+
+==============================================================================
+EXPORT                                                  *github_stats-export*
+
+The export module supports CSV and Markdown formats for external analysis
+and documentation.
+
+CSV Format:~
+>
+    repository,metric,date,count,uniques
+    username/repo,clones,2025-12-20,45,12
+    username/repo,clones,2025-12-21,52,15
+<
+
+Markdown Format:~
+  - Formatted tables with daily breakdown
+  - Summary statistics (max, avg, min, total)
+  - Recent values highlighted
+  - Suitable for documentation and reports
+
+Summary Export:~
+  When using "all" as repository target with Markdown format, creates
+  a comprehensive report across all configured repositories with:
+  - Overview table
+  - Detailed sections per repository
+  - Recent data trends
+
+==============================================================================
+DIFF                                                      *github_stats-diff*
+
+The diff module provides period-over-period comparison to analyze trends
+and growth.
+
+Period Formats:~
+  YYYY-MM       Monthly comparison (e.g., 2025-01)
+  YYYY          Yearly comparison (e.g., 2025)
+
+Calculated Metrics:~
+  - Total count and uniques per period
+  - Number of days with data
+  - Average per day
+  - Percentage change
+
+Example Output:~
+>
+    Period Comparison: username/repo - clones
+    ══════════════════════════════════════════════════════════════════
+
+    Period 1: 2025-01
+      Total Count:   1,234
+      Total Uniques: 567
+      Days:          31
+      Avg/Day:       39 count, 18 uniques
+
+    Period 2: 2025-02
+      Total Count:   1,423
+      Total Uniques: 645
+      Days:          28
+      Avg/Day:       50 count, 23 uniques
+
+    Changes:
+    ──────────────────────────────────────────────────────────────────
+      Count:   +15.3%
+      Uniques: +13.8%
+<
+
+==============================================================================
+API                                                      *github_stats-api*
+
+Lua API for advanced usage:~
+
+Setup:~
+>lua
+    require("github_stats").setup({
+      -- Options (reserved for future use)
+    })
+<
+
+Modules:~
+>lua
+    local config = require("github_stats.config")
+    local api = require("github_stats.api")
+    local storage = require("github_stats.storage")
+    local fetcher = require("github_stats.fetcher")
+    local analytics = require("github_stats.analytics")
+    local visualization = require("github_stats.visualization")
+    local export = require("github_stats.export")
+    local diff = require("github_stats.diff")
+<
+
+Example - Programmatic Fetch:~
+>lua
+    local fetcher = require("github_stats.fetcher")
+
+    fetcher.fetch_all(true, function(summary)
+      print("Success:", #summary.success)
+      print("Errors:", vim.tbl_count(summary.errors))
+    end)
+<
+
+Example - Data Query:~
+>lua
+    local analytics = require("github_stats.analytics")
+
+    local stats, err = analytics.query_metric({
+      repo = "username/repo",
+      metric = "clones",
+      start_date = "2025-01-01",
+      end_date = "2025-12-31",
+    })
+
+    if stats then
+      print("Total clones:", stats.total_count)
+    end
+<
+
+Example - Visualization:~
+>lua
+    local visualization = require("github_stats.visualization")
+
+    local sparkline = visualization.generate_sparkline({
+      10, 15, 20, 25, 30, 25, 20, 15, 10
+    })
+
+    print(sparkline)  -- ▂▃▅▆█▆▅▃▂
+<
+
+==============================================================================
+STORAGE                                              *github_stats-storage*
+
+Data Structure:~
+>
+    ~/.config/nvim/github-stats/
+    ├── config.json                    # User configuration
+    ├── last_fetch.json                # Interval tracking
+    └── data/
+        └── username_repo/
+            ├── clones/
+            │   ├── 2025-12-20T10-30-00.json
+            │   └── 2025-12-21T10-30-00.json
+            ├── views/
+            ├── referrers/
+            └── paths/
+<
+
+File Format (Example):~
+>json
+    {
+      "timestamp": "2025-12-20T10:30:00Z",
+      "data": {
+        "count": 42,
+        "uniques": 15,
+        "clones": [
+          {
+            "timestamp": "2025-12-19T00:00:00Z",
+            "count": 10,
+            "uniques": 5
+          }
+        ]
+      }
+    }
+<
+
+Storage Management:~
+  • JSON-based (~2KB per data point)
+  • Atomic writes (temp + rename)
+  • Automatic directory creation
+  • No automatic cleanup (manual when needed)
+
+==============================================================================
+TROUBLESHOOTING                              *github_stats-troubleshooting*
+
+Problem: "Token error: Environment variable GITHUB_TOKEN not set"~
+Solution:~
+    1. Set token: `export GITHUB_TOKEN="ghp_..."`
+    2. Restart Neovim
+    3. Or configure token_file in config.json
+
+Problem: "No data found for username/repo"~
+Possible Causes:~
+    1. Repository name in config.json incorrect (must match exactly)
+    2. No data fetched yet → :GithubStatsFetch force
+    3. Token lacks permission for repository
+
+Problem: "API test failed: 401 Unauthorized"~
+Solution:~
+    1. Check token permissions (must include `repo`)
+    2. Check token expiration date
+    3. Generate new token if necessary
+
+Problem: "curl not found in PATH"~
+Solution:~
+    • Linux/Debian/Ubuntu: sudo apt install curl
+    • macOS: brew install curl
+    • Windows 10+: curl is included since build 1803
+    • Windows (manual): https://curl.se/windows/
+
+Problem: Autocompletion not working~
+Solution:~
+    1. Check Neovim version: >= 0.9.0 required
+    2. Run: :checkhealth github_stats
+    3. Verify config.json is valid JSON
+
+Diagnostic Workflow:~
+    1. :checkhealth github_stats
+    2. :GithubStatsDebug
+    3. Check logs: :messages
+    4. Verify config: ~/.config/nvim/github-stats/config.json
+
+==============================================================================
+LICENSE                                              *github_stats-license*
+
+MIT License
+
+Copyright (c) 2025
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
