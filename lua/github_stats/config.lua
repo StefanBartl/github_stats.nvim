@@ -6,11 +6,11 @@
 
 local M = {}
 
----@type Config?
+---@type SetupOptions?
 local config = nil
 
 ---Default configuration
----@type Config
+---@type SetupOptions
 local DEFAULT_CONFIG = {
   repos = {},
   token_source = "env",
@@ -18,6 +18,37 @@ local DEFAULT_CONFIG = {
   fetch_interval_hours = 24,
   notification_level = "all",
 }
+
+---Resolved paths (set during init)
+local PATHS = {
+  config_dir = nil,
+  config_file = nil,
+  data_dir = nil,
+}
+
+---Get config directory path
+---@param custom_path? string Custom config directory
+---@return string
+local function resolve_config_dir(custom_path)
+  if custom_path then
+    return vim.fn.expand(custom_path)
+  end
+
+  local config_path = vim.fn.stdpath("config")
+  return config_path .. "/github-stats"
+end
+
+---Get data directory path
+---@param custom_path? string Custom data directory
+---@param config_dir string Config directory
+---@return string
+local function resolve_data_dir(custom_path, config_dir)
+  if custom_path then
+    return vim.fn.expand(custom_path)
+  end
+
+  return config_dir .. "/data"
+end
 
 ---Get config directory path
 ---@return string
@@ -30,12 +61,6 @@ end
 ---@return string
 local function get_config_file()
   return get_config_dir() .. "/config.json"
-end
-
----Get storage root directory
----@return string
-function M.get_storage_root()
-  return get_config_dir() .. "/data"
 end
 
 ---Create default config file if it doesn't exist
@@ -66,37 +91,77 @@ local function ensure_config_exists()
   return true, nil
 end
 
----Load configuration from file
+---Initialize configuration from setup() or config.json
+---@param opts? SetupOptions Setup options
 ---@return boolean, string? # Success flag, error message
-function M.init()
-  -- Ensure config file exists
+function M.init(opts)
+  opts = opts or {}
+
+  -- Resolve paths
+  PATHS.config_dir = resolve_config_dir(opts.config_dir)
+  PATHS.config_file = PATHS.config_dir .. "/config.json"
+  PATHS.data_dir = resolve_data_dir(opts.data_dir, PATHS.config_dir)
+
+  -- Priority 1: Setup options
+  if opts.repos and #opts.repos > 0 then
+    config = vim.tbl_deep_extend("force", DEFAULT_CONFIG, opts)
+    return true, nil
+  end
+
+  -- Priority 2: config.json
+  local stat = vim.loop.fs_stat(PATHS.config_file)
+  if stat then
+    local file_ok, content = pcall(vim.fn.readfile, PATHS.config_file)
+    if not file_ok then
+      return false, string.format("Failed to read config file: %s", content)
+    end
+
+    local json_str = table.concat(content, "\n")
+    local parse_ok, parsed = pcall(vim.json.decode, json_str)
+    if not parse_ok then
+      return false, string.format("Failed to parse config JSON: %s", parsed)
+    end
+
+    config = vim.tbl_deep_extend("force", DEFAULT_CONFIG, parsed)
+    return true, nil
+  end
+
+  -- Priority 3: Create default config.json
   local ok, err = ensure_config_exists()
   if not ok then
     return false, err
   end
 
-  -- Read config file
-  local config_file = get_config_file()
-  local file_ok, content = pcall(vim.fn.readfile, config_file)
+  -- Re-read created config
+  local file_ok, content = pcall(vim.fn.readfile, PATHS.config_file)
   if not file_ok then
-    return false, string.format("Failed to read config file: %s", content)
+    return false, string.format("Failed to read created config: %s", content)
   end
 
-  -- Parse JSON
   local json_str = table.concat(content, "\n")
   local parse_ok, parsed = pcall(vim.json.decode, json_str)
   if not parse_ok then
-    return false, string.format("Failed to parse config JSON: %s", parsed)
+    return false, string.format("Failed to parse created config: %s", parsed)
   end
 
-  -- Merge with defaults
   config = vim.tbl_deep_extend("force", DEFAULT_CONFIG, parsed)
-
   return true, nil
 end
 
+---Get storage root directory
+---@return string
+function M.get_storage_root()
+  return PATHS.data_dir
+end
+
+---Get config directory
+---@return string
+function M.get_config_dir()
+  return PATHS.config_dir
+end
+
 ---Get current configuration
----@return Config?
+---@return SetupOptions?
 function M.get()
   return config
 end

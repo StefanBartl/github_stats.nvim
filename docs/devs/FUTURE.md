@@ -5,5 +5,4 @@ Notification thresholds
 Webhook integration
 Custom date range presets
 
-
-- namespace shortening
+ namespace shortening

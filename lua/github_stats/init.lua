@@ -18,17 +18,16 @@
 ---
 --- Healthcheck:
 ---   :checkhealth github_stats
-
 local M = {}
 
 ---Setup the plugin
----@param opts? table Reserved for future options
+---@param opts? SetupOptions Setup options
 function M.setup(opts)
   opts = opts or {}
 
   -- Initialize configuration
   local config = require("github_stats.config")
-  local ok, err = config.init()
+  local ok, err = config.init(opts)
   if not ok then
     vim.notify(
       string.format("[github-stats] Configuration error: %s", err),
@@ -37,7 +36,7 @@ function M.setup(opts)
     return
   end
 
-  -- Register commands (now modularized)
+  -- Register commands
   local commands = require("github_stats.usercommands")
   commands.setup()
 
@@ -45,7 +44,6 @@ function M.setup(opts)
   vim.api.nvim_create_autocmd("VimEnter", {
     group = vim.api.nvim_create_augroup("GithubStatsAutoFetch", { clear = true }),
     callback = function()
-      -- Defer to avoid blocking startup
       vim.defer_fn(function()
         local fetcher = require("github_stats.fetcher")
         fetcher.auto_fetch()
@@ -53,12 +51,5 @@ function M.setup(opts)
     end,
   })
 end
-
--- Expose submodules for advanced usage
-M.config = require("github_stats.config")
-M.api = require("github_stats.api")
-M.storage = require("github_stats.storage")
-M.fetcher = require("github_stats.fetcher")
-M.analytics = require("github_stats.analytics")
 
 return M

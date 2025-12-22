@@ -4,13 +4,15 @@
 --- Central type definitions for all GitHub Stats components.
 --- Ensures type safety across API responses, storage formats, and analytics.
 
----@class Config
----@field repos string[] List of repositories in "owner/repo" format
----@field token_source "env"|"file" Where to get the GitHub token
----@field token_env_var string Environment variable name for token (when token_source="env")
----@field token_file? string Path to file containing token (when token_source="file")
----@field fetch_interval_hours number Hours between automatic fetches
----@field notification_level "all"|"errors"|"silent" Notification verbosity level
+---@class SetupOptions
+---@field repos? string[] List of repositories
+---@field token_source? "env"|"file" Token source
+---@field token_env_var? string Environment variable name
+---@field token_file? string Path to token file
+---@field fetch_interval_hours? number Fetch interval
+---@field notification_level? "all"|"errors"|"silent" Notification level
+---@field config_dir? string Custom config directory (default: stdpath('config')/github-stats)
+---@field data_dir? string Custom data directory (default: config_dir/data)
 
 ---@class GithubApiClone
 ---@field timestamp string ISO 8601 timestamp

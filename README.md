@@ -1,17 +1,29 @@
 # GitHub Stats Collector for Neovim
+![version](https://img.shields.io/badge/version-1.2-blue.svg)
+![State](https://img.shields.io/badge/status-beta-orange.svg)
+![Lazy.nvim compatible](https://img.shields.io/badge/lazy.nvim-supported-success)
+![Neovim](https://img.shields.io/badge/Neovim-0.9+-success.svg)
+![Lua](https://img.shields.io/badge/language-Lua-yellow.svg)
 
 A Neovim plugin for automatic collection and analysis of GitHub repository traffic statistics.
 
 ## Table of content
 
   - [Features](#features)
-  - [Installation](#installation)
+  - [Minimal Installation](#minimal-installation)
     - [lazy.nvim](#lazynvim)
     - [packer.nvim](#packernvim)
   - [Configuration](#configuration)
-    - [1. Create GitHub Token](#1-create-github-token)
-    - [2. Make Token Available](#2-make-token-available)
-    - [3. Create Configuration File](#3-create-configuration-file)
+    - [Preparation](#preparation)
+      - [1. Create GitHub Token](#1-create-github-token)
+      - [2. Make Token Available](#2-make-token-available)
+    - [3. Configure github_stats.nvim](#3-configure-github_statsnvim)
+      - [Option A: Configuration via `setup()` (Neovim-style)](#option-a-configuration-via-setup-neovim-style)
+      - [Option B: Configuration via `config.json` (default / persistent)](#option-b-configuration-via-configjson-default-persistent)
+      - [Why are configuration and data stored in the same directory by default?](#why-are-configuration-and-data-stored-in-the-same-directory-by-default)
+    - [Configuration precedence rules](#configuration-precedence-rules)
+      - [Create Configuration File](#create-configuration-file)
+    - [Configuration Options](#configuration-options)
   - [Usage](#usage)
     - [User Commands](#user-commands)
       - [Fetch Data](#fetch-data)
@@ -58,13 +70,13 @@ A Neovim plugin for automatic collection and analysis of GitHub repository traff
 
 ---
 
-## Installation
+## Minimal Installation
 
 ### lazy.nvim
 
 ```lua
 {
-  "username/github-stats.nvim",
+  "StefanBartl/github-stats.nvim",
   config = function()
     require("github_stats").setup()
   end,
@@ -77,7 +89,7 @@ A Neovim plugin for automatic collection and analysis of GitHub repository traff
 
 ```lua
 use {
-  "username/github-stats.nvim",
+  "StefanBartl/github-stats.nvim",
   config = function()
     require("github_stats").setup()
   end,
@@ -88,7 +100,9 @@ use {
 
 ## Configuration
 
-### 1. Create GitHub Token
+### Preparation
+
+#### 1. Create GitHub Token
 
 Create a GitHub Personal Access Token with `repo` permission:
 
@@ -99,7 +113,7 @@ Create a GitHub Personal Access Token with `repo` permission:
 
 ---
 
-### 2. Make Token Available
+#### 2. Make Token Available
 
 **Option A: Environment Variable (recommended)**
 
@@ -117,7 +131,131 @@ chmod 600 ~/.github_token
 
 ---
 
-### 3. Create Configuration File
+### 3. Configure github_stats.nvim
+
+The plugin supports two equivalent configuration models:
+
+1. Configuration via `setup()` (Neovim-typical)
+2. Configuration via a persistent `config.json` file (default, backward compatible)
+
+Both variants can be combined. Values passed to `setup()` always take precedence over values from `config.json`.
+
+Detailed information is provided in [CONFIGURATION](./docs/CONFIGURATION.md).
+
+---
+
+#### Option A: Configuration via `setup()` (Neovim-style)
+
+This variant follows the common Neovim workflow: all relevant options are passed directly during plugin initialization.
+
+Minimal example (repositories only, everything else default):
+
+```lua
+require("github_stats").setup({
+  repos = {
+    "username/repo1",
+    "username/repo2",
+  },
+})
+```
+
+Using a token file:
+
+```lua
+require("github_stats").setup({
+  repos = { "username/repo1" },
+  token_source = "file",
+  token_file = "~/.github_token",
+})
+```
+
+Using custom paths:
+
+```lua
+require("github_stats").setup({
+  repos = { "username/repo1" },
+
+  -- Custom location for config.json
+  config_dir = "~/my-github-stats",
+
+  -- Custom location for fetched GitHub data
+  data_dir = "/mnt/shared/github-data",
+})
+```
+
+#### Option B: Configuration via `config.json` (default / persistent)
+
+If `setup()` is called without arguments, the plugin automatically uses a JSON-based configuration.
+
+```lua
+require("github_stats").setup()
+```
+
+The file is created automatically at:
+
+```
+~/.config/nvim/github-stats/config.json
+```
+
+Example content:
+
+```json
+{
+  "repos": [
+    "username/repo1",
+    "username/repo2"
+  ],
+  "token_source": "file",
+  "token_file": "~/.github_token",
+  "fetch_interval_hours": 24,
+  "notification_level": "all"
+}
+```
+
+This variant is useful when:
+
+- configuration should be independent of the plugin manager
+- the same configuration is shared across multiple Neovim installations
+- configuration and data should be version-controlled together
+
+---
+
+#### Why are configuration and data stored in the same directory by default?
+
+By default, the plugin stores both `config.json` and all fetched GitHub data under:
+
+```
+stdpath("config")/github-stats/
+```
+
+This intentionally deviates from the classic Neovim convention:
+
+Path | Typical purpose
+---- | ---------------
+stdpath("config") | Configuration files
+stdpath("data") | Local or non-synced plugin data
+
+The rationale for using `stdpath("config")` for both is:
+
+- The entire Neovim configuration, including GitHub stats, can be synced via Git
+- Identical historical data is available across multiple machines
+- Consistent setup on laptop, workstation, and server
+- No data loss when reinstalling Neovim
+
+For users who prefer the traditional layout, `data_dir` can be explicitly set to `stdpath("data")` or any other directory.
+
+---
+
+### Configuration precedence rules
+
+1. Values passed to `setup()` always override values from `config.json`
+2. Missing options are read from `config.json`
+3. Remaining values are filled with defaults
+4. If `config.json` does not exist, it is created automatically
+
+---
+
+#### Create Configuration File
 
 The file is automatically created at:
 ```
@@ -138,16 +276,18 @@ The file is automatically created at:
 }
 ```
 
-**Configuration Options:**
+### Configuration Options
 
-| Option | Type | Description | Default |
-|--------|------|-------------|---------|
-| `repos` | `string[]` | List of repositories (format: "owner/repo") | `[]` |
-| `token_source` | `"env"\|"file"` | Token source | `"env"` |
-| `token_env_var` | `string` | Environment variable name | `"GITHUB_TOKEN"` |
-| `token_file` | `string` | Path to token file (when `token_source="file"`) | - |
-| `fetch_interval_hours` | `number` | Interval between automatic fetches | `24` |
-| `notification_level` | `"all"\|"errors"\|"silent"` | Notification verbosity | `"all"` |
+| Option               | Type                        | Description                         | Default                        |
+| -------------------- | --------------------------- | ----------------------------------- | ------------------------------ |
+| repos                | string[]                    | List of repositories (`owner/repo`) | []                             |
+| token_source         | "env" | "file"              | Token source                        | "env"                          |
+| token_env_var        | string                      | Environment variable name           | "GITHUB_TOKEN"                 |
+| token_file           | string                      | Path to token file                  | "~/.github_token"              |
+| fetch_interval_hours | number                      | Minimum interval between fetches    | 24                             |
+| notification_level   | "all" | "errors" | "silent" | Notification verbosity              | "all"                          |
+| config_dir           | string                      | Base directory for config.json      | stdpath("config")/github-stats |
+| data_dir             | string                      | Directory for fetched API data      | config_dir .. "/data"          |
 
 **Notification Levels:**
 
