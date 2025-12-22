@@ -7,70 +7,61 @@
 
 A Neovim plugin for automatic collection and analysis of GitHub repository traffic statistics.
 
-## Table of content
+---
 
-  - [Features](#features)
-  - [Minimal Installation](#minimal-installation)
-    - [lazy.nvim](#lazynvim)
-    - [packer.nvim](#packernvim)
-  - [Configuration](#configuration)
-    - [Preparation](#preparation)
-      - [1. Create GitHub Token](#1-create-github-token)
-      - [2. Make Token Available](#2-make-token-available)
-    - [3. Configure github_stats.nvim](#3-configure-github_statsnvim)
-      - [Option A: Configuration via `setup()` (Neovim-style)](#option-a-configuration-via-setup-neovim-style)
-      - [Option B: Configuration via `config.json` (default / persistent)](#option-b-configuration-via-configjson-default-persistent)
-      - [Why are configuration and data stored in the same directory by default?](#why-are-configuration-and-data-stored-in-the-same-directory-by-default)
-    - [Configuration precedence rules](#configuration-precedence-rules)
-      - [Create Configuration File](#create-configuration-file)
-    - [Configuration Options](#configuration-options)
-  - [Usage](#usage)
-    - [User Commands](#user-commands)
-      - [Fetch Data](#fetch-data)
-      - [Show Detailed Statistics](#show-detailed-statistics)
-      - [Summary Across All Repositories](#summary-across-all-repositories)
-      - [Show Top Referrers](#show-top-referrers)
-      - [Show Top Paths](#show-top-paths)
-      - [Visualizations (NEW in v1.2.0)](#visualizations-new-in-v120)
-      - [Export Data (NEW in v1.2.0)](#export-data-new-in-v120)
-      - [Period Comparison (NEW in v1.2.0)](#period-comparison-new-in-v120)
-      - [Debug Information](#debug-information)
-    - [Healthcheck](#healthcheck)
-  - [Architecture](#architecture)
-    - [Data Structure](#data-structure)
-  - [API Endpoints](#api-endpoints)
-  - [Troubleshooting](#troubleshooting)
-    - [Understanding "X errors" Messages](#understanding-x-errors-messages)
-    - ["Token error: Environment variable GITHUB_TOKEN not set or empty"](#token-error-environment-variable-github_token-not-set-or-empty)
-    - ["No data found for username/repo"](#no-data-found-for-usernamerepo)
-    - ["API test failed: 401 Unauthorized"](#api-test-failed-401-unauthorized)
-    - ["curl not found in PATH" (Windows)](#curl-not-found-in-path-windows)
-    - [Autocompletion Not Working](#autocompletion-not-working)
-  - [Performance](#performance)
-  - [Cross-Platform Notes](#cross-platform-notes)
-    - [Windows](#windows)
-    - [macOS / Linux](#macos-linux)
-  - [License](#license)
-  - [Contributing](#contributing)
-  - [Support](#support)
+## Table of Contents
+
+- [Features](#features)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Usage](#usage)
+  - [User Commands](#user-commands)
+  - [Healthcheck](#healthcheck)
+- [Documentation](#documentation)
+- [Troubleshooting](#troubleshooting)
+- [Performance](#performance)
+- [Cross-Platform Support](#cross-platform-support)
+- [License](#license)
+- [Contributing](#contributing)
+- [Support](#support)
 
 ---
+
 
 ## Features
 
 - **Automatic Data Collection**: Daily fetching of clones, views, referrers, and paths
-- **Historical Storage**: All data stored locally as JSON
-- **Detailed Analytics**: Time-range queries and aggregations
-- **Async-First**: Non-blocking API calls
-- **Visualizations**: ASCII sparklines and charts
-- **Export**: CSV and Markdown format support
-- **Period Comparison**: Diff mode for trend analysis
-- **Floating Windows**: Clean formatted displays
+- **Historical Storage**: All data stored locally as JSON with configurable paths
+- **Flexible Configuration**: Setup via `setup()` or `config.json`, with custom storage paths
+- **Detailed Analytics**: Time-range queries, aggregations, and period comparisons
+- **Async-First**: Non-blocking API calls via `vim.system`
+- **Visualizations**: ASCII sparklines and comparison charts
+- **Export Capabilities**: CSV and Markdown format support
+- **Period Comparison**: Diff mode for trend analysis (month-over-month, year-over-year)
+- **Smart Defaults**: Optional date parameters with intelligent fallbacks
+- **Floating Windows**: Clean, formatted result displays
 - **Cross-Platform**: Windows, macOS, Linux support
+- **Autocompletion**: All commands support Tab completion
 
 ---
 
-## Minimal Installation
+## Requirements
+
+- **Neovim** ≥ 0.9.0
+- **curl** (for API requests)
+- **GitHub Personal Access Token** with `repo` permission
+
+### Creating a GitHub Token
+
+1. Visit: https://github.com/settings/tokens
+2. Click "Generate new token (classic)"
+3. Select `repo` scope
+4. Generate and save token securely
+
+---
+
+## Installation
 
 ### lazy.nvim
 
@@ -78,12 +69,12 @@ A Neovim plugin for automatic collection and analysis of GitHub repository traff
 {
   "StefanBartl/github-stats.nvim",
   config = function()
-    require("github_stats").setup()
+    require("github_stats").setup({
+      repos = { "user/repo1", "user/repo2" },
+    })
   end,
 }
 ```
-
----
 
 ### packer.nvim
 
@@ -91,7 +82,9 @@ A Neovim plugin for automatic collection and analysis of GitHub repository traff
 use {
   "StefanBartl/github-stats.nvim",
   config = function()
-    require("github_stats").setup()
+    require("github_stats").setup({
+      repos = { "user/repo1", "user/repo2" },
+    })
   end,
 }
 ```
@@ -100,22 +93,59 @@ use {
 
 ## Configuration
 
-### Preparation
+The plugin supports two configuration methods:
 
-#### 1. Create GitHub Token
+### Option A: Direct Setup (Recommended for most users)
 
-Create a GitHub Personal Access Token with `repo` permission:
+```lua
+require("github_stats").setup({
+  repos = { "username/repo1", "username/repo2" },
+  token_source = "env",
+  token_env_var = "GITHUB_TOKEN",
+  fetch_interval_hours = 24,
+  notification_level = "all",
+})
+```
 
-1. Navigate to: https://github.com/settings/tokens
-2. Click "Generate new token (classic)"
-3. Select `repo` scope
-4. Generate token and save securely
+**Quick Setup:**
+```lua
+-- Minimal configuration
+require("github_stats").setup({
+  repos = { "username/repo" },
+})
+```
 
----
+### Option B: Config File (Best for syncing across systems)
 
-#### 2. Make Token Available
+Create `~/.config/nvim/github-stats/config.json`:
 
-**Option A: Environment Variable (recommended)**
+```json
+{
+  "repos": ["username/repo1", "username/repo2"],
+  "token_source": "env",
+  "token_env_var": "GITHUB_TOKEN",
+  "fetch_interval_hours": 24,
+  "notification_level": "all"
+}
+```
+
+Then in your Neovim config:
+```lua
+require("github_stats").setup()  -- Reads from config.json
+```
+
+**Why use config.json?**
+
+If you sync your Neovim configuration across multiple systems (via Git/dotfiles), storing the plugin configuration and data in `stdpath('config')/github-stats/` allows you to:
+- Share the same historical data across all systems
+- Maintain consistent repository lists
+- Backup everything in one place
+
+See [docs/configuration/INTRO.md](docs/configuration/INTRO.md) for detailed configuration guide.
+
+### Token Setup
+
+**Option A: Environment Variable (Recommended)**
 
 ```bash
 # In ~/.bashrc, ~/.zshrc, etc.
@@ -129,173 +159,24 @@ echo "ghp_your_token_here" > ~/.github_token
 chmod 600 ~/.github_token
 ```
 
----
-
-### 3. Configure github_stats.nvim
-
-The plugin supports two equivalent configuration models:
-
-1. Configuration via `setup()` (Neovim-typical)
-2. Configuration via a persistent `config.json` file (default, backward compatible)
-
-Both variants can be combined. Values passed to `setup()` always take precedence over values from `config.json`.
-
-Detailed information is provided in [CONFIGURATION](./docs/CONFIGURATION.md).
-
----
-
-#### Option A: Configuration via `setup()` (Neovim-style)
-
-This variant follows the common Neovim workflow: all relevant options are passed directly during plugin initialization.
-
-Minimal example (repositories only, everything else default):
-
+Then in setup:
 ```lua
 require("github_stats").setup({
-  repos = {
-    "username/repo1",
-    "username/repo2",
-  },
-})
-```
-
-Using a token file:
-
-```lua
-require("github_stats").setup({
-  repos = { "username/repo1" },
+  repos = { "username/repo" },
   token_source = "file",
   token_file = "~/.github_token",
 })
 ```
 
-Using custom paths:
+### Custom Storage Paths
 
 ```lua
 require("github_stats").setup({
-  repos = { "username/repo1" },
-
-  -- Custom location for config.json
-  config_dir = "~/my-github-stats",
-
-  -- Custom location for fetched GitHub data
-  data_dir = "/mnt/shared/github-data",
+  repos = { "username/repo" },
+  config_dir = "~/my-github-stats",      -- Custom config location
+  data_dir = "/mnt/shared/github-data",  -- Custom data storage (e.g., NAS)
 })
 ```
-
-#### Option B: Configuration via `config.json` (default / persistent)
-
-If `setup()` is called without arguments, the plugin automatically uses a JSON-based configuration.
-
-```lua
-require("github_stats").setup()
-```
-
-The file is created automatically at:
-
-```
-~/.config/nvim/github-stats/config.json
-```
-
-Example content:
-
-```json
-{
-  "repos": [
-    "username/repo1",
-    "username/repo2"
-  ],
-  "token_source": "file",
-  "token_file": "~/.github_token",
-  "fetch_interval_hours": 24,
-  "notification_level": "all"
-}
-```
-
-This variant is useful when:
-
-- configuration should be independent of the plugin manager
-- the same configuration is shared across multiple Neovim installations
-- configuration and data should be version-controlled together
-
----
-
-#### Why are configuration and data stored in the same directory by default?
-
-By default, the plugin stores both `config.json` and all fetched GitHub data under:
-
-```
-stdpath("config")/github-stats/
-```
-
-This intentionally deviates from the classic Neovim convention:
-
-Path | Typical purpose
----- | ---------------
-stdpath("config") | Configuration files
-stdpath("data") | Local or non-synced plugin data
-
-The rationale for using `stdpath("config")` for both is:
-
-- The entire Neovim configuration, including GitHub stats, can be synced via Git
-- Identical historical data is available across multiple machines
-- Consistent setup on laptop, workstation, and server
-- No data loss when reinstalling Neovim
-
-For users who prefer the traditional layout, `data_dir` can be explicitly set to `stdpath("data")` or any other directory.
-
----
-
-### Configuration precedence rules
-
-1. Values passed to `setup()` always override values from `config.json`
-2. Missing options are read from `config.json`
-3. Remaining values are filled with defaults
-4. If `config.json` does not exist, it is created automatically
-
----
-
-#### Create Configuration File
-
-The file is automatically created at:
-```
-~/.config/nvim/github-stats/config.json
-```
-
-**Example Configuration:**
-
-```json
-{
-  "repos": [
-    "username/repo1",
-    "username/repo2"
-  ],
-  "token_source": "env",
-  "token_env_var": "GITHUB_TOKEN",
-  "fetch_interval_hours": 24
-}
-```
-
-### Configuration Options
-
-| Option               | Type                        | Description                         | Default                        |
-| -------------------- | --------------------------- | ----------------------------------- | ------------------------------ |
-| repos                | string[]                    | List of repositories (`owner/repo`) | []                             |
-| token_source         | "env" | "file"              | Token source                        | "env"                          |
-| token_env_var        | string                      | Environment variable name           | "GITHUB_TOKEN"                 |
-| token_file           | string                      | Path to token file                  | "~/.github_token"              |
-| fetch_interval_hours | number                      | Minimum interval between fetches    | 24                             |
-| notification_level   | "all" | "errors" | "silent" | Notification verbosity              | "all"                          |
-| config_dir           | string                      | Base directory for config.json      | stdpath("config")/github-stats |
-| data_dir             | string                      | Directory for fetched API data      | config_dir .. "/data"          |
-
-**Notification Levels:**
-
-| Level | Behavior |
-|-------|----------|
-| `all` | Show all notifications (info, warnings, errors) - **default** |
-| `errors` | Only show warnings and errors |
-| `silent` | No notifications (check `:GithubStatsDebug` manually) |
 
 ---
 
@@ -306,29 +187,37 @@ The file is automatically created at:
 #### Fetch Data
 
 ```vim
-" Respects interval (default: 24h)
+" Respects configured interval (default: 24h)
 :GithubStatsFetch
 
 " Force immediate fetch
 :GithubStatsFetch force
 ```
 
+**Autocompletion:** `force`
+
 ---
 
 #### Show Detailed Statistics
 
 ```vim
-" All available data
+" All available data (smart defaults)
 :GithubStatsShow username/repo clones
 :GithubStatsShow username/repo views
 
 " With date range filter
 :GithubStatsShow username/repo clones 2025-01-01 2025-12-31
+
+" Only start date (end defaults to today)
+:GithubStatsShow username/repo views 2025-01-01
 ```
 
-**Autocompletion available for:**
-- Repository names
-- Metric types (`clones`, `views`)
+**Smart Defaults:**
+- No `start_date` → Shows all available data
+- No `end_date` → Defaults to today
+- Plugin notifies about applied defaults
+
+**Autocompletion:** Repository names, metrics (`clones`, `views`)
 
 ---
 
@@ -338,6 +227,10 @@ The file is automatically created at:
 :GithubStatsSummary clones
 :GithubStatsSummary views
 ```
+
+Shows aggregated statistics for all configured repositories.
+
+**Autocompletion:** Metrics
 
 ---
 
@@ -351,6 +244,8 @@ The file is automatically created at:
 :GithubStatsReferrers username/repo 20
 ```
 
+**Autocompletion:** Repository names
+
 ---
 
 #### Show Top Paths
@@ -363,9 +258,11 @@ The file is automatically created at:
 :GithubStatsPaths username/repo 20
 ```
 
+**Autocompletion:** Repository names
+
 ---
 
-#### Visualizations (NEW in v1.2.0)
+#### Visualizations
 
 ```vim
 " Sparkline chart for single metric
@@ -374,8 +271,8 @@ The file is automatically created at:
 " Comparison chart (count vs uniques)
 :GithubStatsChart username/repo both
 
-" With date range
-:GithubStatsChart username/repo views 2025-01-01 2025-12-31
+" With date range (smart defaults apply)
+:GithubStatsChart username/repo views 2025-01-01
 ```
 
 **Example Output:**
@@ -389,9 +286,11 @@ Period: 2025-11-20 to 2025-12-20 (30 days)
 Max: 1,234 | Avg: 567 | Min: 123 | Total: 17,010
 ```
 
+**Autocompletion:** Repository names, metrics
+
 ---
 
-#### Export Data (NEW in v1.2.0)
+#### Export Data
 
 ```vim
 " Export single repo to CSV
@@ -404,21 +303,15 @@ Max: 1,234 | Avg: 567 | Min: 123 | Total: 17,010
 :GithubStatsExport all clones ~/summary.md
 ```
 
-**CSV Format:**
-```csv
-repository,metric,date,count,uniques
-username/repo,clones,2025-12-20,45,12
-username/repo,clones,2025-12-21,52,15
-```
+**Supported Formats:**
+- `.csv` – Single repository only, daily breakdown
+- `.md` – Single repository or all repositories with summary
 
-**Markdown Format:**
-- Tables with daily breakdown
-- Summary statistics
-- Recent values highlighted
+**Autocompletion:** Repository names, metrics, file paths
 
 ---
 
-#### Period Comparison (NEW in v1.2.0)
+#### Period Comparison
 
 ```vim
 " Compare two months
@@ -451,6 +344,8 @@ Changes:
   Uniques: +13.8%
 ```
 
+**Autocompletion:** Repository names, metrics, period suggestions
+
 ---
 
 #### Debug Information
@@ -462,6 +357,7 @@ Changes:
 Shows:
 - Configuration status
 - Token availability
+- Last fetch summary with detailed error information
 - Test API call for first repository
 
 ---
@@ -472,12 +368,105 @@ Shows:
 :checkhealth github_stats
 ```
 
-Checks:
+Performs comprehensive diagnostics:
 - Configuration validity
-- Token access
-- curl availability (cross-platform)
-- Storage paths
-- API connectivity
+- Token access and permissions
+- curl availability (cross-platform detection)
+- Storage path accessibility
+- API connectivity test (with timeout protection)
+
+---
+
+## Documentation
+
+- **[Configuration Guide](docs/configuration/INTRO.md)** – Detailed setup instructions
+  - [Preparation](docs/configuration/PREPARATION.md)
+  - [Option A: Direct Setup](docs/configuration/OPTION-A.md)
+  - [Option B: Config File](docs/configuration/OPTION-B.md)
+- **[User Commands](docs/usercommands.md)** – Complete command reference
+- **[Troubleshooting Guide](docs/TROUBLESHOOTING.md)** – Common issues and solutions
+
+---
+
+## Troubleshooting
+
+### Quick Diagnostics
+
+```vim
+:checkhealth github_stats
+:GithubStatsDebug
+:messages
+```
+
+### Common Issues
+
+#### "Fetched X metrics, Y errors"
+
+Run `:GithubStatsDebug` to see detailed error information for each failed repository/metric combination.
+
+**Common causes:**
+- `404 Not Found` – Repository name incorrect or deleted
+- `403 Forbidden` – Token lacks permissions or rate limit exceeded
+- `401 Unauthorized` – Invalid or expired token
+
+#### "Token error: GITHUB_TOKEN not set"
+
+```bash
+export GITHUB_TOKEN="ghp_your_token_here"
+```
+
+Then restart Neovim.
+
+#### "No data found for username/repo"
+
+**Possible causes:**
+1. Repository name in configuration doesn't match exactly
+2. No data fetched yet – run `:GithubStatsFetch force`
+3. Token lacks access to repository
+
+#### Autocompletion not working
+
+Requires Neovim ≥ 0.9.0. Run `:checkhealth github_stats` to verify.
+
+See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for comprehensive troubleshooting guide.
+
+---
+
+## Performance
+
+- **Storage**: JSON-based, ~2KB per data point
+- **Fetch Time**: ~1-2 seconds per repository (parallel execution)
+- **UI Blocking**: None (fully async via `vim.system`)
+- **Memory**: Minimal (only active data in RAM)
+- **Rate Limits**: 5,000 requests/hour with token
+
+**Capacity:** With daily fetching (4 requests/repo), the plugin can handle ~1,250 repositories.
+
+---
+
+## Cross-Platform Support
+
+### Windows
+
+- curl detection via PowerShell's `Get-Command`
+- File paths automatically normalized
+- Environment variables: `$env:GITHUB_TOKEN` in PowerShell
+
+### macOS / Linux
+
+- Standard curl detection via `command -v`
+- POSIX-compliant paths
+- Environment variables: Standard bash/zsh export
+
+### Storage Locations
+
+| Platform | Default Config Path |
+|----------|---------------------|
+| Linux | `~/.config/nvim/github-stats/` |
+| macOS | `~/.config/nvim/github-stats/` |
+| Windows | `%LOCALAPPDATA%\nvim\github-stats\` |
+
+Custom paths can be specified via `config_dir` and `data_dir` options.
 
 ---
 
@@ -487,7 +476,7 @@ Checks:
 
 ```
 ~/.config/nvim/github-stats/
-├── config.json                    # User configuration
+├── config.json                    # User configuration (optional)
 ├── last_fetch.json                # Interval tracking
 └── data/
     └── username_repo/
@@ -499,141 +488,49 @@ Checks:
         └── paths/
 ```
 
----
+### API Endpoints
 
-## API Endpoints
+The plugin uses GitHub REST API v3:
 
-The plugin uses the following GitHub REST API v3 endpoints:
-
-- `GET /repos/{owner}/{repo}/traffic/clones` - Clone statistics
-- `GET /repos/{owner}/{repo}/traffic/views` - View statistics
-- `GET /repos/{owner}/{repo}/traffic/popular/referrers` - Top referrers
-- `GET /repos/{owner}/{repo}/traffic/popular/paths` - Top paths
-
-**Rate Limits:**
-- 5,000 requests/hour with token
-- With daily fetch: 4 requests per repo → max 1,250 repositories per day
-
----
-
-## Troubleshooting
-
-### Understanding "X errors" Messages
-
-When you see: `[github-stats] Fetched 40 metrics, 4 errors`
-
-**Find details:**
-```vim
-:GithubStatsDebug
-```
-
-This shows exactly which repositories/metrics failed and why.
-
-**Common errors:**
-- `404 Not Found` - Repository name incorrect or deleted
-- `403 Forbidden` - Token lacks permissions or rate limit
-- `401 Unauthorized` - Invalid or expired token
-- Connection timeout - Network/firewall issue
-
-**See full troubleshooting guide:** [doc/TROUBLESHOOTING.md](doc/TROUBLESHOOTING.md)
-
----
-
----
-
-### "Token error: Environment variable GITHUB_TOKEN not set or empty"
-
-**Solution:**
-1. Set token: `export GITHUB_TOKEN="ghp_..."`
-2. Restart Neovim
-3. Or use token file (see Configuration)
-
----
-
-### "No data found for username/repo"
-
-**Possible Causes:**
-1. Repository name in config.json is incorrect (must match exactly)
-2. No data fetched yet (run `:GithubStatsFetch force`)
-3. Token lacks permission for the repository
-
----
-
-### "API test failed: 401 Unauthorized"
-
-**Solution:**
-1. Check token permissions (must include `repo`)
-2. Check token expiration date
-3. Generate new token if necessary
-
----
-
-### "curl not found in PATH" (Windows)
-
-**Solution:**
-- Windows 10 build 1803+: curl is included
-- Earlier versions: Download from https://curl.se/windows/
-- Verify with: `curl --version` in PowerShell
-
----
-
-### Autocompletion Not Working
-
-**Possible Causes:**
-1. Command registration missing `complete` parameter
-2. Config file not loaded properly
-3. Neovim version < 0.9.0
-
-**Solution:**
-```vim
-:checkhealth github_stats
-```
-
----
-
-## Performance
-
-- **Storage**: JSON-based, ~2KB per data point
-- **Fetch Time**: ~1-2 seconds per repository (parallel)
-- **UI Blocking**: None (fully async)
-- **Memory**: Minimal (only active data in RAM)
-
----
-
-## Cross-Platform Notes
-
-### Windows
-
-- curl detection via PowerShell's `Get-Command`
-- File paths automatically normalized
-- Environment variables: Use `$env:GITHUB_TOKEN` in PowerShell
-
----
-
-### macOS / Linux
-
-- Standard curl detection via `command -v`
-- POSIX-compliant paths
-- Environment variables: Standard bash/zsh export
+- `GET /repos/{owner}/{repo}/traffic/clones` – Clone statistics
+- `GET /repos/{owner}/{repo}/traffic/views` – View statistics
+- `GET /repos/{owner}/{repo}/traffic/popular/referrers` – Top referrers
+- `GET /repos/{owner}/{repo}/traffic/popular/paths` – Top paths
 
 ---
 
 ## License
 
-[MIT](./LICENSE)
+[MIT License](./LICENSE)
 
 ---
 
 ## Contributing
 
-Pull requests are welcome. For major changes, please open an issue first.
+Pull requests are welcome. For major changes, please open an issue first to discuss proposed changes.
 
 ---
 
-## Support
+## Disclaimer
 
-- Issues: https://github.com/username/github-stats.nvim/issues
-- Discussions: https://github.com/username/github-stats.nvim/discussions
-- Help: `:help github_stats`
+ℹ️ This plugin is under active development – some features are planned or experimental.
+Expect changes in upcoming releases.
 
 ---
+
+## Feedback
+
+Your feedback is very welcome!
+
+Please use the [GitHub issue tracker](https://github.com/StefanBartl/github_stats.nvim/issues) to:
+- Report bugs
+- Suggest new features
+- Ask questions about usage
+- Share thoughts on UI or functionality
+
+For general discussion, feel free to open a [GitHub Discussion](https://github.com/StefanBartl/github_stats.nvim/discussions).
+
+If you find this plugin helpful, consider giving it a ⭐ on GitHub — it helps others discover the project.
+
+---
+

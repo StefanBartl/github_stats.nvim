@@ -24,7 +24,9 @@ GitHub repository traffic statistics.
 
 Features:~
   • Automatic daily data collection
-  • Historical JSON storage
+  • Flexible configuration (setup() or config.json)
+  • Historical JSON storage with custom paths
+  • Smart date defaults in commands
   • Time-range based analytics
   • ASCII visualizations (sparklines, charts)
   • Export to CSV and Markdown
@@ -54,7 +56,9 @@ With lazy.nvim:~
     {
       "StefanBartl/github-stats.nvim",
       config = function()
-        require("github_stats").setup()
+        require("github_stats").setup({
+          repos = { "user/repo1", "user/repo2" },
+        })
       end,
     }
 <
@@ -64,7 +68,9 @@ With packer.nvim:~
     use {
       "StefanBartl/github-stats.nvim",
       config = function()
-        require("github_stats").setup()
+        require("github_stats").setup({
+          repos = { "user/repo1", "user/repo2" },
+        })
       end,
     }
 <
@@ -72,54 +78,110 @@ With packer.nvim:~
 ==============================================================================
 CONFIGURATION                                    *github_stats-configuration*
 
-Configuration file: ~/.config/nvim/github-stats/config.json
+Two configuration methods are supported:
 
-Example:~
+Option A: Direct Setup (Recommended)~
+>lua
+    require("github_stats").setup({
+      repos = { "username/repo1", "username/repo2" },
+      token_source = "env",           -- or "file"
+      token_env_var = "GITHUB_TOKEN",
+      fetch_interval_hours = 24,
+      notification_level = "all",     -- "all", "errors", "silent"
+    })
+<
+
+Option B: Config File~
+
+Create: ~/.config/nvim/github-stats/config.json
 >json
     {
-      "repos": [
-        "username/repo1",
-        "username/repo2"
-      ],
+      "repos": ["username/repo1", "username/repo2"],
       "token_source": "env",
       "token_env_var": "GITHUB_TOKEN",
-      "fetch_interval_hours": 24
+      "fetch_interval_hours": 24,
+      "notification_level": "all"
     }
 <
 
-Options:~
-  repos                   List of repositories (format: "owner/repo")
-                          Type: string[]
-                          Default: []
+Then in init.lua:
+>lua
+    require("github_stats").setup()  -- Reads from config.json
+<
 
-  token_source            Token source
-                          Type: "env" | "file"
-                          Default: "env"
+Why Option B?~
+If you sync Neovim config across systems via Git, using config.json in
+stdpath('config') allows:
+  • Same historical data across all systems
+  • Consistent repository lists
+  • Everything in one backup-able location
 
-  token_env_var           Environment variable name
-                          Type: string
-                          Default: "GITHUB_TOKEN"
+See docs/configuration/INTRO.md for detailed guide.
 
-  token_file              Path to token file (only when token_source="file")
-                          Type: string
-                          Example: "~/.github_token"
+Configuration Options:~
 
-  fetch_interval_hours    Interval between automatic fetches
-                          Type: number
-                          Default: 24
+repos                   List of repositories (format: "owner/repo")
+                        Type: string[]
+                        Required: Yes
+
+token_source            Token source ("env" or "file")
+                        Type: string
+                        Default: "env"
+
+token_env_var           Environment variable name
+                        Type: string
+                        Default: "GITHUB_TOKEN"
+
+token_file              Path to token file (when token_source="file")
+                        Type: string
+                        Example: "~/.github_token"
+
+fetch_interval_hours    Hours between automatic fetches
+                        Type: number
+                        Default: 24
+
+notification_level      Notification verbosity
+                        Type: "all" | "errors" | "silent"
+                        Default: "all"
+
+config_dir              Custom config directory (advanced)
+                        Type: string
+                        Default: stdpath('config') .. '/github-stats'
+
+data_dir                Custom data directory (advanced)
+                        Type: string
+                        Default: config_dir .. '/data'
+
+Custom Storage Paths Example:~
+>lua
+    require("github_stats").setup({
+      repos = { "username/repo" },
+      config_dir = "~/my-github-stats",
+      data_dir = "/mnt/nas/github-data",
+    })
+<
 
 Token Setup:~
 
-Environment Variable (recommended):~
+Environment Variable:
 >bash
     # In ~/.bashrc, ~/.zshrc, etc.
     export GITHUB_TOKEN="ghp_your_token_here"
 <
 
-Token File:~
+Token File:
 >bash
     echo "ghp_your_token_here" > ~/.github_token
     chmod 600 ~/.github_token
+<
+
+Then in setup:
+>lua
+    require("github_stats").setup({
+      repos = { "username/repo" },
+      token_source = "file",
+      token_file = "~/.github_token",
+    })
 <
 
 ==============================================================================
@@ -145,13 +207,19 @@ COMMANDS                                            *github_stats-commands*
         {repo}        Repository in "owner/repo" format
         {metric}      "clones" or "views"
         [start_date]  Optional start (ISO: YYYY-MM-DD)
-        [end_date]    Optional end (ISO: YYYY-MM-DD)
+        [end_date]    Optional end (ISO: YYYY-MM-DD, default: today)
+
+    Smart Defaults:~
+        No start_date → All available data
+        No end_date   → Today's date
+        Plugin notifies about applied defaults
 
     Autocompletion: Repository names, metrics
 
     Examples:~
         :GithubStatsShow username/repo clones
-        :GithubStatsShow username/repo views 2025-01-01 2025-12-31
+        :GithubStatsShow username/repo views 2025-01-01
+        :GithubStatsShow username/repo clones 2025-01-01 2025-12-31
 
                                                      *:GithubStatsSummary*
 :GithubStatsSummary {metric}
@@ -159,6 +227,8 @@ COMMANDS                                            *github_stats-commands*
 
     Parameters:~
         {metric}      "clones" or "views"
+
+    Note: Does not accept date parameters (shows entire history)
 
     Autocompletion: Metrics
 
@@ -197,13 +267,16 @@ COMMANDS                                            *github_stats-commands*
                                                        *:GithubStatsChart*
 :GithubStatsChart {repo} {metric} [start_date] [end_date]
     Displays ASCII sparkline chart for traffic data.
-    NEW in v1.2.0
 
     Parameters:~
         {repo}        Repository in "owner/repo" format
         {metric}      "clones", "views", or "both" (comparison)
         [start_date]  Optional start (ISO: YYYY-MM-DD)
-        [end_date]    Optional end (ISO: YYYY-MM-DD)
+        [end_date]    Optional end (ISO: YYYY-MM-DD, default: today)
+
+    Smart Defaults:~
+        No start_date → All available data
+        No end_date   → Today's date
 
     Autocompletion: Repository names, metrics
 
@@ -215,12 +288,15 @@ COMMANDS                                            *github_stats-commands*
                                                       *:GithubStatsExport*
 :GithubStatsExport {repo|all} {metric} {filepath}
     Exports data to CSV or Markdown format.
-    NEW in v1.2.0
 
     Parameters:~
         {repo|all}    Repository or "all" for summary
         {metric}      "clones" or "views"
         {filepath}    Output file (.csv or .md extension)
+
+    Format Support:~
+        CSV:      Single repository only
+        Markdown: Single repository or all repositories
 
     Autocompletion: Repository names, metrics, file paths
 
@@ -232,13 +308,16 @@ COMMANDS                                            *github_stats-commands*
                                                         *:GithubStatsDiff*
 :GithubStatsDiff {repo} {metric} {period1} {period2}
     Compares metrics between two time periods.
-    NEW in v1.2.0
 
     Parameters:~
         {repo}        Repository in "owner/repo" format
         {metric}      "clones" or "views"
         {period1}     First period (YYYY-MM or YYYY)
         {period2}     Second period (YYYY-MM or YYYY)
+
+    Period Formats:~
+        YYYY-MM: Single month (e.g., 2025-01)
+        YYYY:    Full year (e.g., 2025)
 
     Autocompletion: Repository names, metrics, period suggestions
 
@@ -250,10 +329,16 @@ COMMANDS                                            *github_stats-commands*
 :GithubStatsDebug
     Shows debug information and tests API connectivity.
 
-    Checks:~
+    Information Shown:~
         • Configuration status
         • Token availability
+        • Last fetch summary with detailed errors
         • Test API call for first repository
+
+    Use when:~
+        • After initial setup
+        • Troubleshooting errors
+        • Before opening support issues
 
                                                       *:checkhealth-github_stats*
 :checkhealth github_stats
@@ -264,7 +349,7 @@ COMMANDS                                            *github_stats-commands*
         • Token access
         • curl availability (cross-platform)
         • Storage paths
-        • API connectivity
+        • API connectivity (with timeout)
 
 ==============================================================================
 VISUALIZATION                                    *github_stats-visualization*
@@ -368,7 +453,8 @@ Lua API for advanced usage:~
 Setup:~
 >lua
     require("github_stats").setup({
-      -- Options (reserved for future use)
+      repos = { "username/repo" },
+      -- Options (see |github_stats-configuration|)
     })
 <
 
@@ -427,7 +513,7 @@ STORAGE                                              *github_stats-storage*
 Data Structure:~
 >
     ~/.config/nvim/github-stats/
-    ├── config.json                    # User configuration
+    ├── config.json                    # User configuration (Option B)
     ├── last_fetch.json                # Interval tracking
     └── data/
         └── username_repo/
@@ -437,6 +523,17 @@ Data Structure:~
             ├── views/
             ├── referrers/
             └── paths/
+<
+
+Custom Paths:~
+
+Default paths can be customized in setup():
+>lua
+    require("github_stats").setup({
+      repos = { "username/repo" },
+      config_dir = "~/my-github-stats",
+      data_dir = "/mnt/nas/github-data",
+    })
 <
 
 File Format (Example):~
@@ -466,23 +563,27 @@ Storage Management:~
 ==============================================================================
 TROUBLESHOOTING                              *github_stats-troubleshooting*
 
-Problem: "Token error: Environment variable GITHUB_TOKEN not set"~
+Problem: "Token error: GITHUB_TOKEN not set"~
 Solution:~
     1. Set token: `export GITHUB_TOKEN="ghp_..."`
     2. Restart Neovim
-    3. Or configure token_file in config.json
+    3. Or configure token_file in setup
 
 Problem: "No data found for username/repo"~
 Possible Causes:~
-    1. Repository name in config.json incorrect (must match exactly)
+    1. Repository name in configuration incorrect (case-sensitive)
     2. No data fetched yet → :GithubStatsFetch force
     3. Token lacks permission for repository
 
-Problem: "API test failed: 401 Unauthorized"~
+Problem: "Fetched X metrics, Y errors"~
 Solution:~
-    1. Check token permissions (must include `repo`)
-    2. Check token expiration date
-    3. Generate new token if necessary
+    Run :GithubStatsDebug to see detailed error information for each
+    failed repository/metric combination.
+
+    Common error codes:
+    • 404 Not Found    - Repository name incorrect or deleted
+    • 403 Forbidden    - Token lacks permissions or rate limit
+    • 401 Unauthorized - Invalid or expired token
 
 Problem: "curl not found in PATH"~
 Solution:~
@@ -495,38 +596,16 @@ Problem: Autocompletion not working~
 Solution:~
     1. Check Neovim version: >= 0.9.0 required
     2. Run: :checkhealth github_stats
-    3. Verify config.json is valid JSON
+    3. Verify configuration is loaded
 
 Diagnostic Workflow:~
     1. :checkhealth github_stats
     2. :GithubStatsDebug
-    3. Check logs: :messages
-    4. Verify config: ~/.config/nvim/github-stats/config.json
+    3. :messages
+    4. Check config: ~/.config/nvim/github-stats/config.json
 
-==============================================================================
-LICENSE                                              *github_stats-license*
-
-MIT License
-
-Copyright (c) 2025
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+For comprehensive troubleshooting guide, see:
+    docs/TROUBLESHOOTING.md
 
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:

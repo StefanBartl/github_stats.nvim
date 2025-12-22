@@ -2,158 +2,271 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/).
+## Table of Contents
 
-## Table of content
+- [[1.3.0] - 2025-12-22](#130-2025-12-22)
+- [[1.2.1] - 2025-12-21](#121-2025-12-21)
+- [[1.2.0] - 2025-12-21](#120-2025-12-21)
+- [[1.1.0] - 2025-12-21](#110-2025-12-21)
+- [[1.0.0] - 2025-12-20](#100-2025-12-20)
+- [[0.1.0] - 2025-12-15](#010-2025-12-15)
 
-  - [[Unreleased]](#unreleased)
-    - [Planned](#planned)
-  - [[1.2.0] - 2025-12-21](#120-2025-12-21)
-    - [Added](#added)
-    - [Fixed](#fixed)
-    - [Changed](#changed)
-  - [[1.1.0] - 2025-12-21](#110-2025-12-21)
-    - [Added](#added-1)
-    - [Fixed](#fixed-1)
-    - [Changed](#changed-1)
-  - [[1.0.0] - 2025-12-20](#100-2025-12-20)
-    - [Added](#added-2)
-    - [Dependencies](#dependencies)
-  - [[0.1.0] - 2025-12-15](#010-2025-12-15)
-    - [Added](#added-3)
-  - [Versioning Policy](#versioning-policy)
-  - [Categories](#categories)
+--
+
+## [1.3.0] - 2025-12-22
+
+### Added
+- **Flexible Configuration System**
+  - Support for both `setup()` (Option A) and `config.json` (Option B)
+  - Custom `config_dir` and `data_dir` options
+  - Configuration priority: `setup()` > `config.json` > defaults
+  - Comprehensive configuration documentation
+
+- **Smart Date Defaults in UserCommands**
+  - `GithubStatsShow`: Automatic `end_date` default to today
+  - `GithubStatsChart`: Automatic `end_date` default to today
+  - Info notifications when defaults are applied
+  - All available data shown when no `start_date` specified
+
+- **Documentation Overhaul**
+  - New configuration guide split into logical sections
+    - [docs/configuration/INTRO.md](../configuration/INTRO.md)
+    - [docs/configuration/PREPARATION.md](../configuration/PREPARATION.md)
+    - [docs/configuration/OPTION-A.md](../configuration/OPTION-A.md)
+    - [docs/configuration/OPTION-B.md](../configuration/OPTION-B.md)
+  - Updated README with clearer structure
+  - Enhanced vim help file (`doc/github_stats.txt`)
+  - Updated user commands reference
+
+- **Configuration Options Reference**
+  - Detailed explanation of all configuration keys
+  - Security best practices for token management
+  - Cross-system sync strategies
+  - Custom storage path examples
+
+### Fixed
+- **Critical: `parse_date()` nil-safety**
+  - Prevented crashes when date parameters were omitted
+  - Robust handling of `nil` values in date parsing
+  - Proper validation before string operations
+
+- **Critical: `GithubStatsSummary` date handling**
+  - Command no longer accepts date parameters (by design)
+  - Fixed incorrect call to `analytics.query_all_repos()`
+  - Proper error messages for invalid usage
+
+### Changed
+- **Configuration System Architecture**
+  - `config.lua` now accepts `SetupOptions` in `init()`
+  - Path resolution logic separated into dedicated functions
+  - Better error messages for configuration issues
+
+- **Analytics Module**
+  - `aggregate_daily()` now handles `nil` date parameters gracefully
+  - Filter logic only applies when timestamps are valid
+  - Skip invalid date entries instead of crashing
+
+- **UserCommand Improvements**
+  - `show.lua`: Better user feedback for missing parameters
+  - `chart.lua`: Consistent date handling with `show.lua`
+  - `diff.lua`: Enhanced error messages for missing periods
+  - All commands provide helpful usage hints on error
+
+### Documentation
+- Configuration guide restructured into separate focused documents
+- Added decision trees for choosing configuration method
+- Expanded token management section with platform-specific instructions
+- New troubleshooting section for configuration issues
+- Examples for common use cases and advanced scenarios
 
 ---
 
-## [Unreleased]
+## [1.2.1] - 2025-12-21
 
-### Planned
-- Notification thresholds
-- Webhook integration
-- Dashboard UI with multiple repos
-- Custom date range presets
+### Fixed
+- **Healthcheck Async Hang**
+  - Added 10-second timeout to prevent hanging
+  - Duplicate-check prevents multiple simultaneous API tests
+  - Duration display shows how long API test took
+  - Improved error messages with troubleshooting advice
+
+- **Autocompletion in referrers.lua and paths.lua**
+  - Fixed argument index calculation
+  - Now works consistently like other commands
+  - Repository names complete properly
+
+### Changed
+- Healthcheck now shows "Testing API connection (this may take a few seconds)..."
+- Better feedback during async operations
+
+---
 
 ## [1.2.0] - 2025-12-21
 
 ### Added
 - **Visualization Module** (`visualization.lua`)
-  - ASCII sparkline generation
+  - ASCII sparkline generation using Unicode block elements
   - Horizontal bar charts
   - Comparison charts (count vs uniques)
   - `:GithubStatsChart` command with autocompletion
+
 - **Export Module** (`export.lua`)
-  - CSV export for single repositories
-  - Markdown export with formatted tables
-  - Summary export for all repositories
+  - CSV export for single repositories with daily breakdown
+  - Markdown export with formatted tables and statistics
+  - Summary export for all repositories in Markdown
   - `:GithubStatsExport` command with file path completion
+
 - **Diff Module** (`diff.lua`)
-  - Period-over-period comparison
+  - Period-over-period comparison (month/year)
   - Support for YYYY-MM and YYYY formats
   - Percentage change calculations
+  - Average per day metrics
   - `:GithubStatsDiff` command with period suggestions
+
 - **Cross-Platform curl Detection**
-  - Windows PowerShell integration
-  - Fallback detection methods
-  - Better error messages for missing curl
+  - Windows PowerShell integration via `Get-Command`
+  - Fallback detection methods for reliability
+  - Better error messages for missing curl on Windows
 
 ### Fixed
-- **Autocompletion Bug in `GithubStatsShow`**
-  - Fixed argument index calculation
-  - Proper handling of trailing whitespace
+- **Critical: Autocompletion Bug in `GithubStatsShow`**
+  - Fixed argument index calculation logic
+  - Proper handling of trailing whitespace in command line
   - Reliable completion for repositories and metrics
+  - Works consistently across all Neovim versions ≥ 0.9.0
+
 - **Healthcheck Windows Support**
-  - curl detection now works on Windows
-  - Platform-specific error messages
-  - Better guidance for Windows users
+  - curl detection now works correctly on Windows
+  - Platform-specific command execution
+  - Better guidance for Windows users in error messages
 
 ### Changed
-- Healthcheck now includes Windows-specific instructions
-- Updated documentation with visualization examples
+- Healthcheck includes Windows-specific installation instructions
+- Updated all documentation with visualization examples
 - Enhanced error messages across all modules
+- Improved user feedback for export operations
+
+### Documentation
+- Added visualization examples to README
+- Export format specifications documented
+- Period comparison usage guide
+- Cross-platform notes expanded
+
+---
 
 ## [1.1.0] - 2025-12-21
 
 ### Added
-- **Autocompletion** for all UserCommands
+- **Autocompletion for All UserCommands**
   - Repository names from config.json
   - Metric types (clones, views)
   - Force parameter for Fetch command
+  - Period suggestions for Diff command (future)
+
 - **Healthcheck Module** (`:checkhealth github_stats`)
-  - Configuration, token, dependency validation
-  - API connectivity test
+  - Configuration validation (file existence, JSON syntax)
+  - Token access verification
+  - Dependency checks (curl availability)
   - Storage path verification
+  - API connectivity test with timeout
+
 - **Modular UserCommands Architecture**
-  - Separate files per command
-  - Shared utils for floating windows and formatting
+  - Separate files per command in `usercommands/` directory
+  - Shared utilities (`usercommands/utils.lua`)
   - Better maintainability and extensibility
+  - Consistent error handling across commands
 
 ### Fixed
-- **Critical Bug in `GithubStatsShow`**:
-  - Showed incorrect "N/A" and "0" with valid data
-  - Cause: Exact string match between config and query required
-  - Solution: Better error messages and validation
-- Robust JSON parsing with helpful error messages
-- Atomic file writes in storage layer
+- **Critical: `GithubStatsShow` Data Display Bug**
+  - Fixed issue showing incorrect "N/A" and "0" with valid data
+  - Root cause: String matching required exact format between config and query
+  - Improved error messages with actionable solutions
+  - Better validation of repository names
+
+- **Robust JSON Parsing**
+  - Added error handling for malformed JSON
+  - Helpful error messages pointing to syntax issues
+  - Validation of all required fields
+
+- **Atomic File Writes**
+  - Storage layer now uses temp files + rename for atomicity
+  - Prevents data corruption on write failures
+  - Cleanup of temporary files on error
 
 ### Changed
-- UserCommands reorganized into `usercommands/` subdirectory
-- Improved error messages with concrete solutions
-- Documentation completely revised
+- **UserCommands Reorganization**
+  - Moved from single `commands.lua` to modular structure
+  - Each command in separate file (`usercommands/<command>.lua`)
+  - Shared functionality in `usercommands/utils.lua`
+  - Central registration in `usercommands/init.lua`
+
+- **Improved Error Messages**
+  - All errors now include specific solutions
+  - Repository name format clearly explained
+  - Date format examples provided
+  - Token setup instructions included
+
+### Documentation
+- Complete documentation rewrite for clarity
+- Added troubleshooting guide with common issues
+- Step-by-step configuration instructions
+- Examples for all commands with expected outputs
+
+---
 
 ## [1.0.0] - 2025-12-20
 
 ### Added
-- **Initial Release**
-- Automatic daily fetch of GitHub traffic data
-- UserCommands for manual control:
-  - `:GithubStatsFetch [force]`
-  - `:GithubStatsShow {repo} {metric} [start] [end]`
-  - `:GithubStatsSummary {metric}`
-  - `:GithubStatsReferrers {repo} [limit]`
-  - `:GithubStatsPaths {repo} [limit]`
-  - `:GithubStatsDebug`
-- JSON-based local persistence
-- Async API client with curl
-- Analytics module with time-range filtering
-- Floating windows for result display
-- Token management via environment/file
-- VimEnter AutoCommand for auto-fetch
+- **Initial Public Release**
+- **Core Functionality**
+  - Automatic daily fetch of GitHub traffic data
+  - JSON-based local persistence with timestamped files
+  - Async API client using `vim.system` and curl
+  - Analytics module with time-range filtering
+  - Floating windows for formatted result display
+
+- **UserCommands**
+  - `:GithubStatsFetch [force]` – Manual data fetching
+  - `:GithubStatsShow {repo} {metric} [start] [end]` – Detailed statistics
+  - `:GithubStatsSummary {metric}` – Cross-repository summary
+  - `:GithubStatsReferrers {repo} [limit]` – Top referring sources
+  - `:GithubStatsPaths {repo} [limit]` – Most visited paths
+  - `:GithubStatsDebug` – Diagnostic information
+
+- **Configuration System**
+  - JSON-based configuration file
+  - Token management via environment variable or file
+  - Configurable fetch interval
+  - Repository list management
+
+- **API Integration**
+  - GitHub REST API v3 support
+  - Rate limit awareness (5,000 requests/hour)
+  - Four traffic endpoints:
+    - `/repos/{owner}/{repo}/traffic/clones`
+    - `/repos/{owner}/{repo}/traffic/views`
+    - `/repos/{owner}/{repo}/traffic/popular/referrers`
+    - `/repos/{owner}/{repo}/traffic/popular/paths`
+
+- **AutoCommand Integration**
+  - `VimEnter` hook for automatic daily fetching
+  - Respects configured fetch interval
+  - Async execution to prevent UI blocking
 
 ### Dependencies
 - Neovim ≥ 0.9.0
-- curl
-- GitHub Personal Access Token
+- curl command-line tool
+- GitHub Personal Access Token with `repo` permission
+
+---
 
 ## [0.1.0] - 2025-12-15
 
 ### Added
-- Proof of concept
-- Basic API integration
-- Storage prototype
+- Proof of concept implementation
+- Basic API integration with GitHub
+- Simple storage prototype
+- Initial testing framework
 
 ---
 
-## Versioning Policy
-
-This project follows Semantic Versioning (MAJOR.MINOR.PATCH):
-
-- **MAJOR**: Incompatible API changes
-- **MINOR**: New features (backward compatible)
-- **PATCH**: Bug fixes (backward compatible)
-
-## Categories
-
-- **Added**: New features
-- **Changed**: Changes to existing features
-- **Deprecated**: Features to be removed soon
-- **Removed**: Removed features
-- **Fixed**: Bug fixes
-- **Security**: Security fixes
-
-[Unreleased]: https://github.com/username/github-stats.nvim/compare/v1.2.0...HEAD
-[1.2.0]: https://github.com/username/github-stats.nvim/compare/v1.1.0...v1.2.0
-[1.1.0]: https://github.com/username/github-stats.nvim/compare/v1.0.0...v1.1.0
-[1.0.0]: https://github.com/username/github-stats.nvim/compare/v0.1.0...v1.0.0
-[0.1.0]: https://github.com/username/github-stats.nvim/releases/tag/v0.1.0
