@@ -41,7 +41,7 @@ function M.execute(args)
   local repo = parts[1]
   local metric = parts[2]
   local start_date = parts[3]
-  local end_date = parts[4]
+  local end_date = parts[4] or os.date("%Y-%m-%d")
 
   -- Validate metric
   if metric ~= "clones" and metric ~= "views" then
@@ -73,6 +73,16 @@ function M.execute(args)
       vim.log.levels.ERROR
     )
     return
+  end
+
+  if not start_date then
+    vim.notify(
+      string.format(
+        "[github-stats] No start_date specified, showing data from %s onwards",
+        stats.period_start
+      ),
+      vim.log.levels.INFO
+    )
   end
 
   -- Check if we actually have data

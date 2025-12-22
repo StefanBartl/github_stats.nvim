@@ -19,7 +19,7 @@ function M.execute(args)
       vim.log.levels.ERROR
     )
     vim.notify(
-      "[github-stats] Period format: YYYY-MM or YYYY",
+      "[github-stats] Period format: YYYY-MM or YYYY  (e.g.: 2025-01 or 2025)",
       vim.log.levels.INFO
     )
     return

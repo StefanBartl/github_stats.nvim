@@ -13,7 +13,7 @@ local M = {}
 ---@param date_str string ISO date (YYYY-MM-DD)
 ---@return integer|nil # Unix timestamp or nil if invalid
 local function parse_date(date_str)
-  if date_str == "" then
+  if not date_str or date_str == "" then
     return nil
   end
 
@@ -49,14 +49,16 @@ local function extract_date(timestamp)
   return timestamp:match("^(%d%d%d%d%-%d%d%-%d%d)")
 end
 
+-- analytics.lua, Zeile 41-77
 ---Aggregate daily data from stored metrics
 ---@param history StoredMetricData[] Stored metric files
----@param start_date string Filter start (ISO date)
----@param end_date string Filter end (ISO date)
----@return table<string, {count: integer, uniques: integer}>, number, number # Daily map, total_count, total_uniques
+---@param start_date string|nil Filter start (ISO date or nil)
+---@param end_date string|nil Filter end (ISO date or nil)
+---@return table<string, {count: integer, uniques: integer}>, number, number
 local function aggregate_daily(history, start_date, end_date)
-  local start_ts = parse_date(start_date)
-  local end_ts = parse_date(end_date)
+  -- ✅ nil-safe Timestamps
+  local start_ts = start_date and parse_date(start_date) or nil
+  local end_ts = end_date and parse_date(end_date) or nil
 
   local daily = {}
   local total_count = 0
@@ -70,9 +72,15 @@ local function aggregate_daily(history, start_date, end_date)
     if items then
       for _, item in ipairs(items) do
         local date = extract_date(item.timestamp)
-        local item_ts = parse_date(date)
 
-        -- Apply date filter
+        -- ✅ Parse item date
+        local item_ts = parse_date(date)
+        if not item_ts then
+          -- Skip invalid dates
+          goto continue
+        end
+
+        -- ✅ Apply filter only if timestamps exist
         local include = true
         if start_ts and item_ts < start_ts then
           include = false
@@ -92,6 +100,8 @@ local function aggregate_daily(history, start_date, end_date)
           total_count = total_count + (item.count or 0)
           total_uniques = total_uniques + (item.uniques or 0)
         end
+
+        ::continue::
       end
     end
   end
