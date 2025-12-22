@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## Table of Contents
 
+- [[1.3.1] - 2025-12-22](#131-2025-12-23)
 - [[1.3.0] - 2025-12-22](#130-2025-12-22)
 - [[1.2.1] - 2025-12-21](#121-2025-12-21)
 - [[1.2.0] - 2025-12-21](#120-2025-12-21)
@@ -12,6 +13,45 @@ All notable changes to this project will be documented in this file.
 - [[0.1.0] - 2025-12-15](#010-2025-12-15)
 
 --
+
+## [1.3.1] - 2025-12-23
+
+### Added
+- **Custom Date Range Presets**
+  - Predefined shortcuts for common time periods (today, last_week, this_month, etc.)
+  - User-defined custom presets via Lua functions
+  - Support for business-specific ranges (fiscal years, sprint cycles)
+  - Full autocompletion integration across all date-aware commands
+  - 10 built-in presets covering daily to yearly ranges
+  - Preset resolver with error handling and validation
+
+- **Date Preset Module** (`date_presets.lua`)
+  - Resolves preset names to ISO date ranges
+  - Supports both built-in and custom preset functions
+  - Validates date format and range correctness
+  - Provides preset listing for autocompletion
+
+- **Enhanced Command Autocompletion**
+  - `:GithubStatsShow` now suggests date presets
+  - `:GithubStatsChart` supports preset-based ranges
+  - `:GithubStatsDiff` accepts presets for period comparison
+  - Smart detection between preset names and ISO dates
+
+### Changed
+- Configuration schema extended with `date_presets` section
+- All date-aware commands now accept preset names or ISO dates
+- Type annotations improved for nullable date parameters
+- Default configuration includes all 10 built-in presets
+
+### Fixed
+- LSP type warnings in `chart.lua` and `show.lua` for nullable date strings
+- Added diagnostic suppressions for safe type assertions after validation
+
+### Documentation
+- New guide: `USER-DEFINED-DATE-PRESETS.md` with examples
+- README.md section for date presets with usage examples
+- Help file extended with preset configuration and troubleshooting
+- Example configurations for fiscal years and sprint cycles
 
 ## [1.3.0] - 2025-12-22
 

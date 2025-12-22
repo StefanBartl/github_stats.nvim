@@ -4,6 +4,11 @@
 --- Central type definitions for all GitHub Stats components.
 --- Ensures type safety across API responses, storage formats, and analytics.
 
+---@class DatePresetConfig
+---@field enabled boolean Whether date presets are enabled
+---@field builtins string[] List of enabled built-in preset names
+---@field custom table<string, fun(): string, string> Custom user-defined presets
+
 ---@class SetupOptions
 ---@field repos? string[] List of repositories
 ---@field token_source? "env"|"file" Token source
@@ -13,6 +18,7 @@
 ---@field notification_level? "all"|"errors"|"silent" Notification level
 ---@field config_dir? string Custom config directory (default: stdpath('config')/github-stats)
 ---@field data_dir? string Custom data directory (default: config_dir/data)
+---@field date_presets? DatePresetConfig Date range preset configuration
 
 ---@class GithubApiClone
 ---@field timestamp string ISO 8601 timestamp

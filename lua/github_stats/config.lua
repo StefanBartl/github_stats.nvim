@@ -17,6 +17,22 @@ local DEFAULT_CONFIG = {
   token_env_var = "GITHUB_TOKEN",
   fetch_interval_hours = 24,
   notification_level = "all",
+  date_presets = {
+    enabled = true,
+    builtins = {
+      "today",
+      "yesterday",
+      "last_week",
+      "last_month",
+      "last_quarter",
+      "last_year",
+      "this_week",
+      "this_month",
+      "this_quarter",
+      "this_year",
+    },
+    custom = {},
+  },
 }
 
 ---Resolved paths (set during init)

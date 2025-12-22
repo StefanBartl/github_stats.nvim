@@ -11,10 +11,11 @@ CONTENTS                                              *github_stats-contents*
     6. Visualization .......................... |github_stats-visualization|
     7. Export ................................. |github_stats-export|
     8. Diff ................................... |github_stats-diff|
-    9. API .................................... |github_stats-api|
-   10. Storage ................................ |github_stats-storage|
-   11. Troubleshooting ........................ |github_stats-troubleshooting|
-   12. License ................................ |github_stats-license|
+    9. Date Presets ........................... |github_stats-date_presets|
+   10. API .................................... |github_stats-api|
+   11. Storage ................................ |github_stats-storage|
+   12. Troubleshooting ........................ |github_stats-troubleshooting|
+   13. License ................................ |github_stats-license|
 
 ==============================================================================
 INTRODUCTION                                      *github_stats-introduction*
@@ -443,7 +444,129 @@ Example Output:~
     ──────────────────────────────────────────────────────────────────
       Count:   +15.3%
       Uniques: +13.8%
-<
+
+==============================================================================
+DATE PRESETS                                        *github_stats-date-presets*
+
+Date range presets provide quick access to common time periods without
+requiring full ISO date strings.
+
+Built-in Presets:~
+  today           Current day only
+  yesterday       Previous day
+  last_week       7 days ago to today
+  last_month      30 days ago to today
+  last_quarter    90 days ago to today
+  last_year       365 days ago to today
+  this_week       Monday to today
+  this_month      First of month to today
+  this_quarter    Start of quarter to today
+  this_year       January 1st to today
+
+Usage with Commands:~
+>
+    :GithubStatsShow username/repo clones last_month
+    :GithubStatsChart username/repo views this_quarter
+    :GithubStatsDiff username/repo clones last_week this_week
+
+
+Custom Presets:~
+
+Custom presets are Lua functions that return two ISO date strings.
+They must be added programmatically after setup().
+
+Example Configuration:~
+>lua
+    -- In init.lua
+    require("github_stats").setup()
+
+    local config = require("github_stats.config").get()
+
+    -- Fiscal Year Preset (April 1 - March 31)
+    config.date_presets.custom.fiscal_year = function()
+      local now = os.date("*t")
+      local fy_year = now.month >= 4 and now.year or now.year - 1
+      local start_date = string.format("%04d-04-01", fy_year)
+      local end_date = string.format("%04d-03-31", fy_year + 1)
+      return start_date, end_date
+    end
+
+    -- Current Sprint (2-week periods)
+    config.date_presets.custom.current_sprint = function()
+      local now = os.time()
+      local sprint_length = 14 * 86400
+      local date_info = os.date("*t", now)
+      local days_since_monday = (date_info.wday == 1) and 6 or (date_info.wday - 2)
+      local monday = now - (days_since_monday * 86400)
+      local sprint_start = monday - (monday % sprint_length)
+      local sprint_end = sprint_start + sprint_length - 86400
+      return os.date("%Y-%m-%d", sprint_start), os.date("%Y-%m-%d", sprint_end)
+    end
+
+
+Using Custom Presets:~
+>
+    :GithubStatsShow username/repo clones fiscal_year
+    :GithubStatsChart username/repo both current_sprint
+
+
+Configuration Options:~
+
+date_presets.enabled        (boolean)
+    Whether date presets are enabled.
+    Default: true
+
+date_presets.builtins       (string[])
+    List of enabled built-in preset names.
+    Default: All built-in presets enabled
+
+date_presets.custom         (table<string, function>)
+    User-defined preset functions.
+    Default: {}
+
+Preset Function Requirements:~
+  • Must return two strings in ISO format (YYYY-MM-DD)
+  • Start date must be before or equal to end date
+  • Should handle edge cases (month/year boundaries)
+  • Can use os.date(), os.time() for calculations
+
+Autocompletion:~
+
+Tab-completion shows all available presets when entering date parameters
+in commands that support date ranges:
+  • |:GithubStatsShow|
+  • |:GithubStatsChart|
+  • |:GithubStatsDiff|
+
+Example:~
+>
+    :GithubStatsShow username/repo clones <Tab>
+    " Shows: today, yesterday, last_week, ..., fiscal_year, current_sprint
+
+
+Troubleshooting:~
+
+Preset not appearing:~
+  • Restart Neovim after adding custom preset
+  • Verify preset added after setup() call
+  • Check: :lua print(vim.inspect(require("github_stats.date_presets").list()))
+
+"Unknown preset" error:~
+  • Check spelling of preset name
+  • Ensure config.date_presets.enabled = true
+  • Verify preset function is properly assigned
+
+Wrong date calculation:~
+  • Use os.date("*t") for reliable date components
+  • Account for timezone/DST if relevant
+  • Test with different dates (month/year boundaries)
+
+See also:~
+  |github_stats-commands|
+  |github_stats-configuration|
+
+For detailed examples and best practices:
+  docs/configurations/USER-DEFINED-DATE-PRESETS.md
 
 ==============================================================================
 API                                                      *github_stats-api*

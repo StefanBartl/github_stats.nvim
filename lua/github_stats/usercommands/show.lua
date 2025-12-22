@@ -5,8 +5,10 @@
 --- Supports optional date range filtering.
 --- Output is displayed in a formatted floating window.
 
+local date_presets = require("github_stats.date_presets")
 local analytics = require("github_stats.analytics")
 local utils = require("github_stats.usercommands.utils")
+local config = require("github_stats.config")
 
 local M = {}
 
@@ -40,8 +42,39 @@ function M.execute(args)
 
   local repo = parts[1]
   local metric = parts[2]
+  ---@type string?
   local start_date = parts[3]
-  local end_date = parts[4] or os.date("%Y-%m-%d")
+  ---@type string?
+  local end_date = parts[4]
+
+  -- Resolve presets if used
+  if start_date and date_presets.is_preset(start_date) then
+    local resolved_start, resolved_end, err = date_presets.resolve(start_date)
+    if err then
+      vim.notify(
+        string.format("[github-stats] Preset error: %s", err),
+        vim.log.levels.ERROR
+      )
+      return
+    end
+    ---@diagnostic disable-next-line: cast-local-type
+    start_date = resolved_start
+    ---@diagnostic disable-next-line: cast-local-type
+    end_date = resolved_end
+  else
+    if end_date and date_presets.is_preset(end_date) then
+      local _, resolved_end, err = date_presets.resolve(end_date)
+      if err then
+        vim.notify(
+          string.format("[github-stats] Preset error: %s", err),
+          vim.log.levels.ERROR
+        )
+        return
+      end
+      ---@diagnostic disable-next-line: cast-local-type
+      end_date = resolved_end
+    end
+  end
 
   -- Validate metric
   if metric ~= "clones" and metric ~= "views" then
@@ -138,21 +171,10 @@ end
 ---@return string[] # Completion candidates
 ---@diagnostic disable-next-line: unused-local
 function M.complete(arg_lead, cmd_line, _cursor_pos)
-  local config = require("github_stats.config")
 
-  -- Split command line and count arguments
-  -- Remove leading/trailing whitespace and split by spaces
   local parts = vim.split(vim.trim(cmd_line), "%s+")
-
-  -- parts[1] is command name (GithubStatsShow)
-  -- parts[2] would be first arg (repo)
-  -- parts[3] would be second arg (metric)
-  -- parts[4] would be third arg (start_date)
-  -- parts[5] would be fourth arg (end_date)
-
   local arg_index = #parts
 
-  -- If command line ends with space, we're starting a new argument
   if cmd_line:match("%s$") then
     arg_index = arg_index + 1
   end
@@ -173,7 +195,29 @@ function M.complete(arg_lead, cmd_line, _cursor_pos)
     end, metrics)
   end
 
-  -- Third/Fourth arguments: dates (no completion)
+  -- Third argument: start_date (show presets)
+  if arg_index == 4 then
+    local presets = date_presets.list()
+    return vim.tbl_filter(function(preset)
+      return vim.startswith(preset, arg_lead)
+    end, presets)
+  end
+
+  -- Fourth argument: end_date (only if third was ISO date, not preset)
+  if arg_index == 5 then
+    -- Check if start_date (parts[4]) is a preset
+    if parts[4] and date_presets.is_preset(parts[4]) then
+      -- Preset was used, no end_date needed
+      return {}
+    end
+
+    -- Show presets for end_date
+    local presets = date_presets.list()
+    return vim.tbl_filter(function(preset)
+      return vim.startswith(preset, arg_lead)
+    end, presets)
+  end
+
   return {}
 end
 

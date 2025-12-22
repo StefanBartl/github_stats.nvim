@@ -362,7 +362,58 @@ Shows:
 
 ---
 
-### Healthcheck
+## Date Range Presets
+
+Use predefined shortcuts instead of typing full ISO dates:
+
+```vim
+" Built-in presets
+:GithubStatsShow username/repo clones last_month
+:GithubStatsChart username/repo views this_quarter
+:GithubStatsDiff username/repo clones last_week this_week
+
+" Custom presets (after configuration)
+:GithubStatsShow username/repo clones fiscal_year
+:GithubStatsChart username/repo both current_sprint
+```
+
+**Available Built-in Presets:**
+- `today`, `yesterday`
+- `last_week`, `last_month`, `last_quarter`, `last_year`
+- `this_week`, `this_month`, `this_quarter`, `this_year`
+
+**Create Custom Presets:**
+```lua
+-- In init.lua after setup()
+local config = require("github_stats.config").get()
+
+-- Example: Fiscal Year (April 1 - March 31)
+config.date_presets.custom.fiscal_year = function()
+  local now = os.date("*t")
+  local fy_year = now.month >= 4 and now.year or now.year - 1
+  return string.format("%04d-04-01", fy_year), string.format("%04d-03-31", fy_year + 1)
+end
+
+-- Example: Current 2-week Sprint
+config.date_presets.custom.current_sprint = function()
+  local now = os.time()
+  local sprint_length = 14 * 86400
+  local date_info = os.date("*t", now)
+  local days_since_monday = (date_info.wday == 1) and 6 or (date_info.wday - 2)
+  local monday = now - (days_since_monday * 86400)
+  local sprint_start = monday - (monday % sprint_length)
+  return os.date("%Y-%m-%d", sprint_start), os.date("%Y-%m-%d", sprint_start + sprint_length - 86400)
+end
+```
+
+**Autocompletion:**
+Tab-completion shows all available presets when typing date parameters.
+
+**See also:** [Custom Date Presets Guide](docs/configurations/USER-DEFINED-DATE-PRESETS.md)
+
+---
+
+## Healthcheck
 
 ```vim
 :checkhealth github_stats

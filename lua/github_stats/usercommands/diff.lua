@@ -61,6 +61,8 @@ end
 ---@diagnostic disable-next-line: unused-local
 function M.complete(arg_lead, cmd_line, _cursor_pos)
   local config = require("github_stats.config")
+  local date_presets = require("github_stats.date_presets")
+
   local parts = vim.split(vim.trim(cmd_line), "%s+")
   local arg_index = #parts
 
@@ -84,8 +86,9 @@ function M.complete(arg_lead, cmd_line, _cursor_pos)
     end, metrics)
   end
 
-  -- Third/Fourth arguments: periods (suggest current/last month)
+  -- Third/Fourth arguments: periods or presets
   if arg_index == 4 or arg_index == 5 then
+    -- Merge period suggestions with presets
     local now = os.date("*t")
     local current_month = string.format("%04d-%02d", now.year, now.month)
 
@@ -97,16 +100,20 @@ function M.complete(arg_lead, cmd_line, _cursor_pos)
     end
     local last_month = string.format("%04d-%02d", last_month_year, last_month_num)
 
-    local suggestions = {
+    local period_suggestions = {
       current_month,
       last_month,
       tostring(now.year),
       tostring(now.year - 1),
     }
 
-    return vim.tbl_filter(function(period)
-      return vim.startswith(period, arg_lead)
-    end, suggestions)
+    -- Add presets
+    local presets = date_presets.list()
+    local all_suggestions = vim.list_extend(period_suggestions, presets)
+
+    return vim.tbl_filter(function(suggestion)
+      return vim.startswith(suggestion, arg_lead)
+    end, all_suggestions)
   end
 
   return {}
