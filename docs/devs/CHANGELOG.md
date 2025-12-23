@@ -4,7 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## Table of Contents
 
-- [[1.3.1] - 2025-12-22](#131-2025-12-23)
+- [[2.0.0] - 2025-12-23](#200-2025-12-23)
+- [[1.3.1] - 2025-12-23](#131-2025-12-23)
 - [[1.3.0] - 2025-12-22](#130-2025-12-22)
 - [[1.2.1] - 2025-12-21](#121-2025-12-21)
 - [[1.2.0] - 2025-12-21](#120-2025-12-21)
@@ -13,6 +14,57 @@ All notable changes to this project will be documented in this file.
 - [[0.1.0] - 2025-12-15](#010-2025-12-15)
 
 --
+
+## [2.0.0] - 2025-12-23
+
+### Added
+- **Interactive Dashboard UI**
+  - TUI dashboard for monitoring all repositories simultaneously
+  - Real-time statistics with visual trend indicators
+  - ASCII sparkline charts for quick trend visualization
+  - Keyboard-driven navigation (j/k, arrow keys)
+  - Interactive sorting by clones, views, name, or trend
+  - Configurable time ranges (7d, 30d, 90d, all)
+  - Auto-refresh capabilities with configurable intervals
+  - Drill-down to detailed repository statistics
+
+- **Dashboard Module** (`dashboard/`)
+  - `init.lua` - Dashboard orchestration and state management
+  - `layout.lua` - Window and buffer management with resize handling
+  - `renderer.lua` - Content rendering with aligned borders
+  - `navigator.lua` - Keyboard navigation and interaction
+
+- **Dashboard Commands**
+  - `:GithubStatsDashboard` - Open dashboard
+  - `:GithubStatsDashboard!` - Open with forced refresh
+
+- **Dashboard Configuration**
+  - Full keybinding customization
+  - Auto-open on VimEnter option
+  - Configurable refresh intervals
+  - Default sort and time range settings
+
+### Changed
+- `init.lua` extended with dashboard auto-open support
+- `fetcher.lua` enhanced with single-repository fetch capability
+- Configuration schema extended with `dashboard` section
+- Type definitions updated with `DashboardState` and related types
+
+### Fixed
+- Dashboard border alignment issues (all borders now perfectly aligned)
+- Unused code removed from dashboard modules
+- Type safety improved with proper error handling
+
+### Documentation
+- New comprehensive dashboard guide: `docs/DASHBOARD.md`
+- README.md section with dashboard usage and configuration
+- Help file extended with dashboard documentation
+- Configuration examples for all dashboard features
+
+### Performance
+- Efficient rendering for 50+ repositories
+- Smart caching to reduce redundant API calls
+- Optimized window resize handling
 
 ## [1.3.1] - 2025-12-23
 

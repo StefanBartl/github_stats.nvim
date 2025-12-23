@@ -21,13 +21,13 @@
 local M = {}
 
 ---Setup the plugin
----@param opts? SetupOptions Setup options
+---@param opts? table Reserved for future options
 function M.setup(opts)
   opts = opts or {}
 
   -- Initialize configuration
   local config = require("github_stats.config")
-  local ok, err = config.init(opts)
+  local ok, err = config.init()
   if not ok then
     vim.notify(
       string.format("[github-stats] Configuration error: %s", err),
@@ -36,7 +36,7 @@ function M.setup(opts)
     return
   end
 
-  -- Register commands
+  -- Register commands (now modularized)
   local commands = require("github_stats.usercommands")
   commands.setup()
 
@@ -44,12 +44,28 @@ function M.setup(opts)
   vim.api.nvim_create_autocmd("VimEnter", {
     group = vim.api.nvim_create_augroup("GithubStatsAutoFetch", { clear = true }),
     callback = function()
+      -- Defer to avoid blocking startup
       vim.defer_fn(function()
         local fetcher = require("github_stats.fetcher")
         fetcher.auto_fetch()
+
+        -- Auto-open dashboard if enabled
+        local cfg = config.get()
+        if cfg and cfg.dashboard and cfg.dashboard.enabled and cfg.dashboard.auto_open then
+          local dashboard = require("github_stats.dashboard")
+          dashboard.open(false)
+        end
       end, 1000)
     end,
   })
 end
+
+-- Expose submodules for advanced usage
+M.config = require("github_stats.config")
+M.api = require("github_stats.api")
+M.storage = require("github_stats.storage")
+M.fetcher = require("github_stats.fetcher")
+M.analytics = require("github_stats.analytics")
+M.dashboard = require("github_stats.dashboard")
 
 return M

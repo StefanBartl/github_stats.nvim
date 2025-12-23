@@ -19,6 +19,7 @@
 ---@field config_dir? string Custom config directory (default: stdpath('config')/github-stats)
 ---@field data_dir? string Custom data directory (default: config_dir/data)
 ---@field date_presets? DatePresetConfig Date range preset configuration
+---@field dashboard? DashboardConfig Dashboard configuration
 
 ---@class GithubApiClone
 ---@field timestamp string ISO 8601 timestamp

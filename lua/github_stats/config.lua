@@ -33,6 +33,26 @@ local DEFAULT_CONFIG = {
     },
     custom = {},
   },
+  dashboard = {
+    enabled = true,
+    auto_open = false,
+    refresh_interval_seconds = 300, -- 5 minutes
+    sort_by = "clones",
+    time_range = "30d",
+    theme = "default",
+    keybindings = {
+      navigate_down = "j",
+      navigate_up = "k",
+      show_details = "<CR>",
+      refresh_selected = "r",
+      refresh_all = "R",
+      force_refresh = "f",
+      cycle_sort = "s",
+      cycle_time_range = "t",
+      show_help = "?",
+      quit = "q",
+    },
+  },
 }
 
 ---Resolved paths (set during init)
