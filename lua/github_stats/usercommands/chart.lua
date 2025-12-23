@@ -12,6 +12,10 @@ local utils = require("github_stats.usercommands.utils")
 
 local M = {}
 
+local notify, levels = vim.notify, vim.log.levels
+local str_format = string.format
+local tbl_filter, startswith = vim.tbl_filter, vim.startswith
+
 ---Execute chart command
 ---@param args table Command arguments
 function M.execute(args)
@@ -19,9 +23,9 @@ function M.execute(args)
   local parts = vim.split(args.args, "%s+")
 
   if #parts < 2 then
-    vim.notify(
+    notify(
       "[github-stats] Usage: GithubStatsChart {repo} {metric} [start_date] [end_date]",
-      vim.log.levels.ERROR
+      levels.ERROR
     )
     return
   end
@@ -37,9 +41,9 @@ function M.execute(args)
   if start_date and date_presets.is_preset(start_date) then
     local resolved_start, resolved_end, err = date_presets.resolve(start_date)
     if err then
-      vim.notify(
-        string.format("[github-stats] Preset error: %s", err),
-        vim.log.levels.ERROR
+      notify(
+        str_format("[github-stats] Preset error: %s", err),
+        levels.ERROR
       )
       return
     end
@@ -53,9 +57,9 @@ function M.execute(args)
     if end_date and date_presets.is_preset(end_date) then
       local _, resolved_end, err = date_presets.resolve(end_date)
       if err then
-        vim.notify(
-          string.format("[github-stats] Preset error: %s", err),
-          vim.log.levels.ERROR
+        notify(
+          str_format("[github-stats] Preset error: %s", err),
+          levels.ERROR
         )
         return
       end
@@ -67,9 +71,9 @@ function M.execute(args)
 
   -- Validate metric
   if metric ~= "clones" and metric ~= "views" and metric ~= "both" then
-    vim.notify(
+    notify(
       "[github-stats] Metric must be 'clones', 'views', or 'both'",
-      vim.log.levels.ERROR
+      levels.ERROR
     )
     return
   end
@@ -85,19 +89,19 @@ function M.execute(args)
     })
 
     if err or not stats then
-      vim.notify(
-        string.format("[github-stats] Error: %s", err or "No data"),
-        vim.log.levels.ERROR
+      notify(
+        str_format("[github-stats] Error: %s", err or "No data"),
+        levels.ERROR
       )
       return
     end
 
     local lines = visualization.create_comparison_chart(
       stats.daily_breakdown,
-      string.format("GitHub Stats: %s/clones", repo)
+      str_format("GitHub Stats: %s/clones", repo)
     )
 
-    utils.show_float(lines, string.format("Chart: %s", repo))
+    utils.show_float(lines, str_format("Chart: %s", repo))
     return
   end
 
@@ -110,9 +114,9 @@ function M.execute(args)
   })
 
   if err or not stats then
-    vim.notify(
-      string.format("[github-stats] Error: %s", err or "No data"),
-      vim.log.levels.ERROR
+    notify(
+      str_format("[github-stats] Error: %s", err or "No data"),
+      levels.ERROR
     )
     return
   end
@@ -120,10 +124,10 @@ function M.execute(args)
   local lines = visualization.create_daily_sparkline(
     stats.daily_breakdown,
     "count",
-    string.format("GitHub Stats: %s/%s", repo, metric)
+    str_format("GitHub Stats: %s/%s", repo, metric)
   )
 
-  utils.show_float(lines, string.format("Chart: %s/%s", repo, metric))
+  utils.show_float(lines, str_format("Chart: %s/%s", repo, metric))
 end
 
 
@@ -144,24 +148,24 @@ function M.complete(arg_lead, cmd_line, _cursor_pos)
   -- First argument: repository
   if arg_index == 2 then
     local repos = config.get_repos()
-    return vim.tbl_filter(function(repo)
-      return vim.startswith(repo, arg_lead)
+    return tbl_filter(function(repo)
+      return startswith(repo, arg_lead)
     end, repos)
   end
 
   -- Second argument: metric
   if arg_index == 3 then
     local metrics = { "clones", "views", "both" }
-    return vim.tbl_filter(function(metric)
-      return vim.startswith(metric, arg_lead)
+    return tbl_filter(function(metric)
+      return startswith(metric, arg_lead)
     end, metrics)
   end
 
   -- Third argument: start_date (show presets)
   if arg_index == 4 then
     local presets = date_presets.list()
-    return vim.tbl_filter(function(preset)
-      return vim.startswith(preset, arg_lead)
+    return tbl_filter(function(preset)
+      return startswith(preset, arg_lead)
     end, presets)
   end
 
@@ -172,8 +176,8 @@ function M.complete(arg_lead, cmd_line, _cursor_pos)
     end
 
     local presets = date_presets.list()
-    return vim.tbl_filter(function(preset)
-      return vim.startswith(preset, arg_lead)
+    return tbl_filter(function(preset)
+      return startswith(preset, arg_lead)
     end, presets)
   end
 

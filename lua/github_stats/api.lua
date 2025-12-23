@@ -9,6 +9,8 @@ local config = require("github_stats.config")
 
 local M = {}
 
+local schedule = vim.schedule
+
 ---GitHub API base URL
 local API_BASE = "https://api.github.com"
 
@@ -77,14 +79,14 @@ end
 function M.fetch_metric_async(repo, metric, callback)
   -- Validate inputs
   if type(repo) ~= "string" or repo == "" then
-    vim.schedule(function()
+    schedule(function()
       callback(nil, "Invalid repository identifier")
     end)
     return
   end
 
   if type(metric) ~= "string" or not ENDPOINTS[metric] then
-    vim.schedule(function()
+    schedule(function()
       callback(nil, string.format("Invalid metric: %s", metric))
     end)
     return
@@ -93,7 +95,7 @@ function M.fetch_metric_async(repo, metric, callback)
   -- Get token
   local token, token_err = config.get_token()
   if not token then
-    vim.schedule(function()
+    schedule(function()
       callback(nil, string.format("Token error: %s", token_err))
     end)
     return
@@ -102,7 +104,7 @@ function M.fetch_metric_async(repo, metric, callback)
   -- Build URL
   local url, url_err = build_url(repo, metric)
   if not url then
-    vim.schedule(function()
+    schedule(function()
       callback(nil, url_err)
     end)
     return
@@ -113,7 +115,7 @@ function M.fetch_metric_async(repo, metric, callback)
 
   -- Execute async
   vim.system(args, { text = true }, function(result)
-    vim.schedule(function()
+    schedule(function()
       -- Check process exit code
       if result.code ~= 0 then
         callback(nil, string.format("curl failed with code %d: %s", result.code, result.stderr or ""))
@@ -143,7 +145,7 @@ function M.fetch_all_metrics(repo, callback)
   local function check_completion()
     completed = completed + 1
     if completed == #metrics then
-      vim.schedule(function()
+      schedule(function()
         callback(results)
       end)
     end
@@ -162,7 +164,7 @@ end
 function M.get_rate_limit(callback)
   local token, token_err = config.get_token()
   if not token then
-    vim.schedule(function()
+    schedule(function()
       callback(nil, token_err)
     end)
     return
@@ -172,7 +174,7 @@ function M.get_rate_limit(callback)
   local args = build_curl_args(url, token)
 
   vim.system(args, { text = true }, function(result)
-    vim.schedule(function()
+    schedule(function()
       if result.code ~= 0 then
         callback(nil, string.format("curl failed: %s", result.stderr or ""))
         return

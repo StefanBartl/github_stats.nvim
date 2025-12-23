@@ -81,4 +81,9 @@
 ---@field start_date? string ISO date (default: earliest)
 ---@field end_date? string ISO date (default: latest)
 
+---@class FetchSummary
+---@field success string[] List of successful repo/metric combinations
+---@field errors table<string, string> Map of repo/metric to error message
+---@field timestamp string ISO timestamp when fetch completed
+
 return {}

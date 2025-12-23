@@ -6,6 +6,11 @@
 
 local M = {}
 
+local fn = vim.fn
+local expand = fn.expand
+local str_format = string.format
+local tbl_insert, tbl_concat = table.insert, table.concat
+
 ---Escape CSV field
 ---@param field string Field value
 ---@return string # Escaped field
@@ -38,7 +43,7 @@ function M.export_daily_csv(repo, metric, daily_breakdown, filepath)
 
   for _, date in ipairs(dates) do
     local day = daily_breakdown[date]
-    table.insert(lines, string.format("%s,%s,%s,%d,%d",
+    tbl_insert(lines, str_format("%s,%s,%s,%d,%d",
       escape_csv(repo),
       escape_csv(metric),
       date,
@@ -48,11 +53,11 @@ function M.export_daily_csv(repo, metric, daily_breakdown, filepath)
   end
 
   -- Write file
-  local content = table.concat(lines, "\n") .. "\n"
-  local ok, err = pcall(vim.fn.writefile, vim.split(content, "\n"), vim.fn.expand(filepath))
+  local content = tbl_concat(lines, "\n") .. "\n"
+  local ok, err = pcall(fn.writefile, vim.split(content, "\n"), expand(filepath))
 
   if not ok then
-    return false, string.format("Failed to write file: %s", err)
+    return false, str_format("Failed to write file: %s", err)
   end
 
   return true, nil
@@ -66,16 +71,16 @@ end
 ---@return boolean, string? # Success flag, error message
 function M.export_markdown(repo, metric, stats, filepath)
   local lines = {
-    string.format("# GitHub Stats Report: %s", repo),
+    str_format("# GitHub Stats Report: %s", repo),
     "",
-    string.format("**Metric:** %s", metric),
-    string.format("**Period:** %s to %s", stats.period_start, stats.period_end),
-    string.format("**Generated:** %s", os.date("%Y-%m-%d %H:%M:%S")),
+    str_format("**Metric:** %s", metric),
+    str_format("**Period:** %s to %s", stats.period_start, stats.period_end),
+    str_format("**Generated:** %s", os.date("%Y-%m-%d %H:%M:%S")),
     "",
     "## Summary",
     "",
-    string.format("- **Total Count:** %s", M.format_number(stats.total_count)),
-    string.format("- **Total Uniques:** %s", M.format_number(stats.total_uniques)),
+    str_format("- **Total Count:** %s", M.format_number(stats.total_count)),
+    str_format("- **Total Uniques:** %s", M.format_number(stats.total_uniques)),
     "",
     "## Daily Breakdown",
     "",
@@ -89,7 +94,7 @@ function M.export_markdown(repo, metric, stats, filepath)
 
   for _, date in ipairs(dates) do
     local day = stats.daily_breakdown[date]
-    table.insert(lines, string.format("| %s | %s | %s |",
+    tbl_insert(lines, str_format("| %s | %s | %s |",
       date,
       M.format_number(day.count),
       M.format_number(day.uniques)
@@ -97,11 +102,11 @@ function M.export_markdown(repo, metric, stats, filepath)
   end
 
   -- Write file
-  local content = table.concat(lines, "\n") .. "\n"
-  local ok, err = pcall(vim.fn.writefile, vim.split(content, "\n"), vim.fn.expand(filepath))
+  local content = tbl_concat(lines, "\n") .. "\n"
+  local ok, err = pcall(fn.writefile, vim.split(content, "\n"), expand(filepath))
 
   if not ok then
-    return false, string.format("Failed to write file: %s", err)
+    return false, str_format("Failed to write file: %s", err)
   end
 
   return true, nil
@@ -114,10 +119,10 @@ end
 ---@return boolean, string? # Success flag, error message
 function M.export_summary_markdown(metric, results, filepath)
   local lines = {
-    string.format("# GitHub Stats Summary: %s", metric),
+    str_format("# GitHub Stats Summary: %s", metric),
     "",
-    string.format("**Generated:** %s", os.date("%Y-%m-%d %H:%M:%S")),
-    string.format("**Repositories:** %d", vim.tbl_count(results)),
+    str_format("**Generated:** %s", os.date("%Y-%m-%d %H:%M:%S")),
+    str_format("**Repositories:** %d", vim.tbl_count(results)),
     "",
     "## Repositories",
     "",
@@ -126,7 +131,7 @@ function M.export_summary_markdown(metric, results, filepath)
   -- Sort repos by total count
   local sorted_repos = {}
   for repo, stats in pairs(results) do
-    table.insert(sorted_repos, {
+    tbl_insert(sorted_repos, {
       repo = repo,
       stats = stats,
     })
@@ -137,11 +142,11 @@ function M.export_summary_markdown(metric, results, filepath)
   end)
 
   -- Add table
-  table.insert(lines, "| Repository | Period | Total Count | Total Uniques |")
-  table.insert(lines, "|------------|--------|-------------|---------------|")
+  tbl_insert(lines, "| Repository | Period | Total Count | Total Uniques |")
+  tbl_insert(lines, "|------------|--------|-------------|---------------|")
 
   for _, item in ipairs(sorted_repos) do
-    table.insert(lines, string.format("| %s | %s to %s | %s | %s |",
+    tbl_insert(lines, str_format("| %s | %s to %s | %s | %s |",
       item.repo,
       item.stats.period_start,
       item.stats.period_end,
@@ -151,21 +156,21 @@ function M.export_summary_markdown(metric, results, filepath)
   end
 
   -- Add detailed sections
-  table.insert(lines, "")
-  table.insert(lines, "## Detailed Reports")
-  table.insert(lines, "")
+  tbl_insert(lines, "")
+  tbl_insert(lines, "## Detailed Reports")
+  tbl_insert(lines, "")
 
   for _, item in ipairs(sorted_repos) do
-    table.insert(lines, string.format("### %s", item.repo))
-    table.insert(lines, "")
-    table.insert(lines, string.format("- **Period:** %s to %s",
+    tbl_insert(lines, str_format("### %s", item.repo))
+    tbl_insert(lines, "")
+    tbl_insert(lines, str_format("- **Period:** %s to %s",
       item.stats.period_start,
       item.stats.period_end
     ))
-    table.insert(lines, string.format("- **Total Count:** %s",
+    tbl_insert(lines, str_format("- **Total Count:** %s",
       M.format_number(item.stats.total_count)
     ))
-    table.insert(lines, string.format("- **Total Uniques:** %s",
+    tbl_insert(lines, str_format("- **Total Uniques:** %s",
       M.format_number(item.stats.total_uniques)
     ))
 
@@ -174,15 +179,15 @@ function M.export_summary_markdown(metric, results, filepath)
     table.sort(dates)
 
     if #dates > 0 then
-      table.insert(lines, "")
-      table.insert(lines, "**Recent Data:**")
-      table.insert(lines, "")
+      tbl_insert(lines, "")
+      tbl_insert(lines, "**Recent Data:**")
+      tbl_insert(lines, "")
 
       local recent_count = math.min(7, #dates)
       for i = #dates - recent_count + 1, #dates do
         local date = dates[i]
         local day = item.stats.daily_breakdown[date]
-        table.insert(lines, string.format("- %s: %s count, %s uniques",
+        tbl_insert(lines, str_format("- %s: %s count, %s uniques",
           date,
           M.format_number(day.count),
           M.format_number(day.uniques)
@@ -190,15 +195,15 @@ function M.export_summary_markdown(metric, results, filepath)
       end
     end
 
-    table.insert(lines, "")
+    tbl_insert(lines, "")
   end
 
   -- Write file
-  local content = table.concat(lines, "\n") .. "\n"
-  local ok, err = pcall(vim.fn.writefile, vim.split(content, "\n"), vim.fn.expand(filepath))
+  local content = tbl_concat(lines, "\n") .. "\n"
+  local ok, err = pcall(fn.writefile, vim.split(content, "\n"), expand(filepath))
 
   if not ok then
-    return false, string.format("Failed to write file: %s", err)
+    return false, str_format("Failed to write file: %s", err)
   end
 
   return true, nil

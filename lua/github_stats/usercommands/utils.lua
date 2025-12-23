@@ -6,6 +6,9 @@
 
 local M = {}
 
+local api = vim.api
+local set_option_value = api.nvim_set_option_value
+
 ---Split string into lines, handling various line endings
 ---@param str string Input string
 ---@return string[] # Array of lines
@@ -33,10 +36,10 @@ function M.show_float(lines, title)
   end
 
   -- Create buffer
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-  vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
-  vim.api.nvim_set_option_value("bufhidden", "wipe", { buf = buf })
+  local buf = api.nvim_create_buf(false, true)
+  api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  set_option_value("modifiable", false, { buf = buf })
+  set_option_value("bufhidden", "wipe", { buf = buf })
 
   -- Calculate dimensions
   local width = 0
@@ -65,16 +68,16 @@ function M.show_float(lines, title)
   }
 
   -- Create window
-  local win = vim.api.nvim_open_win(buf, true, opts)
+  local win = api.nvim_open_win(buf, true, opts)
 
   -- Set window options
-  vim.api.nvim_set_option_value("wrap", false, { win = win })
-  vim.api.nvim_set_option_value("cursorline", true, { win = win })
+  set_option_value("wrap", false, { win = win })
+  set_option_value("cursorline", true, { win = win })
 
   -- Keymaps to close
   local close_keys = { "q", "<Esc>" }
   for _, key in ipairs(close_keys) do
-    vim.api.nvim_buf_set_keymap(
+    api.nvim_buf_set_keymap(
       buf,
       "n",
       key,

@@ -6,6 +6,8 @@
 
 local M = {}
 
+local str_format = string.format
+
 ---Parse period string (YYYY-MM or YYYY) into start and end timestamps
 ---@param period string Period identifier (YYYY-MM or YYYY)
 ---@return integer, integer # Start timestamp, end timestamp (inclusive)
@@ -81,7 +83,7 @@ local function parse_period(period)
   end
 
   -- Invalid input: neither YYYY-MM nor YYYY
-  error(string.format(
+  error(str_format(
     "Invalid period format: %s (expected YYYY-MM or YYYY)",
     period
   ))
@@ -164,7 +166,7 @@ local function calculate_change(old_val, new_val)
   local change = ((new_val - old_val) / old_val) * 100
   local sign = change >= 0 and "+" or ""
 
-  return change, string.format("%s%.1f%%", sign, change)
+  return change, str_format("%s%.1f%%", sign, change)
 end
 
 ---Compare two periods
@@ -189,12 +191,12 @@ function M.compare_periods(repo, metric, period1, period2)
   -- Parse periods
   local ok1, start1, end1 = pcall(parse_period, period1)
   if not ok1 then
-    return nil, string.format("Invalid period1: %s", start1)
+    return nil, str_format("Invalid period1: %s", start1)
   end
 
   local ok2, start2, end2 = pcall(parse_period, period2)
   if not ok2 then
-    return nil, string.format("Invalid period2: %s", start2)
+    return nil, str_format("Invalid period2: %s", start2)
   end
 
   -- Filter data
@@ -257,31 +259,31 @@ end
 ---@return string[] # Lines for display
 function M.format_comparison(comparison)
   local lines = {
-    string.format("Period Comparison: %s - %s", comparison.repo, comparison.metric),
+    str_format("Period Comparison: %s - %s", comparison.repo, comparison.metric),
     string.rep("═", 70),
     "",
-    string.format("Period 1: %s", comparison.period1.name),
-    string.format("  Total Count:   %s", format_number(comparison.period1.total_count)),
-    string.format("  Total Uniques: %s", format_number(comparison.period1.total_uniques)),
-    string.format("  Days:          %d", comparison.period1.days),
-    string.format("  Avg/Day:       %s count, %s uniques",
+    str_format("Period 1: %s", comparison.period1.name),
+    str_format("  Total Count:   %s", format_number(comparison.period1.total_count)),
+    str_format("  Total Uniques: %s", format_number(comparison.period1.total_uniques)),
+    str_format("  Days:          %d", comparison.period1.days),
+    str_format("  Avg/Day:       %s count, %s uniques",
       format_number(comparison.period1.avg_count),
       format_number(comparison.period1.avg_uniques)
     ),
     "",
-    string.format("Period 2: %s", comparison.period2.name),
-    string.format("  Total Count:   %s", format_number(comparison.period2.total_count)),
-    string.format("  Total Uniques: %s", format_number(comparison.period2.total_uniques)),
-    string.format("  Days:          %d", comparison.period2.days),
-    string.format("  Avg/Day:       %s count, %s uniques",
+    str_format("Period 2: %s", comparison.period2.name),
+    str_format("  Total Count:   %s", format_number(comparison.period2.total_count)),
+    str_format("  Total Uniques: %s", format_number(comparison.period2.total_uniques)),
+    str_format("  Days:          %d", comparison.period2.days),
+    str_format("  Avg/Day:       %s count, %s uniques",
       format_number(comparison.period2.avg_count),
       format_number(comparison.period2.avg_uniques)
     ),
     "",
     "Changes:",
     string.rep("─", 70),
-    string.format("  Count:   %s", comparison.changes.count_change_str),
-    string.format("  Uniques: %s", comparison.changes.unique_change_str),
+    str_format("  Count:   %s", comparison.changes.count_change_str),
+    str_format("  Uniques: %s", comparison.changes.unique_change_str),
   }
 
   return lines

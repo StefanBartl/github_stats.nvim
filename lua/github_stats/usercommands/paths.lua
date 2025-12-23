@@ -9,15 +9,19 @@ local utils = require("github_stats.usercommands.utils")
 
 local M = {}
 
+local notify, levels = vim.notify, vim.log.levels
+local tbl_insert = table.insert
+local str_format = string.format
+
 ---Execute paths command
 ---@param args table Command arguments from nvim_create_user_command
 function M.execute(args)
   local parts = vim.split(args.args, "%s+")
 
   if #parts < 1 then
-    vim.notify(
+    notify(
       "[github-stats] Usage: GithubStatsPaths {repo} [limit]",
-      vim.log.levels.ERROR
+      levels.ERROR
     )
     return
   end
@@ -28,34 +32,34 @@ function M.execute(args)
   local paths, err = analytics.get_top_paths(repo, limit)
 
   if err then
-    vim.notify(
-      string.format("[github-stats] Error: %s", err),
-      vim.log.levels.ERROR
+    notify(
+      str_format("[github-stats] Error: %s", err),
+      levels.ERROR
     )
     return
   end
 
   if #paths == 0 then
-    vim.notify(
+    notify(
       "[github-stats] No path data available",
-      vim.log.levels.INFO
+      levels.INFO
     )
     return
   end
 
   -- Build output
   local lines = {
-    string.format("Top Paths: %s", repo),
+    str_format("Top Paths: %s", repo),
     string.rep("=", 60),
     "",
   }
 
   for i, path_data in ipairs(paths) do
-    table.insert(lines, string.format("%2d. %s", i, path_data.path))
-    table.insert(lines, string.format("    Title: %s", path_data.title))
-    table.insert(
+    tbl_insert(lines, str_format("%2d. %s", i, path_data.path))
+    tbl_insert(lines, str_format("    Title: %s", path_data.title))
+    tbl_insert(
       lines,
-      string.format(
+      str_format(
         "    Count: %s, Uniques: %s",
         utils.format_number(path_data.count),
         utils.format_number(path_data.uniques)
@@ -63,7 +67,7 @@ function M.execute(args)
     )
   end
 
-  utils.show_float(lines, string.format("Top Paths: %s", repo))
+  utils.show_float(lines, str_format("Top Paths: %s", repo))
 end
 
 ---Get completion candidates

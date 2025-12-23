@@ -4,16 +4,14 @@
 --- Coordinates parallel fetching of all metrics for configured repositories.
 --- Manages fetch intervals and provides both automatic and manual fetch triggers.
 
-local M = {}
-
 local config = require("github_stats.config")
 local api = require("github_stats.api")
 local storage = require("github_stats.storage")
 
----@class FetchSummary
----@field success string[] List of successful repo/metric combinations
----@field errors table<string, string> Map of repo/metric to error message
----@field timestamp string ISO timestamp when fetch completed
+local M = {}
+
+local str_format = string.format
+local tbl_concat = table.concat
 
 ---Store for detailed error information (accessible via debug command)
 ---@type FetchSummary?
@@ -39,7 +37,7 @@ local function load_last_fetch()
     return nil
   end
 
-  local json_str = table.concat(content, "\n")
+  local json_str = tbl_concat(content, "\n")
   local parse_ok, data = pcall(vim.json.decode, json_str)
   if not parse_ok then
     return nil
@@ -127,7 +125,7 @@ function M.fetch_all(force, callback)
     return
   end
 
-  config.notify(string.format("[github-stats] Starting fetch: %d repos, force=%s", #repos, tostring(force)), "info")
+  config.notify(str_format("[github-stats] Starting fetch: %d repos, force=%s", #repos, tostring(force)), "info")
 
   local completed = 0
   local all_success = {}
@@ -153,12 +151,12 @@ function M.fetch_all(force, callback)
       local error_count = vim.tbl_count(all_errors)
       if error_count > 0 then
         config.notify(
-          string.format("[github-stats] Fetched %d metrics, %d errors", #all_success, error_count),
+          str_format("[github-stats] Fetched %d metrics, %d errors", #all_success, error_count),
           "warn"
         )
       else
         config.notify(
-          string.format("[github-stats] Successfully fetched %d metrics", #all_success),
+          str_format("[github-stats] Successfully fetched %d metrics", #all_success),
           "info"
         )
       end

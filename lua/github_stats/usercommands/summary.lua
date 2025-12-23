@@ -9,15 +9,19 @@ local utils = require("github_stats.usercommands.utils")
 
 local M = {}
 
+local notify, levels = vim.notify, vim.log.levels
+local str_format = string.format
+local tbl_insert = table.insert
+
 ---Execute summary command
 ---@param args table Command arguments from nvim_create_user_command
 function M.execute(args)
   local metric = args.args
 
   if metric ~= "clones" and metric ~= "views" then
-    vim.notify(
+    notify(
       "[github-stats] Metric must be 'clones' or 'views'",
-      vim.log.levels.ERROR
+      levels.ERROR
     )
     return
   end
@@ -25,36 +29,36 @@ function M.execute(args)
   local results, err = analytics.query_all_repos(metric, nil, nil)
 
   if err then
-    vim.notify(
-      string.format("[github-stats] Errors occurred: %s", err),
-      vim.log.levels.WARN
+    notify(
+      str_format("[github-stats] Errors occurred: %s", err),
+      levels.WARN
     )
   end
 
   if not results or vim.tbl_count(results) == 0 then
-    vim.notify(
+    notify(
       "[github-stats] No data available",
-      vim.log.levels.INFO
+      levels.INFO
     )
     return
   end
 
   -- Build output
   local lines = {
-    string.format("Summary: %s across all repositories", metric),
+    str_format("Summary: %s across all repositories", metric),
     string.rep("=", 60),
     "",
   }
 
   for repo, stats in pairs(results) do
-    table.insert(lines, string.format("Repository: %s", repo))
-    table.insert(lines, string.format("  Period: %s to %s", stats.period_start, stats.period_end))
-    table.insert(lines, string.format("  Total Count: %s", utils.format_number(stats.total_count)))
-    table.insert(lines, string.format("  Total Uniques: %s", utils.format_number(stats.total_uniques)))
-    table.insert(lines, "")
+    tbl_insert(lines, str_format("Repository: %s", repo))
+    tbl_insert(lines, str_format("  Period: %s to %s", stats.period_start, stats.period_end))
+    tbl_insert(lines, str_format("  Total Count: %s", utils.format_number(stats.total_count)))
+    tbl_insert(lines, str_format("  Total Uniques: %s", utils.format_number(stats.total_uniques)))
+    tbl_insert(lines, "")
   end
 
-  utils.show_float(lines, string.format("GitHub Stats Summary: %s", metric))
+  utils.show_float(lines, str_format("GitHub Stats Summary: %s", metric))
 end
 
 ---Get completion candidates
