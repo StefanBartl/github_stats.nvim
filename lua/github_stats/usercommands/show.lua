@@ -12,6 +12,10 @@ local config = require("github_stats.config")
 
 local M = {}
 
+local notify, levels = vim.notify, vim.log.levels
+local str_format = string.format
+local tbl_filter, startswith = vim.tbl_filter, vim.startswith
+
 ---Format number with thousands separator
 ---@param num number
 ---@return string
@@ -33,9 +37,9 @@ function M.execute(args)
   local parts = vim.split(args.args, "%s+")
 
   if #parts < 2 then
-    vim.notify(
+    notify(
       "[github-stats] Usage: GithubStatsShow {repo} {metric} [start_date] [end_date]",
-      vim.log.levels.ERROR
+      levels.ERROR
     )
     return
   end
@@ -51,9 +55,9 @@ function M.execute(args)
   if start_date and date_presets.is_preset(start_date) then
     local resolved_start, resolved_end, err = date_presets.resolve(start_date)
     if err then
-      vim.notify(
-        string.format("[github-stats] Preset error: %s", err),
-        vim.log.levels.ERROR
+      notify(
+        str_format("[github-stats] Preset error: %s", err),
+        levels.ERROR
       )
       return
     end
@@ -65,9 +69,9 @@ function M.execute(args)
     if end_date and date_presets.is_preset(end_date) then
       local _, resolved_end, err = date_presets.resolve(end_date)
       if err then
-        vim.notify(
-          string.format("[github-stats] Preset error: %s", err),
-          vim.log.levels.ERROR
+        notify(
+          str_format("[github-stats] Preset error: %s", err),
+          levels.ERROR
         )
         return
       end
@@ -78,9 +82,9 @@ function M.execute(args)
 
   -- Validate metric
   if metric ~= "clones" and metric ~= "views" then
-    vim.notify(
-      string.format("[github-stats] Invalid metric '%s'. Use 'clones' or 'views'", metric),
-      vim.log.levels.ERROR
+    notify(
+      str_format("[github-stats] Invalid metric '%s'. Use 'clones' or 'views'", metric),
+      levels.ERROR
     )
     return
   end
@@ -93,52 +97,52 @@ function M.execute(args)
   })
 
   if err then
-    vim.notify(
-      string.format("[github-stats] Error: %s", err),
-      vim.log.levels.ERROR
+    notify(
+      str_format("[github-stats] Error: %s", err),
+      levels.ERROR
     )
     return
   end
 
   if not stats then
-    vim.notify(
+    notify(
       "[github-stats] No data returned from analytics",
-      vim.log.levels.ERROR
+      levels.ERROR
     )
     return
   end
 
   if not start_date then
-    vim.notify(
-      string.format(
+    notify(
+      str_format(
         "[github-stats] No start_date specified, showing data from %s onwards",
         stats.period_start
       ),
-      vim.log.levels.INFO
+      levels.INFO
     )
   end
 
   -- Check if we actually have data
   if stats.total_count == 0 and stats.total_uniques == 0 then
-    vim.notify(
-      string.format(
+    notify(
+      str_format(
         "[github-stats] No data found for %s/%s. Check repository name and ensure data has been fetched.",
         repo,
         metric
       ),
-      vim.log.levels.WARN
+      levels.WARN
     )
     return
   end
 
   -- Build output
   local lines = {
-    string.format("Repository: %s", stats.repo),
-    string.format("Metric: %s", stats.metric),
-    string.format("Period: %s to %s", stats.period_start, stats.period_end),
+    str_format("Repository: %s", stats.repo),
+    str_format("Metric: %s", stats.metric),
+    str_format("Period: %s to %s", stats.period_start, stats.period_end),
     "",
-    string.format("Total Count: %s", format_number(stats.total_count)),
-    string.format("Total Uniques: %s", format_number(stats.total_uniques)),
+    str_format("Total Count: %s", format_number(stats.total_count)),
+    str_format("Total Uniques: %s", format_number(stats.total_uniques)),
     "",
     "Daily Breakdown:",
     "----------------",
@@ -152,7 +156,7 @@ function M.execute(args)
     local day = stats.daily_breakdown[date]
     table.insert(
       lines,
-      string.format(
+      str_format(
         "  %s: %6s count, %6s uniques",
         date,
         format_number(day.count),
@@ -161,7 +165,7 @@ function M.execute(args)
     )
   end
 
-  utils.show_float(lines, string.format("GitHub Stats: %s/%s", repo, metric))
+  utils.show_float(lines, str_format("GitHub Stats: %s/%s", repo, metric))
 end
 
 ---Get completion candidates for show command
@@ -182,24 +186,24 @@ function M.complete(arg_lead, cmd_line, _cursor_pos)
   -- First argument: repository
   if arg_index == 2 then
     local repos = config.get_repos()
-    return vim.tbl_filter(function(repo)
-      return vim.startswith(repo, arg_lead)
+    return tbl_filter(function(repo)
+      return startswith(repo, arg_lead)
     end, repos)
   end
 
   -- Second argument: metric
   if arg_index == 3 then
     local metrics = { "clones", "views" }
-    return vim.tbl_filter(function(metric)
-      return vim.startswith(metric, arg_lead)
+    return tbl_filter(function(metric)
+      return startswith(metric, arg_lead)
     end, metrics)
   end
 
   -- Third argument: start_date (show presets)
   if arg_index == 4 then
     local presets = date_presets.list()
-    return vim.tbl_filter(function(preset)
-      return vim.startswith(preset, arg_lead)
+    return tbl_filter(function(preset)
+      return startswith(preset, arg_lead)
     end, presets)
   end
 
@@ -213,8 +217,8 @@ function M.complete(arg_lead, cmd_line, _cursor_pos)
 
     -- Show presets for end_date
     local presets = date_presets.list()
-    return vim.tbl_filter(function(preset)
-      return vim.startswith(preset, arg_lead)
+    return tbl_filter(function(preset)
+      return startswith(preset, arg_lead)
     end, presets)
   end
 

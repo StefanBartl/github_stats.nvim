@@ -9,15 +9,18 @@ local utils = require("github_stats.usercommands.utils")
 
 local M = {}
 
+local notify, levels = vim.notify, vim.log.levels
+local str_format = string.format
+
 ---Execute referrers command
 ---@param args table Command arguments from nvim_create_user_command
 function M.execute(args)
   local parts = vim.split(args.args, "%s+")
 
   if #parts < 1 then
-    vim.notify(
+    notify(
       "[github-stats] Usage: GithubStatsReferrers {repo} [limit]",
-      vim.log.levels.ERROR
+      levels.ERROR
     )
     return
   end
@@ -28,33 +31,33 @@ function M.execute(args)
   local referrers, err = analytics.get_top_referrers(repo, limit)
 
   if err then
-    vim.notify(
-      string.format("[github-stats] Error: %s", err),
-      vim.log.levels.ERROR
+    notify(
+      str_format("[github-stats] Error: %s", err),
+      levels.ERROR
     )
     return
   end
 
   if #referrers == 0 then
-    vim.notify(
+    notify(
       "[github-stats] No referrer data available",
-      vim.log.levels.INFO
+      levels.INFO
     )
     return
   end
 
   -- Build output
   local lines = {
-    string.format("Top Referrers: %s", repo),
+    str_format("Top Referrers: %s", repo),
     string.rep("=", 60),
     "",
   }
 
   for i, ref in ipairs(referrers) do
-    table.insert(lines, string.format("%2d. %s", i, ref.referrer))
+    table.insert(lines, str_format("%2d. %s", i, ref.referrer))
     table.insert(
       lines,
-      string.format(
+      str_format(
         "    Count: %s, Uniques: %s",
         utils.format_number(ref.count),
         utils.format_number(ref.uniques)
@@ -62,7 +65,7 @@ function M.execute(args)
     )
   end
 
-  utils.show_float(lines, string.format("Top Referrers: %s", repo))
+  utils.show_float(lines, str_format("Top Referrers: %s", repo))
 end
 
 ---Get completion candidates

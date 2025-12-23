@@ -6,6 +6,11 @@
 
 local M = {}
 
+local fn = vim.fn
+local loop = vim.loop
+local str_format = string.format
+local tbl_concat = table.concat
+
 ---@type SetupOptions?
 local config = nil
 
@@ -47,10 +52,10 @@ local PATHS = {
 ---@return string
 local function resolve_config_dir(custom_path)
   if custom_path then
-    return vim.fn.expand(custom_path)
+    return fn.expand(custom_path)
   end
 
-  local config_path = vim.fn.stdpath("config")
+  local config_path = fn.stdpath("config")
   return config_path .. "/github-stats"
 end
 
@@ -60,7 +65,7 @@ end
 ---@return string
 local function resolve_data_dir(custom_path, config_dir)
   if custom_path then
-    return vim.fn.expand(custom_path)
+    return fn.expand(custom_path)
   end
 
   return config_dir .. "/data"
@@ -69,7 +74,7 @@ end
 ---Get config directory path
 ---@return string
 local function get_config_dir()
-  local config_path = vim.fn.stdpath("config")
+  local config_path = fn.stdpath("config")
   return config_path .. "/github-stats"
 end
 
@@ -86,21 +91,21 @@ local function ensure_config_exists()
   local config_file = get_config_file()
 
   -- Create directory if needed
-  local stat = vim.loop.fs_stat(config_dir)
+  local stat = loop.fs_stat(config_dir)
   if not stat then
-    local ok, err = pcall(vim.fn.mkdir, config_dir, "p")
+    local ok, err = pcall(fn.mkdir, config_dir, "p")
     if not ok then
-      return false, string.format("Failed to create config directory: %s", err)
+      return false, str_format("Failed to create config directory: %s", err)
     end
   end
 
   -- Create default config if file doesn't exist
-  stat = vim.loop.fs_stat(config_file)
+  stat = loop.fs_stat(config_file)
   if not stat then
     local default_json = vim.json.encode(DEFAULT_CONFIG)
-    local ok, err = pcall(vim.fn.writefile, { default_json }, config_file)
+    local ok, err = pcall(fn.writefile, { default_json }, config_file)
     if not ok then
-      return false, string.format("Failed to create config file: %s", err)
+      return false, str_format("Failed to create config file: %s", err)
     end
   end
 
@@ -125,17 +130,17 @@ function M.init(opts)
   end
 
   -- Priority 2: config.json
-  local stat = vim.loop.fs_stat(PATHS.config_file)
+  local stat = loop.fs_stat(PATHS.config_file)
   if stat then
-    local file_ok, content = pcall(vim.fn.readfile, PATHS.config_file)
+    local file_ok, content = pcall(fn.readfile, PATHS.config_file)
     if not file_ok then
-      return false, string.format("Failed to read config file: %s", content)
+      return false, str_format("Failed to read config file: %s", content)
     end
 
-    local json_str = table.concat(content, "\n")
+    local json_str = tbl_concat(content, "\n")
     local parse_ok, parsed = pcall(vim.json.decode, json_str)
     if not parse_ok then
-      return false, string.format("Failed to parse config JSON: %s", parsed)
+      return false, str_format("Failed to parse config JSON: %s", parsed)
     end
 
     config = vim.tbl_deep_extend("force", DEFAULT_CONFIG, parsed)
@@ -149,15 +154,15 @@ function M.init(opts)
   end
 
   -- Re-read created config
-  local file_ok, content = pcall(vim.fn.readfile, PATHS.config_file)
+  local file_ok, content = pcall(fn.readfile, PATHS.config_file)
   if not file_ok then
-    return false, string.format("Failed to read created config: %s", content)
+    return false, str_format("Failed to read created config: %s", content)
   end
 
-  local json_str = table.concat(content, "\n")
+  local json_str = tbl_concat(content, "\n")
   local parse_ok, parsed = pcall(vim.json.decode, json_str)
   if not parse_ok then
-    return false, string.format("Failed to parse created config: %s", parsed)
+    return false, str_format("Failed to parse created config: %s", parsed)
   end
 
   config = vim.tbl_deep_extend("force", DEFAULT_CONFIG, parsed)
@@ -202,7 +207,7 @@ function M.get_token()
     local env_var = config.token_env_var or "GITHUB_TOKEN"
     local token = vim.env[env_var]
     if not token or token == "" then
-      return nil, string.format("Environment variable %s not set or empty", env_var)
+      return nil, str_format("Environment variable %s not set or empty", env_var)
     end
     return token, nil
   elseif config.token_source == "file" then
@@ -210,10 +215,10 @@ function M.get_token()
       return nil, "token_file not specified in config"
     end
 
-    local file_path = vim.fn.expand(config.token_file)
-    local ok, content = pcall(vim.fn.readfile, file_path)
+    local file_path = fn.expand(config.token_file)
+    local ok, content = pcall(fn.readfile, file_path)
     if not ok then
-      return nil, string.format("Failed to read token file: %s", content)
+      return nil, str_format("Failed to read token file: %s", content)
     end
 
     if #content == 0 then
@@ -227,7 +232,7 @@ function M.get_token()
 
     return token, nil
   else
-    return nil, string.format("Invalid token_source: %s", config.token_source)
+    return nil, str_format("Invalid token_source: %s", config.token_source)
   end
 end
 

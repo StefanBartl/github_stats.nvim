@@ -9,6 +9,12 @@ local config = require("github_stats.config")
 
 local M = {}
 
+local fn = vim.fn
+local fs = vim.fs
+local loop = vim.loop
+local str_format = string.format
+local tbl_concat = table.concat
+
 ---Sanitize repository name for filesystem
 ---@param repo string Repository in "owner/repo" format
 ---@return string # Sanitized name (owner_repo)
@@ -24,16 +30,16 @@ end
 local function get_metric_dir(repo, metric)
   local root = config.get_storage_root()
   local repo_safe = sanitize_repo_name(repo)
-  return vim.fs.joinpath(root, "data", repo_safe, metric)
+  return fs.joinpath(root, "data", repo_safe, metric)
 end
 
 ---Ensure directory exists
 ---@param path string Directory path
 ---@return boolean, string? # Success flag, error message
 local function ensure_dir(path)
-  local ok, err = pcall(vim.fn.mkdir, path, "p")
+  local ok, err = pcall(fn.mkdir, path, "p")
   if not ok then
-    return false, string.format("Failed to create directory: %s", err)
+    return false, str_format("Failed to create directory: %s", err)
   end
   return true, nil
 end
@@ -57,7 +63,7 @@ function M.write_metric(repo, metric, data)
   end
 
   local filename = generate_filename()
-  local filepath = vim.fs.joinpath(dir, filename)
+  local filepath = fs.joinpath(dir, filename)
 
   -- Prepare storage structure
   local storage_data = {
@@ -68,22 +74,22 @@ function M.write_metric(repo, metric, data)
   -- Encode to JSON
   local json_ok, json = pcall(vim.json.encode, storage_data)
   if not json_ok then
-    return false, string.format("JSON encode failed: %s", json)
+    return false, str_format("JSON encode failed: %s", json)
   end
 
   -- Write atomically (write to temp, then rename)
   local temp_file = filepath .. ".tmp"
-  local write_ok, write_err = pcall(vim.fn.writefile, {json}, temp_file)
+  local write_ok, write_err = pcall(fn.writefile, {json}, temp_file)
   if not write_ok then
-    return false, string.format("Write failed: %s", write_err)
+    return false, str_format("Write failed: %s", write_err)
   end
 
   -- Atomic rename
-  local rename_ok, rename_err = pcall(vim.loop.fs_rename, temp_file, filepath)
+  local rename_ok, rename_err = pcall(loop.fs_rename, temp_file, filepath)
   if not rename_ok then
     -- Cleanup temp file on failure
-    pcall(vim.fn.delete, temp_file)
-    return false, string.format("Rename failed: %s", rename_err)
+    pcall(fn.delete, temp_file)
+    return false, str_format("Rename failed: %s", rename_err)
   end
 
   return true, nil
@@ -97,26 +103,26 @@ function M.read_metric_history(repo, metric)
   local dir = get_metric_dir(repo, metric)
 
   -- Check if directory exists
-  local stat = vim.loop.fs_stat(dir)
+  local stat = loop.fs_stat(dir)
   if not stat or stat.type ~= "directory" then
     return {}, nil
   end
 
   -- Scan directory
-  local scan_ok, files = pcall(vim.fn.readdir, dir)
+  local scan_ok, files = pcall(fn.readdir, dir)
   if not scan_ok then
-    return {}, string.format("Failed to read directory: %s", files)
+    return {}, str_format("Failed to read directory: %s", files)
   end
 
   -- Read and parse each file
   local results = {}
   for _, file in ipairs(files) do
     if file:match("%.json$") and not file:match("%.tmp$") then
-      local filepath = vim.fs.joinpath(dir, file)
+      local filepath = fs.joinpath(dir, file)
 
-      local read_ok, content = pcall(vim.fn.readfile, filepath)
+      local read_ok, content = pcall(fn.readfile, filepath)
       if read_ok then
-        local parse_ok, parsed = pcall(vim.json.decode, table.concat(content, "\n"))
+        local parse_ok, parsed = pcall(vim.json.decode, tbl_concat(content, "\n"))
         if parse_ok and type(parsed) == "table" then
           table.insert(results, parsed)
         end
@@ -136,7 +142,7 @@ end
 ---@return string
 local function get_last_fetch_path()
   local root = config.get_storage_root()
-  return vim.fs.joinpath(root, "last_fetch.json")
+  return fs.joinpath(root, "last_fetch.json")
 end
 
 ---Read last fetch timestamps
@@ -144,15 +150,15 @@ end
 function M.read_last_fetch()
   local path = get_last_fetch_path()
 
-  local ok, content = pcall(vim.fn.readfile, path)
+  local ok, content = pcall(fn.readfile, path)
   if not ok then
     -- File doesn't exist yet, return empty
     return {}, nil
   end
 
-  local parse_ok, parsed = pcall(vim.json.decode, table.concat(content, "\n"))
+  local parse_ok, parsed = pcall(vim.json.decode, tbl_concat(content, "\n"))
   if not parse_ok then
-    return {}, string.format("Invalid last_fetch.json: %s", parsed)
+    return {}, str_format("Invalid last_fetch.json: %s", parsed)
   end
 
   return parsed, nil
@@ -163,7 +169,7 @@ end
 ---@return boolean, string? # Success flag, error message
 function M.write_last_fetch(data)
   local path = get_last_fetch_path()
-  local dir = vim.fs.dirname(path)
+  local dir = fs.dirname(path)
 
   local ok, err = ensure_dir(dir)
   if not ok then
@@ -172,20 +178,20 @@ function M.write_last_fetch(data)
 
   local json_ok, json = pcall(vim.json.encode, data)
   if not json_ok then
-    return false, string.format("JSON encode failed: %s", json)
+    return false, str_format("JSON encode failed: %s", json)
   end
 
   -- Atomic write
   local temp_file = path .. ".tmp"
-  local write_ok, write_err = pcall(vim.fn.writefile, {json}, temp_file)
+  local write_ok, write_err = pcall(fn.writefile, {json}, temp_file)
   if not write_ok then
-    return false, string.format("Write failed: %s", write_err)
+    return false, str_format("Write failed: %s", write_err)
   end
 
-  local rename_ok, rename_err = pcall(vim.loop.fs_rename, temp_file, path)
+  local rename_ok, rename_err = pcall(loop.fs_rename, temp_file, path)
   if not rename_ok then
-    pcall(vim.fn.delete, temp_file)
-    return false, string.format("Rename failed: %s", rename_err)
+    pcall(fn.delete, temp_file)
+    return false, str_format("Rename failed: %s", rename_err)
   end
 
   return true, nil
@@ -201,7 +207,7 @@ function M.update_last_fetch(repo, metric)
     return false, err
   end
 
-  local key = string.format("%s:%s", repo, metric)
+  local key = str_format("%s:%s", repo, metric)
   data[key] = tostring(os.date("!%Y-%m-%dT%H:%M:%SZ"))
 
   return M.write_last_fetch(data)
@@ -218,7 +224,7 @@ function M.should_fetch(repo, metric)
     return true
   end
 
-  local key = string.format("%s:%s", repo, metric)
+  local key = str_format("%s:%s", repo, metric)
   local last_fetch = data[key]
 
   if not last_fetch then
@@ -226,7 +232,7 @@ function M.should_fetch(repo, metric)
   end
 
   -- Parse timestamps
-  local last_time = vim.fn.strptime("%Y-%m-%dT%H:%M:%SZ", last_fetch)
+  local last_time = fn.strptime("%Y-%m-%dT%H:%M:%SZ", last_fetch)
   local current_time = os.time()
   local interval_seconds = config.get_fetch_interval() * 3600
 

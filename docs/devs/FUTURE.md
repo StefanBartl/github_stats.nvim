@@ -20,7 +20,15 @@ This document outlines planned features for GitHub Stats, organized by implement
 
 ---
 
-## Large Features (v2.0.0)
+## Ideas
+
+- `data/` möglicherweiße komprimierbar? Was hätte das für Auswirkungen auf den in initialen fetch (einmal in 24h), denn wenn dieser durchgeführt wird, müssen die Daten entpackt werden. Aber da diese Operation asynchron ist, sollte sie auf den nvim main thread keine auswirkung haben?!
+    - Jedenfalls könte man einen Mechanismus einbauen, der, sofern einmal die data entpackt wurde, dass diese entpackt bleiben, sollten usercommands ausgeführt werden, könnten diese dann sofort verwednet werden
+    - Wen sie aber nicht entpackt sind und man führt einen usercommand aus, wird das beim ersten Mal die Ausführung verzögern
+    - Sollte weder der init fetch noch ein usrcommand ausgeführt werden, würden die Daten gar nicht entpackt werden.
+    - Eventuell gibt es da bestimmte Paradigmen/Szenarien, die man für solche Fälle anwendet
+
+## ##Large Features (v2.0.0)
 
 ### Dashboard UI
 

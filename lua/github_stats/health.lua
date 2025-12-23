@@ -7,21 +7,27 @@
 
 local M = {}
 
+local fn = vim.fn
+local has = fn .has
+local health = vim.health
+local str_format = string.format
+local tbl_concat = table.concat
+
 ---Check if command exists (cross-platform)
 ---@param cmd string Command name
 ---@return boolean # True if command is available
 local function command_exists(cmd)
   -- Windows-specific check
-  if vim.fn.has("win32") == 1 or vim.fn.has("win64") == 1 then
+  if has("win32") == 1 or has("win64") == 1 then
     -- Try PowerShell's Get-Command
-    local result = vim.fn.system(string.format('powershell -Command "Get-Command %s -ErrorAction SilentlyContinue"', cmd))
+    local result = fn.system(str_format('powershell -Command "Get-Command %s -ErrorAction SilentlyContinue"', cmd))
     if vim.v.shell_error == 0 and result ~= "" then
       return true
     end
 
     -- Fallback: Try direct execution
     ---@diagnostic disable-next-line: unused-local
-    local test_result = vim.fn.system(cmd .. " --version 2>nul")
+    local test_result = fn.system(cmd .. " --version 2>nul")
     return vim.v.shell_error == 0
   end
 
@@ -59,7 +65,7 @@ local function check_config()
 
   local ok, err = config.init()
   if not ok then
-    return false, string.format("Configuration error: %s", err)
+    return false, str_format("Configuration error: %s", err)
   end
 
   local cfg = config.get()
@@ -76,11 +82,11 @@ local function check_config()
   for i, repo in ipairs(cfg.repos) do
     local valid, repo_err = validate_repo_format(repo)
     if not valid then
-      return false, string.format("Invalid repo[%d] '%s': %s", i, repo, repo_err)
+      return false, str_format("Invalid repo[%d] '%s': %s", i, repo, repo_err)
     end
   end
 
-  return true, string.format("Configuration valid (%d repos)", #cfg.repos)
+  return true, str_format("Configuration valid (%d repos)", #cfg.repos)
 end
 
 ---Check token availability
@@ -90,14 +96,14 @@ local function check_token()
 
   local token, err = config.get_token()
   if not token then
-    return false, string.format("Token error: %s", err)
+    return false, str_format("Token error: %s", err)
   end
 
   if #token < 10 then
     return false, "Token appears invalid (too short)"
   end
 
-  return true, string.format("Token available (%d chars, source: %s)",
+  return true, str_format("Token available (%d chars, source: %s)",
     #token,
     config.get().token_source
   )
@@ -113,18 +119,18 @@ local function check_storage()
   local stat = vim.loop.fs_stat(storage_root)
   if not stat then
     -- Try to create
-    local ok, err = pcall(vim.fn.mkdir, storage_root, "p")
+    local ok, err = pcall(fn.mkdir, storage_root, "p")
     if not ok then
-      return false, string.format("Failed to create storage directory: %s", err)
+      return false, str_format("Failed to create storage directory: %s", err)
     end
-    return true, string.format("Storage directory created: %s", storage_root)
+    return true, str_format("Storage directory created: %s", storage_root)
   end
 
   if stat.type ~= "directory" then
-    return false, string.format("Storage path exists but is not a directory: %s", storage_root)
+    return false, str_format("Storage path exists but is not a directory: %s", storage_root)
   end
 
-  return true, string.format("Storage directory accessible: %s", storage_root)
+  return true, str_format("Storage directory accessible: %s", storage_root)
 end
 
 ---Check curl availability (cross-platform)
@@ -135,7 +141,7 @@ local function check_curl()
   end
 
   -- Test curl version (cross-platform)
-  local version_cmd = vim.fn.has("win32") == 1 and "curl --version 2>nul" or "curl --version 2>&1"
+  local version_cmd = has("win32") == 1 and "curl --version 2>nul" or "curl --version 2>&1"
   local handle = io.popen(version_cmd)
   if not handle then
     return false, "Failed to execute curl --version"
@@ -146,7 +152,7 @@ local function check_curl()
 
   local version = version_output:match("curl (%d+%.%d+%.%d+)")
   if version then
-    return true, string.format("curl available (version %s)", version)
+    return true, str_format("curl available (version %s)", version)
   end
 
   return true, "curl available (version unknown)"
@@ -166,20 +172,20 @@ local function check_api_sync()
   local token, token_err = config.get_token()
 
   if not token then
-    return false, string.format("Cannot test API: %s", token_err), 0
+    return false, str_format("Cannot test API: %s", token_err), 0
   end
 
   -- Build curl command with output to temp file for reliable parsing
-  local url = string.format("https://api.github.com/repos/%s/traffic/clones", test_repo)
+  local url = str_format("https://api.github.com/repos/%s/traffic/clones", test_repo)
 
   -- Use temp file for response
-  local temp_file = vim.fn.tempname()
-  local temp_headers = vim.fn.tempname()
+  local temp_file = fn.tempname()
+  local temp_headers = fn.tempname()
 
   local curl_cmd
-  if vim.fn.has("win32") == 1 or vim.fn.has("win64") == 1 then
+  if has("win32") == 1 or has("win64") == 1 then
     -- Windows: Use temp files to avoid parsing issues
-    curl_cmd = string.format(
+    curl_cmd = str_format(
       'curl -s -D "%s" -o "%s" -H "Accept: application/vnd.github+json" -H "Authorization: Bearer %s" -H "X-GitHub-Api-Version: 2022-11-28" --max-time 10 "%s"',
       temp_headers,
       temp_file,
@@ -188,7 +194,7 @@ local function check_api_sync()
     )
   else
     -- Unix: Use temp files for consistency
-    curl_cmd = string.format(
+    curl_cmd = str_format(
       'curl -s -D "%s" -o "%s" -H "Accept: application/vnd.github+json" -H "Authorization: Bearer %s" -H "X-GitHub-Api-Version: 2022-11-28" --max-time 10 "%s"',
       temp_headers,
       temp_file,
@@ -200,7 +206,7 @@ local function check_api_sync()
   local start_time = vim.loop.hrtime()
 
   -- Execute synchronously
-  vim.fn.system(curl_cmd)
+  fn.system(curl_cmd)
   local exit_code = vim.v.shell_error
 
   local duration_ms = math.floor((vim.loop.hrtime() - start_time) / 1000000)
@@ -208,21 +214,21 @@ local function check_api_sync()
   -- Check for timeout or network error
   if exit_code ~= 0 then
     -- Cleanup temp files
-    pcall(vim.fn.delete, temp_file)
-    pcall(vim.fn.delete, temp_headers)
+    pcall(fn.delete, temp_file)
+    pcall(fn.delete, temp_headers)
 
     if duration_ms >= 10000 then
       return false, "API test timed out (10s)", duration_ms
     else
-      return false, string.format("curl failed (exit code: %d)", exit_code), duration_ms
+      return false, str_format("curl failed (exit code: %d)", exit_code), duration_ms
     end
   end
 
   -- Read HTTP headers
-  local headers_ok, headers_content = pcall(vim.fn.readfile, temp_headers)
+  local headers_ok, headers_content = pcall(fn.readfile, temp_headers)
   if not headers_ok or #headers_content == 0 then
-    pcall(vim.fn.delete, temp_file)
-    pcall(vim.fn.delete, temp_headers)
+    pcall(fn.delete, temp_file)
+    pcall(fn.delete, temp_headers)
     return false, "Failed to read response headers", duration_ms
   end
 
@@ -231,11 +237,11 @@ local function check_api_sync()
   local http_code = status_line:match("HTTP/%S+ (%d+)")
 
   -- Read response body
-  local body_ok, body_content = pcall(vim.fn.readfile, temp_file)
+  local body_ok, body_content = pcall(fn.readfile, temp_file)
 
   -- Cleanup temp files
-  pcall(vim.fn.delete, temp_file)
-  pcall(vim.fn.delete, temp_headers)
+  pcall(fn.delete, temp_file)
+  pcall(fn.delete, temp_headers)
 
   -- Check HTTP status
   local code_num = tonumber(http_code)
@@ -246,10 +252,10 @@ local function check_api_sync()
   if code_num == 200 then
     -- Verify we got valid JSON
     if body_ok and #body_content > 0 then
-      local body_str = table.concat(body_content, "\n")
+      local body_str = tbl_concat(body_content, "\n")
       local json_ok, _ = pcall(vim.json.decode, body_str)
       if json_ok then
-        return true, string.format("API connectivity confirmed (tested %s)", test_repo), duration_ms
+        return true, str_format("API connectivity confirmed (tested %s)", test_repo), duration_ms
       else
         return false, "API returned invalid JSON", duration_ms
       end
@@ -261,44 +267,44 @@ local function check_api_sync()
   elseif code_num == 403 then
     return false, "API test failed: 403 Forbidden (rate limit or token issue)", duration_ms
   elseif code_num == 404 then
-    return false, string.format("API test failed: 404 Not Found (check repository name: %s)", test_repo), duration_ms
+    return false, str_format("API test failed: 404 Not Found (check repository name: %s)", test_repo), duration_ms
   else
-    return false, string.format("API test failed: HTTP %d", code_num), duration_ms
+    return false, str_format("API test failed: HTTP %d", code_num), duration_ms
   end
 end
 
 ---Main health check entry point
 function M.check()
-  vim.health.start("GitHub Stats Configuration")
+  health.start("GitHub Stats Configuration")
 
   -- Check config
   local config_ok, config_msg = check_config()
   if config_ok then
-    vim.health.ok(config_msg)
+    health.ok(config_msg)
   else
-    vim.health.error(config_msg)
+    health.error(config_msg)
   end
 
   -- Check token
   local token_ok, token_msg = check_token()
   if token_ok then
-    vim.health.ok(token_msg)
+    health.ok(token_msg)
   else
-    vim.health.error(token_msg, {
+    health.error(token_msg, {
       "Set GITHUB_TOKEN environment variable",
       "Or configure token_file in config.json",
       "Get token from: https://github.com/settings/tokens",
     })
   end
 
-  vim.health.start("GitHub Stats Dependencies")
+  health.start("GitHub Stats Dependencies")
 
   -- Check curl (cross-platform)
   local curl_ok, curl_msg = check_curl()
   if curl_ok then
-    vim.health.ok(curl_msg)
+    health.ok(curl_msg)
   else
-    vim.health.error(curl_msg, {
+    health.error(curl_msg, {
       "Linux/Debian/Ubuntu: sudo apt install curl",
       "macOS: brew install curl",
       "Windows: curl is included since Windows 10 build 1803",
@@ -306,29 +312,29 @@ function M.check()
     })
   end
 
-  vim.health.start("GitHub Stats Storage")
+  health.start("GitHub Stats Storage")
 
   -- Check storage
   local storage_ok, storage_msg = check_storage()
   if storage_ok then
-    vim.health.ok(storage_msg)
+    health.ok(storage_msg)
   else
-    vim.health.error(storage_msg)
+    health.error(storage_msg)
   end
 
-  vim.health.start("GitHub Stats API Connectivity")
+  health.start("GitHub Stats API Connectivity")
 
   -- Synchronous API check with timeout
   if config_ok and token_ok and curl_ok then
-    vim.health.info("Testing API connection (max 10 seconds)...")
+    health.info("Testing API connection (max 10 seconds)...")
 
     local api_ok, api_msg, duration_ms = check_api_sync()
-    local duration_str = string.format("%.2fs", duration_ms / 1000)
+    local duration_str = str_format("%.2fs", duration_ms / 1000)
 
     if api_ok then
-      vim.health.ok(string.format("%s (took %s)", api_msg, duration_str))
+      health.ok(str_format("%s (took %s)", api_msg, duration_str))
     else
-      vim.health.error(string.format("%s (took %s)", api_msg, duration_str), {
+      health.error(str_format("%s (took %s)", api_msg, duration_str), {
         "Check network connectivity",
         "Verify token has 'repo' permission",
         "Confirm repository name in config.json",
@@ -337,7 +343,7 @@ function M.check()
       })
     end
   else
-    vim.health.warn("Skipping API test due to previous errors")
+    health.warn("Skipping API test due to previous errors")
   end
 end
 

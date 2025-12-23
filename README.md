@@ -434,7 +434,7 @@ Performs comprehensive diagnostics:
   - [Preparation](docs/configuration/PREPARATION.md)
   - [Option A: Direct Setup](docs/configuration/OPTION-A.md)
   - [Option B: Config File](docs/configuration/OPTION-B.md)
-- **[User Commands](docs/usercommands.md)** – Complete command reference
+- **[User Commands](docs/USERCOMMANDS.md)** – Complete command reference
 - **[Troubleshooting Guide](docs/TROUBLESHOOTING.md)** – Common issues and solutions
 
 ---

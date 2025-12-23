@@ -8,19 +8,24 @@ local utils = require("github_stats.usercommands.utils")
 
 local M = {}
 
+local notify, levels = vim.notify, vim.log.levels
+local str_format = string.format
+local tbl_filter, startswith = vim.tbl_filter, vim.startswith
+
+
 ---Execute diff command
 ---@param args table Command arguments
 function M.execute(args)
   local parts = vim.split(args.args, "%s+")
 
   if #parts < 4 then
-    vim.notify(
+    notify(
       "[github-stats] Usage: GithubStatsDiff {repo} {metric} {period1} {period2}",
-      vim.log.levels.ERROR
+      levels.ERROR
     )
-    vim.notify(
+    notify(
       "[github-stats] Period format: YYYY-MM or YYYY  (e.g.: 2025-01 or 2025)",
-      vim.log.levels.INFO
+      levels.INFO
     )
     return
   end
@@ -32,9 +37,9 @@ function M.execute(args)
 
   -- Validate metric
   if metric ~= "clones" and metric ~= "views" then
-    vim.notify(
+    notify(
       "[github-stats] Metric must be 'clones' or 'views'",
-      vim.log.levels.ERROR
+      levels.ERROR
     )
     return
   end
@@ -42,15 +47,15 @@ function M.execute(args)
   local comparison, err = diff.compare_periods(repo, metric, period1, period2)
 
   if err or not comparison then
-    vim.notify(
-      string.format("[github-stats] Error: %s", err or "Comparison failed"),
-      vim.log.levels.ERROR
+    notify(
+      str_format("[github-stats] Error: %s", err or "Comparison failed"),
+      levels.ERROR
     )
     return
   end
 
   local lines = diff.format_comparison(comparison)
-  utils.show_float(lines, string.format("Diff: %s/%s", repo, metric))
+  utils.show_float(lines, str_format("Diff: %s/%s", repo, metric))
 end
 
 ---Get completion candidates
@@ -73,16 +78,16 @@ function M.complete(arg_lead, cmd_line, _cursor_pos)
   -- First argument: repository
   if arg_index == 2 then
     local repos = config.get_repos()
-    return vim.tbl_filter(function(repo)
-      return vim.startswith(repo, arg_lead)
+    return tbl_filter(function(repo)
+      return startswith(repo, arg_lead)
     end, repos)
   end
 
   -- Second argument: metric
   if arg_index == 3 then
     local metrics = { "clones", "views" }
-    return vim.tbl_filter(function(metric)
-      return vim.startswith(metric, arg_lead)
+    return tbl_filter(function(metric)
+      return startswith(metric, arg_lead)
     end, metrics)
   end
 
@@ -90,7 +95,7 @@ function M.complete(arg_lead, cmd_line, _cursor_pos)
   if arg_index == 4 or arg_index == 5 then
     -- Merge period suggestions with presets
     local now = os.date("*t")
-    local current_month = string.format("%04d-%02d", now.year, now.month)
+    local current_month = str_format("%04d-%02d", now.year, now.month)
 
     local last_month_num = now.month - 1
     local last_month_year = now.year
@@ -98,7 +103,7 @@ function M.complete(arg_lead, cmd_line, _cursor_pos)
       last_month_num = 12
       last_month_year = last_month_year - 1
     end
-    local last_month = string.format("%04d-%02d", last_month_year, last_month_num)
+    local last_month = str_format("%04d-%02d", last_month_year, last_month_num)
 
     local period_suggestions = {
       current_month,
@@ -111,8 +116,8 @@ function M.complete(arg_lead, cmd_line, _cursor_pos)
     local presets = date_presets.list()
     local all_suggestions = vim.list_extend(period_suggestions, presets)
 
-    return vim.tbl_filter(function(suggestion)
-      return vim.startswith(suggestion, arg_lead)
+    return tbl_filter(function(suggestion)
+      return startswith(suggestion, arg_lead)
     end, all_suggestions)
   end
 

@@ -8,15 +8,18 @@ local export = require("github_stats.export")
 
 local M = {}
 
+local notify, levels = vim.notify, vim.log.levels
+local str_format = string.format
+
 ---Execute export command
 ---@param args table Command arguments
 function M.execute(args)
   local parts = vim.split(args.args, "%s+")
 
   if #parts < 3 then
-    vim.notify(
+    notify(
       "[github-stats] Usage: GithubStatsExport {repo|all} {metric} {filepath}",
-      vim.log.levels.ERROR
+      levels.ERROR
     )
     return
   end
@@ -27,9 +30,9 @@ function M.execute(args)
 
   -- Validate metric
   if metric ~= "clones" and metric ~= "views" then
-    vim.notify(
+    notify(
       "[github-stats] Metric must be 'clones' or 'views'",
-      vim.log.levels.ERROR
+      levels.ERROR
     )
     return
   end
@@ -41,9 +44,9 @@ function M.execute(args)
   elseif filepath:match("%.md$") then
     format = "markdown"
   else
-    vim.notify(
+    notify(
       "[github-stats] File must have .csv or .md extension",
-      vim.log.levels.ERROR
+      levels.ERROR
     )
     return
   end
@@ -51,32 +54,32 @@ function M.execute(args)
   -- Export all repos
   if target == "all" then
     if format ~= "markdown" then
-      vim.notify(
+      notify(
         "[github-stats] 'all' target only supports Markdown format",
-        vim.log.levels.ERROR
+        levels.ERROR
       )
       return
     end
 
     local results, err = analytics.query_all_repos(metric, nil, nil)
     if err then
-      vim.notify(
-        string.format("[github-stats] Error: %s", err),
-        vim.log.levels.ERROR
+      notify(
+        str_format("[github-stats] Error: %s", err),
+        levels.ERROR
       )
       return
     end
 
     local ok, export_err = export.export_summary_markdown(metric, results, filepath)
     if ok then
-      vim.notify(
-        string.format("[github-stats] Exported to: %s", vim.fn.expand(filepath)),
-        vim.log.levels.INFO
+      notify(
+        str_format("[github-stats] Exported to: %s", vim.fn.expand(filepath)),
+        levels.INFO
       )
     else
-      vim.notify(
-        string.format("[github-stats] Export failed: %s", export_err),
-        vim.log.levels.ERROR
+      notify(
+        str_format("[github-stats] Export failed: %s", export_err),
+        levels.ERROR
       )
     end
 
@@ -90,9 +93,9 @@ function M.execute(args)
   })
 
   if err or not stats then
-    vim.notify(
-      string.format("[github-stats] Error: %s", err or "No data"),
-      vim.log.levels.ERROR
+    notify(
+      str_format("[github-stats] Error: %s", err or "No data"),
+      levels.ERROR
     )
     return
   end
@@ -105,14 +108,14 @@ function M.execute(args)
   end
 
   if ok then
-    vim.notify(
-      string.format("[github-stats] Exported to: %s", vim.fn.expand(filepath)),
-      vim.log.levels.INFO
+    notify(
+      str_format("[github-stats] Exported to: %s", vim.fn.expand(filepath)),
+      levels.INFO
     )
   else
-    vim.notify(
-      string.format("[github-stats] Export failed: %s", export_err),
-      vim.log.levels.ERROR
+    notify(
+      str_format("[github-stats] Export failed: %s", export_err),
+      levels.ERROR
     )
   end
 end
