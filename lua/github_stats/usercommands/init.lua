@@ -20,6 +20,7 @@ function M.setup()
   local chart = require("github_stats.usercommands.chart")
   local export = require("github_stats.usercommands.export")
   local diff = require("github_stats.usercommands.diff")
+  local dashboard = require("github_stats.usercommands.dashboard")
 
   -- GithubStatsFetch [force]
   create_user_command("GithubStatsFetch", fetch.execute, {
@@ -81,6 +82,12 @@ function M.setup()
   create_user_command("GithubStatsDebug", debug.execute, {
     nargs = 0,
     desc = "Debug configuration and test API connection",
+  })
+
+  -- GithubStatsDashboard[!]
+  create_user_command("GithubStatsDashboard", dashboard.execute, {
+    bang = true,
+    desc = "Open GitHub Stats Dashboard (use ! to force refresh)",
   })
 end
 

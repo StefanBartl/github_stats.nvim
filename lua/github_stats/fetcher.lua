@@ -188,4 +188,37 @@ function M.manual_fetch(force)
   M.fetch_all(force)
 end
 
+---Fetch all metrics for a single repository
+---@param repo string Repository identifier
+---@param callback fun(success: string[], errors: table<string, string>)
+function M.fetch_repo(repo, callback)
+  local metrics = { "clones", "views", "referrers", "paths" }
+  local completed = 0
+  local success = {}
+  local errors = {}
+
+  local function check_complete()
+    completed = completed + 1
+    if completed == #metrics then
+      callback(success, errors)
+    end
+  end
+
+  for _, metric in ipairs(metrics) do
+    api.fetch_metric_async(repo, metric, function(data, err)
+      if err or not data then
+        errors[repo .. "/" .. metric] = err
+      else
+        local save_ok, save_err = storage.write_metric(repo, metric, data)
+        if save_ok then
+          table.insert(success, repo .. "/" .. metric)
+        else
+          errors[repo .. "/" .. metric] = save_err or "Unknown storage error"
+        end
+      end
+      check_complete()
+    end)
+  end
+end
+
 return M

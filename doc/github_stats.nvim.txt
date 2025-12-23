@@ -8,14 +8,15 @@ CONTENTS                                              *github_stats-contents*
     3. Installation ........................... |github_stats-installation|
     4. Configuration .......................... |github_stats-configuration|
     5. Commands ............................... |github_stats-commands|
-    6. Visualization .......................... |github_stats-visualization|
-    7. Export ................................. |github_stats-export|
-    8. Diff ................................... |github_stats-diff|
-    9. Date Presets ........................... |github_stats-date_presets|
-   10. API .................................... |github_stats-api|
-   11. Storage ................................ |github_stats-storage|
-   12. Troubleshooting ........................ |github_stats-troubleshooting|
-   13. License ................................ |github_stats-license|
+    6. Dashboard UI ........................... |github_stats-dashboards|
+    7. Visualization .......................... |github_stats-visualization|
+    8. Export ................................. |github_stats-export|
+    9. Diff ................................... |github_stats-diff|
+   10. Date Presets ........................... |github_stats-date_presets|
+   11. API .................................... |github_stats-api|
+   12. Storage ................................ |github_stats-storage|
+   13. Troubleshooting ........................ |github_stats-troubleshooting|
+   14. License ................................ |github_stats-license|
 
 ==============================================================================
 INTRODUCTION                                      *github_stats-introduction*
@@ -351,6 +352,144 @@ COMMANDS                                            *github_stats-commands*
         • curl availability (cross-platform)
         • Storage paths
         • API connectivity (with timeout)
+
+==============================================================================
+DASHBOARD                                            *github_stats-dashboard*
+
+The dashboard provides an interactive TUI for monitoring multiple repositories
+simultaneously with real-time statistics and visual trend indicators.
+
+Opening the Dashboard:~
+>
+    :GithubStatsDashboard       Open dashboard
+    :GithubStatsDashboard!      Open with forced refresh
+
+
+Dashboard Layout:~
+>
+    ┌─────────────────────────────────────────────────────────┐
+    │ GitHub Stats Dashboard            [?] Help  [q] Quit    │
+    ├─────────────────────────────────────────────────────────┤
+    │ Overall: 3 repos | 12,345 clones | 5,678 views         │
+    │ Last update: 2025-12-23 10:30:00                        │
+    ├─────────────────────────────────────────────────────────┤
+    │ ▶ username/repo1                  ⬆ +15% ↗             │
+    │   Clones: 1,234 | Views: 5,678 | Referrers: 45         │
+    │   ▂▃▅▇█▇▅▃▂▁▂▃▅▇█▇▅▃▂▁                                  │
+    └─────────────────────────────────────────────────────────┘
+
+
+Key Bindings:~
+
+Navigation:~
+  j, <Down>       Navigate to next repository
+  k, <Up>         Navigate to previous repository
+  <Enter>         Show detailed statistics for selected repository
+
+Actions:~
+  r               Refresh selected repository
+  R               Refresh all repositories
+  f               Force fetch (bypass interval)
+  s               Cycle sort criteria (clones/views/name/trend)
+  t               Cycle time range (7d/30d/90d/all)
+
+Other:~
+  ?               Toggle help overlay
+  q, <Esc>        Quit dashboard
+
+Configuration:~
+
+dashboard.enabled               (boolean)
+    Enable dashboard functionality.
+    Default: true
+
+dashboard.auto_open             (boolean)
+    Automatically open dashboard on VimEnter.
+    Default: false
+
+dashboard.refresh_interval_seconds  (integer)
+    Auto-refresh interval in seconds. Set to 0 to disable.
+    Default: 300 (5 minutes)
+
+dashboard.sort_by               (string)
+    Default sort criteria: "clones", "views", "name", or "trend".
+    Default: "clones"
+
+dashboard.time_range            (string)
+    Default time range: "7d", "30d", "90d", or "all".
+    Default: "30d"
+
+dashboard.keybindings           (table)
+    Customize keybindings. See |github_stats-dashboard-keybindings|
+
+Example Configuration:~
+>lua
+    require("github_stats").setup({
+      repos = { "user/repo1", "user/repo2" },
+      dashboard = {
+        enabled = true,
+        auto_open = false,
+        refresh_interval_seconds = 300,
+        sort_by = "clones",
+        time_range = "30d",
+        keybindings = {
+          navigate_down = "j",
+          navigate_up = "k",
+          show_details = "<CR>",
+          refresh_selected = "r",
+          refresh_all = "R",
+          force_refresh = "f",
+          cycle_sort = "s",
+          cycle_time_range = "t",
+          show_help = "?",
+          quit = "q",
+        },
+      },
+    })
+
+
+Features:~
+
+Repository Cards:~
+  Each repository is displayed with:
+  • Current statistics (clones, views, referrers)
+  • Trend indicator (↑↓ with percentage change)
+  • Mini sparkline showing recent activity
+  • Selection indicator (▶) for current repository
+
+Overall Summary:~
+  Displays aggregate statistics:
+  • Total number of configured repositories
+  • Combined clones and views across all repos
+  • Timestamp of last data refresh
+
+Visual Indicators:~
+  ⬆ +15%    Growing (positive trend)
+  ⬇ -8%     Declining (negative trend)
+  ⬌ 0%      Stable (no change)
+
+Sorting:~
+  Press 's' to cycle through sort options:
+  • clones   - Sort by total clone count
+  • views    - Sort by total view count
+  • name     - Sort alphabetically
+  • trend    - Sort by percentage change
+
+Time Ranges:~
+  Press 't' to cycle through time ranges:
+  • 7d       - Last 7 days
+  • 30d      - Last 30 days
+  • 90d      - Last 90 days
+  • all      - All available data
+
+Auto-Refresh:~
+  When enabled, dashboard automatically refreshes data at configured interval.
+  Manual refresh available via 'R' key.
+  Auto-refresh pauses when dashboard is not visible.
+
+See also:~
+  |github_stats-commands|
+  |github_stats-configuration|
 
 ==============================================================================
 VISUALIZATION                                    *github_stats-visualization*

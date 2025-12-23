@@ -18,6 +18,7 @@ A Neovim plugin for automatic collection and analysis of GitHub repository traff
 - [Usage](#usage)
   - [User Commands](#user-commands)
   - [Healthcheck](#healthcheck)
+- [Dashboard UI](#dashboard-ui)
 - [Documentation](#documentation)
 - [Troubleshooting](#troubleshooting)
 - [Performance](#performance)
@@ -162,10 +163,10 @@ chmod 600 ~/.github_token
 Then in setup:
 ```lua
 require("github_stats").setup({
-  repos = { "username/repo" },
+ aaaaaaaaaaaaaa repos = { "username/repo" },
   token_source = "file",
   token_file = "~/.github_token",
-})
+})aa
 ```
 
 ### Custom Storage Paths
@@ -359,6 +360,74 @@ Shows:
 - Token availability
 - Last fetch summary with detailed error information
 - Test API call for first repository
+
+---
+
+## Dashboard UI
+
+Interactive TUI dashboard for monitoring all repositories at a glance:
+```vim
+" Open dashboard
+:GithubStatsDashboard
+
+" Open with forced refresh
+:GithubStatsDashboard!
+```
+
+**Features:**
+- Real-time overview of all configured repositories
+- Visual trend indicators with sparklines
+- Keyboard-driven navigation (j/k)
+- Interactive sorting (by clones, views, name, trend)
+- Configurable time ranges (7d, 30d, 90d, all)
+- Auto-refresh capabilities
+- Drill-down to detailed statistics
+
+**Key Bindings:**
+| Key | Action |
+|-----|--------|
+| `j` / `<Down>` | Navigate down |
+| `k` / `<Up>` | Navigate up |
+| `<Enter>` | Show detailed view |
+| `r` | Refresh selected repository |
+| `R` | Refresh all repositories |
+| `s` | Cycle sort order |
+| `t` | Cycle time range |
+| `?` | Show help |
+| `q` / `<Esc>` | Quit dashboard |
+
+**Configuration:**
+```lua
+require("github_stats").setup({
+  repos = { ... },
+  dashboard = {
+    enabled = true,
+    auto_open = false,            -- Open on VimEnter
+    refresh_interval_seconds = 300, -- 5 minutes (0 = disabled)
+    sort_by = "clones",           -- Default sort
+    time_range = "30d",           -- Default time range
+    keybindings = {
+      -- Customize keybindings
+      navigate_down = "j",
+      navigate_up = "k",
+      show_details = "",
+      -- ... more bindings
+    },
+  },
+})
+```
+
+**Auto-Open on Startup:**
+```lua
+require("github_stats").setup({
+  dashboard = {
+    enabled = true,
+    auto_open = true,  -- Dashboard opens automatically
+  },
+})
+```
+
+**See also:** [Dashboard Guide](docs/DASHBOARD.md)
 
 ---
 
