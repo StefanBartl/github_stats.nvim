@@ -12,96 +12,73 @@ local utils = require("github_stats.usercommands.utils")
 
 local M = {}
 
-local notify, levels = vim.notify, vim.log.levels
-local str_format = string.format
 local tbl_filter, startswith = vim.tbl_filter, vim.startswith
 
 ---Execute chart command
 ---@param args table Command arguments
 function M.execute(args)
-
   local parts = vim.split(args.args, "%s+")
 
   if #parts < 2 then
-    notify(
-      "[github-stats] Usage: GithubStatsChart {repo} {metric} [start_date] [end_date]",
-      levels.ERROR
+    vim.notify(
+      "[github-stats] Usage: GithubStatsChart {repo} {metric} [start_date|time_range] [end_date]",
+      vim.log.levels.ERROR
     )
     return
   end
 
   local repo = parts[1]
   local metric = parts[2]
-  ---@type string?
-  local start_date = parts[3]
-  ---@type string?
-  local end_date = parts[4]
+  local arg3 = parts[3]
+  local arg4 = parts[4]
 
-  -- Resolve presets if used
-  if start_date and date_presets.is_preset(start_date) then
-    local resolved_start, resolved_end, err = date_presets.resolve(start_date)
-    if err then
-      notify(
-        str_format("[github-stats] Preset error: %s", err),
-        levels.ERROR
-      )
-      return
-    end
-    -- Type assertion: we know these are strings after successful resolve
-    ---@diagnostic disable-next-line: cast-local-type
-    start_date = resolved_start
-    ---@diagnostic disable-next-line: cast-local-type
-    end_date = resolved_end
-  else
-    -- If start_date is ISO date, check if end_date is preset
-    if end_date and date_presets.is_preset(end_date) then
-      local _, resolved_end, err = date_presets.resolve(end_date)
-      if err then
-        notify(
-          str_format("[github-stats] Preset error: %s", err),
-          levels.ERROR
-        )
-        return
-      end
-      -- Type assertion: we know this is a string after successful resolve
-      ---@diagnostic disable-next-line: cast-local-type
-      end_date = resolved_end
+  -- Determine if arg3 is a date or time range
+  local start_date, end_date, time_range
+
+  if arg3 then
+    -- Check if it's a time range keyword
+    if arg3:match("last") or arg3:match("%d+d") then
+      time_range = arg3
+    else
+      -- Assume it's a start date
+      start_date = arg3
+      end_date = arg4
     end
   end
 
   -- Validate metric
   if metric ~= "clones" and metric ~= "views" and metric ~= "both" then
-    notify(
+    vim.notify(
       "[github-stats] Metric must be 'clones', 'views', or 'both'",
-      levels.ERROR
+      vim.log.levels.ERROR
     )
     return
   end
 
   -- Handle "both" metric
   if metric == "both" then
-    -- Fetch clones data
     local stats, err = analytics.query_metric({
       repo = repo,
       metric = "clones",
       start_date = start_date,
       end_date = end_date,
+      time_range = time_range,
     })
 
     if err or not stats then
-      notify(
-        str_format("[github-stats] Error: %s", err or "No data"),
-        levels.ERROR
+      vim.notify(
+        string.format("[github-stats] Error: %s", err or "No data"),
+        vim.log.levels.ERROR
       )
       return
     end
 
     local lines = visualization.create_comparison_chart(
       stats.daily_breakdown,
-      str_format("GitHub Stats: %s/clones", repo)
+      string.format("GitHub Stats: %s/clones", repo)
     )
 
-    utils.show_float(lines, str_format("Chart: %s", repo))
+    utils.show_float(lines, string.format("Chart: %s", repo))
     return
   end
 
@@ -111,12 +88,13 @@ function M.execute(args)
     metric = metric,
     start_date = start_date,
     end_date = end_date,
+    time_range = time_range,
   })
 
   if err or not stats then
-    notify(
-      str_format("[github-stats] Error: %s", err or "No data"),
-      levels.ERROR
+    vim.notify(
+      string.format("[github-stats] Error: %s", err or "No data"),
+      vim.log.levels.ERROR
     )
     return
   end
@@ -124,12 +102,11 @@ function M.execute(args)
   local lines = visualization.create_daily_sparkline(
     stats.daily_breakdown,
     "count",
-    str_format("GitHub Stats: %s/%s", repo, metric)
+    string.format("GitHub Stats: %s/%s", repo, metric)
   )
 
-  utils.show_float(lines, str_format("Chart: %s/%s", repo, metric))
+  utils.show_float(lines, string.format("Chart: %s/%s", repo, metric))
 end
-
 
 ---Get completion candidates
 ---@param arg_lead string Current argument
