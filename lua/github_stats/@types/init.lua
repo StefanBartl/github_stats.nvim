@@ -79,7 +79,8 @@
 ---@field repo string Repository to query
 ---@field metric "clones"|"views" Metric type
 ---@field start_date? string ISO date (default: earliest)
----@field end_date? string ISO date (default: latest)
+---@field end_date? string ISO date (default: latest, excluding today)
+---@field time_range? string Time range keyword ("last week", "7d", "30d", "90d")
 
 ---@class FetchSummary
 ---@field success string[] List of successful repo/metric combinations

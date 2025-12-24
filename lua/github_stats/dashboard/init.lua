@@ -1,303 +1,231 @@
 ---@module 'github_stats.dashboard'
----@brief Dashboard entry point and orchestration
+---@brief Dashboard initialization and lifecycle
 ---@description
---- Manages the GitHub Stats dashboard TUI, providing a unified view of all repositories
---- with real-time statistics, trend visualization, and interactive navigation.
+--- Main entry point for the GitHub Stats dashboard.
+--- Manages buffer creation, state initialization, and rendering coordination.
+
+local config = require("github_stats.config")
+local ui_state = require("github_stats.state.ui_state")
+local dashboard_state = require("github_stats.dashboard.state")
+local render = require("github_stats.dashboard.render")
+local keymaps = require("github_stats.dashboard.keymaps")
 
 local M = {}
 
-local notify, levels = vim.notify, vim.log.levels
-local str_format = string.format
+---Render debounce timer
+---@type uv_timer_t?
+local render_timer = nil
 
----@type DashboardState?
-local state = nil
+---Minimum time between renders (milliseconds)
+local RENDER_DEBOUNCE_MS = 50
 
----Initialize dashboard state
----@return DashboardState
-local function init_state()
-	local config = require("github_stats.config")
-	return {
-		repos = config.get_repos(),
-		selected_index = 1,
-		sort_by = "clones",
-		time_range = "30d",
-		is_open = false,
-		last_refresh = 0,
-		auto_refresh_timer = nil,
-		buffer = nil,
-		window = nil,
-		scroll_offset = 0,
-	}
-end
+---Dashboard buffer name constant
+local DASHBOARD_BUF_NAME = "GitHub Stats Dashboard"
 
----Open dashboard
----@param force_refresh? boolean Whether to force immediate refresh
-function M.open(force_refresh)
-	-- Validate configuration
-	local config = require("github_stats.config")
-	local cfg = config.get()
+---Schedule a dashboard render with debouncing
+---@param force boolean If true, bypass debouncing and render immediately
+---@return nil
+function M.schedule_render(force)
+  -- Stop existing timer
+  if render_timer then
+    render_timer:stop()
+    render_timer = nil
+  end
 
-	if not cfg then
-		notify("[dashboard] Configuration not loaded", levels.ERROR)
-		return
-	end
-
-	if not cfg.dashboard or not cfg.dashboard.enabled then
-		notify("[dashboard] Dashboard is disabled in configuration", levels.WARN)
-		return
-	end
-
-	local repos = config.get_repos()
-	if #repos == 0 then
-		notify("[dashboard] No repositories configured", levels.WARN)
-		return
-	end
-
-	if state and state.is_open then
-		-- Dashboard already open, focus window
-		if state.window and vim.api.nvim_win_is_valid(state.window) then
-			vim.api.nvim_set_current_win(state.window)
-
-			-- Optionally re-render if data might have changed
-			local renderer = require("github_stats.dashboard.renderer")
-			renderer.render(state)
-		else
-			-- Window invalid, reset state and reopen
-			state = nil
-			M.open(force_refresh)
-		end
-		return
-	end
-
-	-- Validate buffer/window creation capability
-	local ok, err = pcall(function()
-		state = init_state()
-
-		local layout = require("github_stats.dashboard.layout")
-		local renderer = require("github_stats.dashboard.renderer")
-		local navigator = require("github_stats.dashboard.navigator")
-
-		-- Create dashboard window and buffer
-		layout.create(state)
-
-		-- Setup keybindings
-		navigator.setup_keybindings(state)
-
-		-- Initial render
-		renderer.render(state)
-
-		-- Start auto-refresh if enabled
-		M.start_auto_refresh()
-
-		-- Force refresh if requested
-		if force_refresh then
-			M.refresh_all()
-		end
-
-		state.is_open = true
-	end)
-
-	if not ok then
-		notify(str_format("[dashboard] Failed to open: %s", err), levels.ERROR)
-		-- Cleanup partial state
-		if state then
-			pcall(M.close)
-		end
-		state = nil
-	end
-end
-
----Close dashboard
-function M.close()
-	if not state then
-		return
-	end
-
-	-- Stop auto-refresh timer
-	if state.auto_refresh_timer then
-		pcall(function()
-			---@diagnostic disable-next-line: undefined-field
-			state.auto_refresh_timer:stop()
-			---@diagnostic disable-next-line: undefined-field
-			state.auto_refresh_timer:close()
-		end)
-		state.auto_refresh_timer = nil
-	end
-
-	-- Close window and wipe buffer
-	local layout = require("github_stats.dashboard.layout")
-	pcall(function()
-		layout.destroy(state)
-	end)
-
-	state.is_open = false
-	state = nil
-end
-
----Refresh statistics for selected repository
-function M.refresh_selected()
-	if not state or state.selected_index < 1 or state.selected_index > #state.repos then
-		notify("[dashboard] No repository selected", levels.WARN)
-		return
-	end
-
-	local repo = state.repos[state.selected_index]
-	local fetcher = require("github_stats.fetcher")
-
-	notify(str_format("[dashboard] Refreshing %s...", repo), levels.INFO)
-
-	-- Fetch asynchronously with timeout
-	local timeout_timer = vim.loop.new_timer()
-	local completed = false
-
-	timeout_timer:start(30000, 0, function()
-		if not completed then
-			vim.schedule(function()
-				notify(str_format("[dashboard] %s: refresh timed out", repo), levels.WARN)
-			end)
-		end
-	end)
-
-	fetcher.fetch_repo(repo, function(_, errors)
-		completed = true
-		timeout_timer:stop()
-		timeout_timer:close()
-
-		vim.schedule(function()
-			if vim.tbl_count(errors) > 0 then
-				local error_list = {}
-				for key, err in pairs(errors) do
-					table.insert(error_list, str_format("%s: %s", key, err))
-				end
-
-				notify(
-					str_format("[dashboard] %s errors:\n%s", repo, table.concat(error_list, "\n")),
-					levels.WARN
-				)
-			else
-				notify(str_format("[dashboard] %s: updated successfully", repo), levels.INFO)
-			end
-
-			-- Re-render dashboard only if still open
-			if state and state.is_open then
-				local renderer = require("github_stats.dashboard.renderer")
-				pcall(function()
-					renderer.render(state)
-				end)
-			end
-		end)
-	end)
-end
-
----Refresh all repositories with progress indication
-function M.refresh_all()
-  if not state then
-    notify("[dashboard] Dashboard not open", levels.WARN)
+  -- Force immediate render
+  if force then
+    render.render_dashboard()
     return
   end
 
-  local fetcher = require("github_stats.fetcher")
-  local total_repos = #state.repos
-
-  notify(
-    str_format("[dashboard] Refreshing %d repositories...", total_repos),
-    levels.INFO
-  )
-
-  fetcher.fetch_all(true, function(summary)
-    local error_count = vim.tbl_count(summary.errors)
-
-    vim.schedule(function()
-      if error_count > 0 then
-        local error_details = {}
-        for repo_metric, err in pairs(summary.errors) do
-          table.insert(error_details, str_format("  • %s: %s", repo_metric, err))
-        end
-
-        notify(
-          str_format(
-            "[dashboard] Completed with %d errors:\n%s",
-            error_count,
-            table.concat(error_details, "\n")
-          ),
-          levels.WARN
-        )
-      else
-        vim.notify(
-          str_format("[dashboard] All %d repositories updated successfully", total_repos),
-          levels.INFO
-        )
+  -- Check if enough time has passed
+  if not dashboard_state.should_render(RENDER_DEBOUNCE_MS) then
+    -- Too soon, schedule debounced render
+    render_timer = vim.loop.new_timer()
+    render_timer:start(RENDER_DEBOUNCE_MS, 0, vim.schedule_wrap(function()
+      if render_timer then
+        render_timer:stop()
+        render_timer = nil
       end
+      render.render_dashboard()
+    end))
+    return
+  end
 
-      state.last_refresh = os.time()
-
-      -- Re-render dashboard
-      if state and state.is_open then
-        local renderer = require("github_stats.dashboard.renderer")
-        pcall(function()
-          renderer.render(state)
-        end)
-      end
-    end)
-  end)
+  -- Enough time has passed, render immediately
+  render.render_dashboard()
 end
 
----Start auto-refresh timer with validation
-function M.start_auto_refresh()
-	if not state or state.auto_refresh_timer then
-		return
-	end
-
-	local config = require("github_stats.config").get()
-	if
-		not config.dashboard
-		or not config.dashboard.refresh_interval_seconds
-		or config.dashboard.refresh_interval_seconds <= 0
-	then
-		return
-	end
-
-	local interval_ms = config.dashboard.refresh_interval_seconds * 1000
-
-	-- Validate interval is reasonable (between 60s and 1 hour)
-	if interval_ms < 60000 then
-		notify("[dashboard] Auto-refresh interval too short (min 60s), disabling", levels.WARN)
-		return
-	end
-
-	if interval_ms > 3600000 then
-		notify("[dashboard] Auto-refresh interval very long (>1h), consider manual refresh", levels.INFO)
-	end
-
-	state.auto_refresh_timer = vim.loop.new_timer()
-	---@diagnostic disable-next-line: undefined-field
-	state.auto_refresh_timer:start(
-		interval_ms,
-		interval_ms,
-		vim.schedule_wrap(function()
-			if state and state.is_open then
-				M.refresh_all()
-			else
-				-- Dashboard closed, stop timer
-				if state and state.auto_refresh_timer then
-					---@diagnostic disable-next-line: undefined-field
-					state.auto_refresh_timer:stop()
-					---@diagnostic disable-next-line: undefined-field
-					state.auto_refresh_timer:close()
-					state.auto_refresh_timer = nil
-				end
-			end
-		end)
-	)
+---Find existing dashboard buffer by name
+---@return integer? # Buffer handle or nil if not found
+local function find_dashboard_buffer()
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_valid(buf) then
+      local name = vim.api.nvim_buf_get_name(buf)
+      if name:match("GitHub Stats Dashboard") then
+        return buf
+      end
+    end
+  end
+  return nil
 end
 
----Toggle dashboard visibility
-function M.toggle()
-	if state and state.is_open then
-		M.close()
-	else
-		M.open()
-	end
+---Delete existing dashboard buffer if it exists
+---@return nil
+local function cleanup_existing_dashboard()
+  local existing_buf = find_dashboard_buffer()
+  if existing_buf then
+    pcall(vim.api.nvim_buf_delete, existing_buf, { force = true })
+  end
+end
+
+---Create and configure dashboard buffer
+---@return integer? # Buffer handle or nil on failure
+local function create_dashboard_buffer()
+  -- Clean up any existing dashboard buffers first
+  cleanup_existing_dashboard()
+
+  local buf = vim.api.nvim_create_buf(false, true)
+
+  if not buf or buf == 0 then
+    vim.notify(
+      "[github-stats] Failed to create dashboard buffer",
+      vim.log.levels.ERROR
+    )
+    return nil
+  end
+
+  -- Buffer options
+  vim.api.nvim_set_option_value("buftype", "nofile", { buf = buf })
+  vim.api.nvim_set_option_value("bufhidden", "wipe", { buf = buf })
+  vim.api.nvim_set_option_value("swapfile", false, { buf = buf })
+  vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
+
+  -- Set buffer name (now safe because we cleaned up)
+  vim.api.nvim_buf_set_name(buf, DASHBOARD_BUF_NAME)
+
+  return buf
+end
+
+---Create and configure dashboard window
+---@param buf integer Buffer handle
+---@return integer? # Window handle or nil on failure
+local function create_dashboard_window(buf)
+  -- Calculate dimensions
+  local width = math.min(80, vim.o.columns - 10)
+  local height = math.min(30, vim.o.lines - 10)
+
+  local row = math.floor((vim.o.lines - height) / 2)
+  local col = math.floor((vim.o.columns - width) / 2)
+
+  -- Window options
+  local opts = {
+    relative = "editor",
+    width = width,
+    height = height,
+    row = row,
+    col = col,
+    style = "minimal",
+    border = "rounded",
+    title = " GitHub Stats Dashboard ",
+    title_pos = "center",
+  }
+
+  local win = vim.api.nvim_open_win(buf, true, opts)
+
+  if not win or win == 0 then
+    vim.notify(
+      "[github-stats] Failed to create dashboard window",
+      vim.log.levels.ERROR
+    )
+    return nil
+  end
+
+  -- Window options
+  vim.api.nvim_set_option_value("wrap", false, { win = win })
+  vim.api.nvim_set_option_value("cursorline", true, { win = win })
+  vim.api.nvim_set_option_value("number", false, { win = win })
+  vim.api.nvim_set_option_value("relativenumber", false, { win = win })
+
+  return win
+end
+
+---Cleanup dashboard resources
+---@return nil
+local function cleanup_dashboard()
+  -- Stop render timer
+  if render_timer then
+    render_timer:stop()
+    render_timer = nil
+  end
+
+  -- Mark dashboard as closed
+  dashboard_state.mark_closed()
+
+  -- Clear state
+  dashboard_state.clear_state()
+
+  -- Cleanup UI state (closes window and deletes buffer)
+  ui_state.cleanup_all()
+end
+
+---Open dashboard
+---@return nil
+function M.open()
+  -- Get configured repositories
+  local repos = config.get_repos()
+
+  if #repos == 0 then
+    vim.notify(
+      "[github-stats] No repositories configured",
+      vim.log.levels.WARN
+    )
+    return
+  end
+
+  -- Create buffer and window
+  local buf = create_dashboard_buffer()
+  if not buf then
+    return
+  end
+
+  local win = create_dashboard_window(buf)
+  if not win then
+    vim.api.nvim_buf_delete(buf, { force = true })
+    return
+  end
+
+  -- Store in UI state
+  ui_state.set_buf(buf)
+  ui_state.set_win(win)
+
+  -- Initialize dashboard state
+  local state = dashboard_state.init_state(repos)
+
+  -- Set buffer and window in state
+  state.buffer = buf
+  state.window = win
+
+  -- Mark as open
+  dashboard_state.mark_open()
+
+  -- Setup keymaps
+  keymaps.setup_keymaps(buf)
+
+  -- Setup cleanup on buffer delete
+  vim.api.nvim_create_autocmd("BufWipeout", {
+    buffer = buf,
+    once = true,
+    callback = function()
+      cleanup_dashboard()
+    end,
+  })
+
+  -- Initial render
+  M.schedule_render(true)
+
+  -- Set cursor to first entry
+  render.set_cursor_to_current(state)
 end
 
 return M

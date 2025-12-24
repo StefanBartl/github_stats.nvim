@@ -1,7 +1,12 @@
 ---@module 'github_stats.@types.dashboard'
 
 ---@class DashboardState
----@field repos string[] Configured repository list
+---@field repos string[] List of repository identifiers
+---@field current_index integer Currently selected repository index (1-based)
+---@field scroll_offset integer Number of lines scrolled from top
+---@field win_height integer Current window height in lines
+---@field max_scroll integer Maximum allowed scroll offset
+---@field last_render_time integer Timestamp of last render (ms)
 ---@field selected_index integer Currently selected repository (1-based)
 ---@field sort_by "clones"|"views"|"name"|"trend" Current sort criteria
 ---@field time_range "7d"|"30d"|"90d"|"all" Current time range filter
@@ -10,7 +15,6 @@
 ---@field auto_refresh_timer uv.uv_timer_t? Auto-refresh timer handle
 ---@field buffer integer? Dashboard buffer handle
 ---@field window integer? Dashboard window handle
----@field scroll_offset integer Vertical scroll offset for long lists
 
 ---@class DashboardKeybindings
 ---@field navigate_down string Keybinding to navigate down

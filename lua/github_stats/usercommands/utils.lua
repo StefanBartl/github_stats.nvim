@@ -23,6 +23,7 @@ end
 ---Create floating window with content
 ---@param lines string|string[] Buffer lines or formatted string
 ---@param title string Window title
+---@return integer?, integer? # Buffer handle, window handle
 function M.show_float(lines, title)
   -- Normalize input to string array
   if type(lines) == "string" then
@@ -85,6 +86,8 @@ function M.show_float(lines, title)
       { noremap = true, silent = true }
     )
   end
+  -- Return buffer and window handles
+  return buf, win
 end
 
 ---Format number with thousands separator
