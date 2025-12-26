@@ -29,149 +29,7 @@ This document outlines planned features for GitHub Stats, organized by implement
     - Sollte weder der init fetch noch ein usrcommand ausgeführt werden, würden die Daten gar nicht entpackt werden.
     - Eventuell gibt es da bestimmte Paradigmen/Szenarien, die man für solche Fälle anwendet
 
-## Large Features (v2.0.0)
-
-### Dashboard UI
-
-**Description:**
-
-A comprehensive TUI (Text User Interface) dashboard displaying statistics for multiple repositories simultaneously, with real-time updates and interactive navigation.
-
-**Goals:**
-- Single-screen overview of all configured repositories
-- Visual comparison between repositories
-- Quick access to detailed statistics
-- Keyboard-driven navigation
-- Auto-refresh capabilities
-
-**Implementation Ideas:**
-
-**Architecture:**
-```lua
--- New modules structure
-lua/github_stats/
-├── dashboard/
-│   ├── init.lua           -- Dashboard entry point
-│   ├── layout.lua         -- Window/split management
-│   ├── renderer.lua       -- Content rendering
-│   ├── navigator.lua      -- Keyboard navigation
-│   ├── components/
-│   │   ├── repo_card.lua  -- Individual repository display
-│   │   ├── summary.lua    -- Overall statistics
-│   │   ├── graph.lua      -- Trend visualization
-│   │   └── help.lua       -- Help overlay
-│   └── state.lua          -- Dashboard state management
-```
-
-**UI Layout:**
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ GitHub Stats Dashboard                    [?] Help  [q] Quit    │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│ Overall: 15 repos | 12,345 total clones | 5,678 total views    │
-│ Last update: 2025-12-22 10:30:00                                │
-│                                                                  │
-├─────────────────────────────────────────────────────────────────┤
-│ username/repo1                            ⬆ +15% ↗              │
-│ Clones: 1,234 | Views: 5,678 | Referrers: 45                   │
-│ ▂▃▅▇█▇▅▃▂▁▂▃▅▇█▇▅▃▂▁▂▃▅▇█▇▅▃▂▁▂▃▅▇█▇▅▃▂▁                        │
-├─────────────────────────────────────────────────────────────────┤
-│ username/repo2                            ⬇ -8% ↘               │
-│ Clones: 567 | Views: 2,345 | Referrers: 23                     │
-│ ▇▇▅▃▂▁▂▃▅▇█▇▅▃▂▁▂▃▅▇█▇▅▃▂▁▂▃▅▇█▇▅▃▂▁▂▃▅                         │
-├─────────────────────────────────────────────────────────────────┤
-│ ... (more repositories)                                         │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-**Key Bindings:**
-```
-j/k          Navigate between repositories
-<Enter>      Show detailed view for selected repository
-r            Refresh data for selected repository
-R            Refresh all repositories
-f            Force fetch (bypass interval)
-/            Search repositories
-s            Sort by (clones/views/name/trend)
-t            Toggle time range (7d/30d/90d/all)
-e            Export selected repository
-d            Show diff/comparison
-?            Toggle help
-q            Quit dashboard
-```
-
-**Features:**
-
-1. **Repository Cards:**
-   - Current statistics (clones, views, referrers)
-   - Trend indicators (↑↓ with percentage)
-   - Mini sparkline for quick visualization
-   - Color-coded status (green=growing, red=declining)
-
-2. **Overall Summary:**
-   - Aggregate statistics across all repositories
-   - Total API calls used vs. rate limit
-   - Last fetch timestamp
-   - Upcoming auto-fetch time
-
-3. **Interactive Actions:**
-   - Drill down into individual repository
-   - Quick export to clipboard
-   - Real-time filtering and sorting
-   - Context-sensitive help overlay
-
-4. **Auto-Refresh:**
-   - Configurable refresh interval
-   - Visual countdown to next refresh
-   - Pause/resume functionality
-
-**Configuration:**
-```lua
-require("github_stats").setup({
-  repos = { ... },
-  dashboard = {
-    enabled = true,
-    auto_open = false,            -- Open on VimEnter
-    refresh_interval_seconds = 300, -- 5 minutes
-    sort_by = "clones",           -- "clones", "views", "name", "trend"
-    time_range = "30d",           -- "7d", "30d", "90d", "all"
-    theme = "default",            -- "default", "minimal", "compact"
-    keybindings = {               -- Customizable keybindings
-      navigate_down = "j",
-      navigate_up = "k",
-      -- ... more keybindings
-    },
-  },
-})
-```
-
-**UserCommand:**
-```vim
-:GithubStatsDashboard      " Open dashboard
-:GithubStatsDashboard!     " Open dashboard and force refresh
-```
-
-**Technical Challenges:**
-- State synchronization between dashboard and data layer
-- Efficient rendering of many repositories
-- Handling window resizing
-- Race conditions during concurrent refreshes
-
-**Dependencies:**
-- No external dependencies (pure Lua/Neovim API)
-- Optional: `nui.nvim` for advanced UI components
-
-**Testing:**
-- Unit tests for state management
-- Integration tests for keyboard navigation
-- Visual tests for rendering accuracy
-- Performance tests with 50+ repositories
-
-**Estimated Effort:** 3-4 weeks
-**Target Version:** v2.0.0
-
----
+### Large Features
 
 ### Webhook Integration
 
@@ -346,7 +204,7 @@ require("github_stats").setup({
 
 ---
 
-## Medium Features (v1.4.0 - v1.6.0)
+## Medium Features
 
 ### Notification Thresholds
 
@@ -603,7 +461,7 @@ require("github_stats").setup({
 
 ---
 
-## Small Features (v1.x.x patches)
+## Small Features
 
 ### Autocomplete Date Suggestions
 

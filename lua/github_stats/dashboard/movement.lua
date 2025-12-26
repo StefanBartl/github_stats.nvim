@@ -7,12 +7,11 @@
 
 local dashboard_state = require("github_stats.dashboard.state")
 local render = require("github_stats.dashboard.render")
-local ui_state = require("github_stats.state.ui_state")
 
 local M = {}
 
 ---Move cursor to target index with proper line calculation
----@param state DashboardState
+---@param state GHStats.DashboardState
 ---@param target_index integer Target repository index (1-based)
 local function move_to_index(state, target_index)
 	if not state.buffer or not vim.api.nvim_buf_is_valid(state.buffer) then
@@ -50,8 +49,9 @@ local function move_to_index(state, target_index)
 	end
 end
 
+
 ---Move down by N repositories
----@param state DashboardState
+---@param state GHStats.DashboardState
 ---@param count integer Number of items to move
 function M.move_down(state, count)
 	count = count or 1
@@ -60,7 +60,7 @@ function M.move_down(state, count)
 end
 
 ---Move up by N repositories
----@param state DashboardState
+---@param state GHStats.DashboardState
 ---@param count integer Number of items to move
 function M.move_up(state, count)
 	count = count or 1
@@ -69,19 +69,19 @@ function M.move_up(state, count)
 end
 
 ---Move to first repository
----@param state DashboardState
+---@param state GHStats.DashboardState
 function M.move_first(state)
 	move_to_index(state, 1)
 end
 
 ---Move to last repository
----@param state DashboardState
+---@param state GHStats.DashboardState
 function M.move_last(state)
 	move_to_index(state, #state.repos)
 end
 
 ---Move cursor down to next repository with auto-scroll
----@param state DashboardState Current dashboard state
+---@param state GHStats.DashboardState Current dashboard state
 ---@return nil
 function M.move_cursor_down(state)
 	if not state then
@@ -119,7 +119,7 @@ function M.move_cursor_down(state)
 end
 
 ---Move cursor up to previous repository with auto-scroll
----@param state DashboardState Current dashboard state
+---@param state GHStats.DashboardState Current dashboard state
 ---@return nil
 function M.move_cursor_up(state)
 	if not state then

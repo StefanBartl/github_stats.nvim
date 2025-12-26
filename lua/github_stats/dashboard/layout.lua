@@ -10,7 +10,7 @@ local api = vim.api
 local set_option_value = api.nvim_set_option_value
 
 ---Setup window resize autocmd
----@param state DashboardState Dashboard state
+---@param state GHStats.DashboardState Dashboard state
 function M.setup_resize_handler(state)
   if not state.buffer or not api.nvim_buf_is_valid(state.buffer) then
     return
@@ -34,7 +34,7 @@ function M.setup_resize_handler(state)
 end
 
 ---Create dashboard window and buffer with resize handling
----@param state DashboardState Dashboard state
+---@param state GHStats.DashboardState Dashboard state
 function M.create(state)
   -- Create scratch buffer
   local buf = api.nvim_create_buf(false, true)
@@ -68,7 +68,7 @@ function M.create(state)
 end
 
 ---Destroy dashboard window and buffer
----@param state DashboardState Dashboard state
+---@param state GHStats.DashboardState Dashboard state
 function M.destroy(state)
   if state.window and api.nvim_win_is_valid(state.window) then
     api.nvim_win_close(state.window, true)

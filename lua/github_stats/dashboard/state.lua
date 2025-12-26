@@ -6,12 +6,12 @@
 
 local M = {}
 
----@type DashboardState?
+---@type GHStats.DashboardState?
 local state = nil
 
 ---Initialize dashboard state
 ---@param repos string[] List of repositories
----@return DashboardState
+---@return GHStats.DashboardState
 function M.init_state(repos)
   state = {
     repos = repos,
@@ -33,7 +33,7 @@ function M.init_state(repos)
 end
 
 ---Get current state
----@return DashboardState?
+---@return GHStats.DashboardState?
 function M.get_state()
   return state
 end

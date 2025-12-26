@@ -89,7 +89,7 @@ local function check_config()
 
 	-- Check repos
 	if #cfg.repos == 0 then
-		return false, "No repositories configured. Edit config.json"
+		return false, "No repositories configured. Edit config.json or plugin initialization."
 	end
 
 	-- Validate each repo

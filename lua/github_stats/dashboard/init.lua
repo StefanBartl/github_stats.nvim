@@ -12,11 +12,11 @@ local keymaps = require("github_stats.dashboard.keymaps")
 
 local M = {}
 
----@type DashboardState?
+---@type GHStats.DashboardState?
 local state = nil
 
 ---@type uv.uv_timer_t?
-local auto_refresh_timer = nil
+-- local auto_refresh_timer = nil
 
 ---Render debounce timer
 ---@type uv.uv_timer_t?
@@ -157,7 +157,7 @@ local function create_dashboard_window(buf)
 end
 
 ---Stop auto-refresh timer if running
----@param _state DashboardState
+---@param _state GHStats.DashboardState
 local function stop_auto_refresh(_state)
   if _state.auto_refresh_timer then
     local timer = _state.auto_refresh_timer
@@ -170,7 +170,7 @@ local function stop_auto_refresh(_state)
 end
 
 ---Close dashboard window
----@param _state DashboardState
+---@param _state GHStats.DashboardState
 function M.close(_state)
   -- Stop auto-refresh
   stop_auto_refresh(_state)

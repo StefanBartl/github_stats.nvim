@@ -99,7 +99,7 @@ local function build_entry(repo, index, is_selected)
 end
 
 ---Build complete dashboard content
----@param state DashboardState Current dashboard state
+---@param state GHStats.DashboardState Current dashboard state
 ---@return string[] # All lines for the buffer
 local function build_lines(state)
   local lines = {}
@@ -152,8 +152,8 @@ function M.render_dashboard()
   M.set_cursor_to_current(state)
 end
 
----Set cursor to current index
----@param state DashboardState
+---Set cursor to current index with proper viewport management
+---@param state GHStats.DashboardState
 function M.set_cursor_to_current(state)
   if not state.buffer or not vim.api.nvim_buf_is_valid(state.buffer) then
     return
@@ -183,7 +183,7 @@ function M.set_cursor_to_current(state)
 end
 
 ---Calculate total lines for current dashboard
----@param state DashboardState Current dashboard state
+---@param state GHStats.DashboardState Current dashboard state
 ---@return integer # Total number of lines
 function M.calculate_total_lines(state)
   -- Header + (entries * 6 lines each)

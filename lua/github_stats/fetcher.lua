@@ -14,7 +14,7 @@ local str_format = string.format
 local tbl_concat = table.concat
 
 ---Store for detailed error information (accessible via debug command)
----@type FetchSummary?
+---@type GHStats.FetchSummary?
 M.last_fetch_summary = nil
 
 ---Get path to last_fetch tracking file
@@ -111,7 +111,7 @@ end
 
 ---Fetch all repositories and metrics
 ---@param force boolean Whether to bypass interval check
----@param callback? fun(summary: FetchSummary) Optional completion callback
+---@param callback? fun(summary: GHStats.FetchSummary) Optional completion callback
 function M.fetch_all(force, callback)
   local repos = config.get_repos()
 

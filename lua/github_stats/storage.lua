@@ -98,7 +98,7 @@ end
 ---Read all metric files for a repository
 ---@param repo string Repository identifier
 ---@param metric string Metric type
----@return StoredMetricData[], string? # Array of stored data, error message
+---@return GHStats.StoredMetricData[], string? # Array of stored data, error message
 function M.read_metric_history(repo, metric)
   local dir = get_metric_dir(repo, metric)
 
@@ -146,7 +146,7 @@ local function get_last_fetch_path()
 end
 
 ---Read last fetch timestamps
----@return LastFetchData, string? # Map of repo:metric -> timestamp, error
+---@return GHStats.LastFetchData, string? # Map of repo:metric -> timestamp, error
 function M.read_last_fetch()
   local path = get_last_fetch_path()
 
@@ -165,7 +165,7 @@ function M.read_last_fetch()
 end
 
 ---Write last fetch timestamps
----@param data LastFetchData Map of repo:metric -> timestamp
+---@param data GHStats.LastFetchData Map of repo:metric -> timestamp
 ---@return boolean, string? # Success flag, error message
 function M.write_last_fetch(data)
   local path = get_last_fetch_path()
@@ -220,7 +220,7 @@ end
 function M.should_fetch(repo, metric)
   local data, err = M.read_last_fetch()
   if err then
-    -- If we can't read, assume we should fetch
+-- If we can't read, assume we should fetch
     return true
   end
 

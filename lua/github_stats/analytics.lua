@@ -57,8 +57,8 @@ local function get_today()
 end
 
 ---Deduplicate records - keep only latest fetch per day
----@param history StoredMetricData[] Array of stored metrics
----@return table<string, DailyMetricData> # Map of ISO date -> latest data
+---@param history GHStats.StoredMetricData[] Array of stored metrics
+---@return table<string, GHStats.DailyMetricData> # Map of ISO date -> latest data
 local function deduplicate_by_date(history)
   ---@type table<string, {timestamp: string, count: integer, uniques: integer}>
   local by_date = {}
@@ -103,7 +103,7 @@ local function exclude_today(daily_data)
 end
 
 ---Aggregate daily data from deduplicated records
----@param history StoredMetricData[] Stored metric files
+---@param history GHStats.StoredMetricData[] Stored metric files
 ---@param start_date string? Filter start (ISO date)
 ---@param end_date string? Filter end (ISO date)
 ---@return table<string, {count: integer, uniques: integer}>, integer, integer # Daily map, total_count, total_uniques
@@ -181,8 +181,8 @@ local function parse_time_range(time_range)
 end
 
 ---Query clones or views with time range
----@param query AnalyticsQuery Query parameters
----@return AggregatedStats|nil, string? # Aggregated stats or nil, error message
+---@param query GHStats.AnalyticsQuery Query parameters
+---@return GHStats.AggregatedStats|nil, string? # Aggregated stats or nil, error message
 function M.query_metric(query)
   if not query.repo or query.repo == "" then
     return nil, "Repository required"
@@ -245,7 +245,7 @@ end
 ---@param metric "clones"|"views" Metric type
 ---@param start_date? string Filter start
 ---@param end_date? string Filter end
----@return table<string, AggregatedStats>, string? # Map of repo -> stats, error
+---@return table<string, GHStats.AggregatedStats>, string? # Map of repo -> stats, error
 function M.query_all_repos(metric, start_date, end_date)
   local config = require("github_stats.config")
   local repos = config.get_repos()
@@ -279,7 +279,7 @@ end
 ---Get top referrers from latest data
 ---@param repo string Repository identifier
 ---@param limit? integer Max results (default: 10)
----@return GithubApiReferrer[], string? # Top referrers, error
+---@return GHStats.GithubApiReferrer[], string? # Top referrers, error
 function M.get_top_referrers(repo, limit)
   limit = limit or 10
 
@@ -313,7 +313,7 @@ end
 ---Get top paths from latest data
 ---@param repo string Repository identifier
 ---@param limit? integer Max results (default: 10)
----@return GithubApiPath[], string? # Top paths, error
+---@return GHStats.GithubApiPath[], string? # Top paths, error
 function M.get_top_paths(repo, limit)
   limit = limit or 10
 

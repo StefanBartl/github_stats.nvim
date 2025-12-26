@@ -6,7 +6,7 @@
 
 local M = {}
 
----@type UIState
+---@type GHStats.UIState
 local state = {
   buf = nil,
   win = nil,
