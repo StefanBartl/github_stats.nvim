@@ -89,7 +89,7 @@ local function check_config()
 
 	-- Check repos
 	if #cfg.repos == 0 then
-		return false, "No repositories configured. Edit config.json"
+		return false, "No repositories configured. Edit config.json or plugin initialization."
 	end
 
 	-- Validate each repo
@@ -279,6 +279,52 @@ local function check_api_sync()
 	end
 end
 
+---Check dashboard configuration
+---@return boolean, string # Success flag, message
+local function check_dashboard()
+  local cfg = config.get()
+  if not cfg then
+    return false, "Configuration not loaded"
+  end
+
+  local dashboard_cfg = cfg.dashboard
+  if not dashboard_cfg then
+    return true, "Dashboard configuration not present (optional feature)"
+  end
+
+  -- Check enabled flag
+  if type(dashboard_cfg.enabled) ~= "boolean" then
+    return false, "dashboard.enabled must be boolean"
+  end
+
+  if not dashboard_cfg.enabled then
+    return true, "Dashboard disabled by configuration"
+  end
+
+  -- Check refresh interval
+  if dashboard_cfg.refresh_interval_seconds then
+    if type(dashboard_cfg.refresh_interval_seconds) ~= "number" then
+      return false, "dashboard.refresh_interval_seconds must be number"
+    end
+    if dashboard_cfg.refresh_interval_seconds < 10 then
+      return false, "dashboard.refresh_interval_seconds must be >= 10"
+    end
+  end
+
+  -- Check keybindings
+  if dashboard_cfg.keybindings then
+    if type(dashboard_cfg.keybindings) ~= "table" then
+      return false, "dashboard.keybindings must be table"
+    end
+  end
+
+  return true, string.format(
+    "Dashboard configured (enabled=%s, refresh=%ds)",
+    tostring(dashboard_cfg.enabled),
+    dashboard_cfg.refresh_interval_seconds or 60
+  )
+end
+
 ---Main health check entry point
 function M.check()
 	vim.health.start("GitHub Stats Configuration")
@@ -399,6 +445,17 @@ function M.check()
 			"See documentation for default configuration",
 		})
 	end
+
+  vim.health.start("GitHub Stats Dashboard")
+  local dashboard_ok, dashboard_msg = check_dashboard()
+  if dashboard_ok then
+    vim.health.ok(dashboard_msg)
+  else
+    vim.health.warn(dashboard_msg, {
+      "Check dashboard configuration in config.json",
+      "Example: { \"dashboard\": { \"enabled\": true, \"refresh_interval_seconds\": 60 } }",
+    })
+  end
 end
 
 return M

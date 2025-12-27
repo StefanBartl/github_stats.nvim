@@ -208,6 +208,63 @@ local function scroll_view(state, direction)
   renderer.render(state)
 end
 
+---Move cursor to specific item
+---@param state DashboardState
+---@param target_index number Target item index (1-based)
+local function move_to_item(state, target_index)
+  if not state.buf or not vim.api.nvim_buf_is_valid(state.buf) then
+    return
+  end
+
+  if target_index < 1 or target_index > #state.items then
+    return
+  end
+
+  -- Header hat 4 Zeilen
+  -- Item N beginnt in Zeile: 4 + (N-1) * 3 + 1
+  local target_line = 4 + (target_index - 1) * 3 + 1
+
+  vim.api.nvim_win_set_cursor(state.win, { target_line, 0 })
+end
+
+---Move cursor down by N items
+---@param state DashboardState
+---@param count number Number of items to move
+function M.move_down(state, count)
+  count = count or 1
+
+  local current_item = map_cursor_to_item(state)
+  if not current_item then
+    -- Cursor ist im Header, springe zum ersten Item
+    move_to_item(state, 1)
+    return
+  end
+
+  local current_index = current_item.index
+  local target_index = math.min(current_index + count, #state.items)
+
+  move_to_item(state, target_index)
+end
+
+---Move cursor up by N items
+---@param state DashboardState
+---@param count number Number of items to move
+function M.move_up(state, count)
+  count = count or 1
+
+  local current_item = map_cursor_to_item(state)
+  if not current_item then
+    -- Cursor ist im Header, springe zum ersten Item
+    move_to_item(state, 1)
+    return
+  end
+
+  local current_index = current_item.index
+  local target_index = math.max(current_index - count, 1)
+
+  move_to_item(state, target_index)
+end
+
 ---Setup all keyboard bindings
 ---@param state DashboardState Dashboard state
 function M.setup_keybindings(state)

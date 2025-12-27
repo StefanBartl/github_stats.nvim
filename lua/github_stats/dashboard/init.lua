@@ -12,8 +12,14 @@ local keymaps = require("github_stats.dashboard.keymaps")
 
 local M = {}
 
+---@type GHStats.DashboardState?
+local state = nil
+
+---@type uv.uv_timer_t?
+-- local auto_refresh_timer = nil
+
 ---Render debounce timer
----@type uv_timer_t?
+---@type uv.uv_timer_t?
 local render_timer = nil
 
 ---Minimum time between renders (milliseconds)
@@ -150,6 +156,40 @@ local function create_dashboard_window(buf)
   return win
 end
 
+---Stop auto-refresh timer if running
+---@param _state GHStats.DashboardState
+local function stop_auto_refresh(_state)
+  if _state.auto_refresh_timer then
+    local timer = _state.auto_refresh_timer
+    if timer and not timer:is_closing() then
+      timer:stop()
+      timer:close()
+    end
+    _state.auto_refresh_timer = nil
+  end
+end
+
+---Close dashboard window
+---@param _state GHStats.DashboardState
+function M.close(_state)
+  -- Stop auto-refresh
+  stop_auto_refresh(_state)
+
+  -- Close window
+  if _state.window and vim.api.nvim_win_is_valid(_state.window) then
+    vim.api.nvim_win_close(_state.window, true)
+  end
+
+  -- Delete buffer
+  if _state.buffer and vim.api.nvim_buf_is_valid(_state.buffer) then
+    vim.api.nvim_buf_delete(_state.buffer, { force = true })
+  end
+
+  _state.is_open = false
+  _state.window = nil
+  _state.buffer = nil
+end
+
 ---Cleanup dashboard resources
 ---@return nil
 local function cleanup_dashboard()
@@ -200,7 +240,7 @@ function M.open()
   ui_state.set_win(win)
 
   -- Initialize dashboard state
-  local state = dashboard_state.init_state(repos)
+  state = dashboard_state.init_state(repos)
 
   -- Set buffer and window in state
   state.buffer = buf

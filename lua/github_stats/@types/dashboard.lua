@@ -1,6 +1,10 @@
 ---@module 'github_stats.@types.dashboard'
 
----@class DashboardState
+---@class GHStats.UIState
+---@field dashboard_open boolean Whether dashboard is currently open
+---@field last_notification integer? Timestamp of last notification
+
+---@class GHStats.DashboardState
 ---@field repos string[] List of repository identifiers
 ---@field current_index integer Currently selected repository index (1-based)
 ---@field scroll_offset integer Number of lines scrolled from top
@@ -16,7 +20,7 @@
 ---@field buffer integer? Dashboard buffer handle
 ---@field window integer? Dashboard window handle
 
----@class DashboardKeybindings
+---@class GHStats.DashboardKeybindings
 ---@field navigate_down string Keybinding to navigate down
 ---@field navigate_up string Keybinding to navigate up
 ---@field show_details string Keybinding to show detailed view
@@ -28,11 +32,12 @@
 ---@field show_help string Keybinding to show help overlay
 ---@field quit string Keybinding to quit dashboard
 
----@class DashboardConfig
+---@class GHStats.DashboardConfig
 ---@field enabled boolean Whether dashboard is enabled
----@field auto_open boolean Open dashboard on VimEnter
----@field refresh_interval_seconds integer Seconds between auto-refreshes (0 = disabled)
----@field sort_by "clones"|"views"|"name"|"trend" Default sort criteria
----@field time_range "7d"|"30d"|"90d"|"all" Default time range filter
----@field theme "default"|"minimal"|"compact" Display theme (reserved for future)
----@field keybindings DashboardKeybindings Customizable keybindings
+---@field refresh_interval_seconds integer Auto-refresh interval
+---@field sort_by? "clones"|"views"|"name"|"trend" Default sort criteria
+---@field time_range? "7d"|"30d"|"90d"|"all" Default time range filter
+---@field theme? "default"|"minimal"|"compact" Display theme (reserved for future)
+---@field keybindings? GHStats.DashboardKeybindings Customizable keybindings
+
+return {}

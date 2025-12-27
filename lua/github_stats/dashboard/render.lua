@@ -3,7 +3,6 @@
 ---@description
 --- Handles the visual representation of the dashboard including header,
 --- repository entries, and metrics. Manages scroll position and cursor placement.
---- CRITICAL: cursor_index is DERIVED from state, not the other way around.
 
 local analytics = require("github_stats.analytics")
 local ui_state = require("github_stats.state.ui_state")
@@ -100,7 +99,7 @@ local function build_entry(repo, index, is_selected)
 end
 
 ---Build complete dashboard content
----@param state DashboardState Current dashboard state
+---@param state GHStats.DashboardState Current dashboard state
 ---@return string[] # All lines for the buffer
 local function build_lines(state)
   local lines = {}
@@ -110,7 +109,7 @@ local function build_lines(state)
 
   -- Entries
   for i, repo in ipairs(state.repos) do
-    -- CRITICAL: Use state.current_index as single source of truth
+    -- Use state.current_index as single source of truth
     local is_selected = (i == state.current_index)
     vim.list_extend(lines, build_entry(repo, i, is_selected))
   end
@@ -140,55 +139,51 @@ function M.render_dashboard()
   -- Update scroll limits and clamp offset
   dashboard_state.clamp_scroll_offset()
 
-  -- Make buffer modifiable
   vim.api.nvim_set_option_value("modifiable", true, { buf = buf })
-
-  -- Clear buffer completely
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
-
-  -- Build and set lines
   local lines = build_lines(state)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
 
-  -- Set buffer read-only
   vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
-
-  -- CRITICAL: Force cursor to correct position based on state.current_index
-  M.set_cursor_to_current(state)
 
   -- Update render timestamp
   dashboard_state.mark_rendered()
+
+  M.set_cursor_to_current(state)
 end
 
----Force cursor position to match current_index (single source of truth)
----@param state DashboardState Current dashboard state
----@return nil
+---Set cursor to current index with proper viewport management
+---@param state GHStats.DashboardState
 function M.set_cursor_to_current(state)
-  local win = ui_state.get_win()
-  if not win or not vim.api.nvim_win_is_valid(win) then
+  if not state.buffer or not vim.api.nvim_buf_is_valid(state.buffer) then
     return
   end
 
-  -- Calculate target line from state.current_index
-  local target_line = dashboard_state.get_repo_line(state.current_index)
-
-  -- Ensure line is in visible range by adjusting scroll
-  if target_line < state.scroll_offset + M.HEADER_LINES + 1 then
-    -- Target is above visible area, scroll up
-    state.scroll_offset = math.max(0, target_line - M.HEADER_LINES - 1)
-    dashboard_state.clamp_scroll_offset()
-  elseif target_line > state.scroll_offset + state.win_height - 1 then
-    -- Target is below visible area, scroll down
-    state.scroll_offset = target_line - state.win_height + 1
-    dashboard_state.clamp_scroll_offset()
+  if not state.window or not vim.api.nvim_win_is_valid(state.window) then
+    return
   end
 
-  -- Set cursor to exact line
-  pcall(vim.api.nvim_win_set_cursor, win, { target_line, 0 })
+  local target_line = 5 * state.current_index
+
+  -- Set cursor
+  local ok, _ = pcall(vim.api.nvim_win_set_cursor, state.window, { target_line, 0 })
+  if not ok then
+    return
+  end
+
+  -- Adjust scroll if needed
+  local visible_start = state.scroll_offset + 1
+  local visible_end = state.scroll_offset + state.win_height
+
+  if target_line < visible_start then
+    state.scroll_offset = math.max(0, target_line - 1)
+  elseif target_line > visible_end then
+    state.scroll_offset = math.min(state.max_scroll, target_line - state.win_height)
+  end
 end
 
 ---Calculate total lines for current dashboard
----@param state DashboardState Current dashboard state
+---@param state GHStats.DashboardState Current dashboard state
 ---@return integer # Total number of lines
 function M.calculate_total_lines(state)
   -- Header + (entries * 6 lines each)

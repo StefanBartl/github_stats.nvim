@@ -46,19 +46,21 @@ end
 ---@param timestamp string ISO 8601 timestamp
 ---@return string # Date in YYYY-MM-DD format
 local function extract_date(timestamp)
-  return timestamp:match("^(%d%d%d%d%-%d%d%-%d%d)")
+  local match = timestamp:match("^(%d%d%d%d%-%d%d%-%d%d)")
+  return match or ""
 end
 
 ---Get today's date in YYYY-MM-DD format
 ---@return string
 local function get_today()
-  return os.date("%Y-%m-%d")
+  return tostring(os.date("%Y-%m-%d"))
 end
 
----Deduplicate data points: Keep only LATEST fetch per day
----@param history StoredMetricData[] All stored metric files
----@return table<string, StoredMetricData> # Map of date -> latest data
+---Deduplicate records - keep only latest fetch per day
+---@param history GHStats.StoredMetricData[] Array of stored metrics
+---@return table<string, GHStats.DailyMetricData> # Map of ISO date -> latest data
 local function deduplicate_by_date(history)
+  ---@type table<string, {timestamp: string, count: integer, uniques: integer}>
   local by_date = {}
 
   -- Group by date, keeping track of fetch timestamp
@@ -72,21 +74,13 @@ local function deduplicate_by_date(history)
       for _, item in ipairs(items) do
         local date = extract_date(item.timestamp)
 
-        -- Initialize if first time seeing this date
-        if not by_date[date] then
+        -- Keep only latest fetch for this date
+        if not by_date[date] or record.timestamp > by_date[date].timestamp then
           by_date[date] = {
-            date = date,
+            timestamp = record.timestamp,
             count = item.count or 0,
             uniques = item.uniques or 0,
-            fetch_time = fetch_time,
           }
-        else
-          -- Compare fetch timestamps: keep newer
-          if fetch_time > by_date[date].fetch_time then
-            by_date[date].count = item.count or 0
-            by_date[date].uniques = item.uniques or 0
-            by_date[date].fetch_time = fetch_time
-          end
         end
       end
     end
@@ -94,7 +88,6 @@ local function deduplicate_by_date(history)
 
   return by_date
 end
-
 ---Filter out today's incomplete data
 ---@param daily_data table<string, {count: integer, uniques: integer}> Daily breakdown
 ---@return table<string, {count: integer, uniques: integer}> # Filtered data
@@ -112,7 +105,7 @@ local function exclude_today(daily_data)
 end
 
 ---Aggregate daily data from deduplicated records
----@param history StoredMetricData[] Stored metric files
+---@param history GHStats.StoredMetricData[] Stored metric files
 ---@param start_date string? Filter start (ISO date)
 ---@param end_date string? Filter end (ISO date)
 ---@return table<string, {count: integer, uniques: integer}>, integer, integer # Daily map, total_count, total_uniques
@@ -125,6 +118,7 @@ local function aggregate_daily(history, start_date, end_date)
   local end_ts = end_date and parse_date(end_date)
 
   -- Step 3: Build daily breakdown with date filtering
+  ---@type table<string, {count: integer, uniques: integer}>
   local daily = {}
   local total_count = 0
   local total_uniques = 0
@@ -134,10 +128,10 @@ local function aggregate_daily(history, start_date, end_date)
 
     -- Apply date filter
     local include = true
-    if start_ts and item_ts < start_ts then
+    if start_ts and item_ts and item_ts < start_ts then
       include = false
     end
-    if end_ts and item_ts > end_ts then
+    if end_ts and item_ts and item_ts > end_ts then
       include = false
     end
 
@@ -146,7 +140,6 @@ local function aggregate_daily(history, start_date, end_date)
         count = record.count,
         uniques = record.uniques,
       }
-
       total_count = total_count + record.count
       total_uniques = total_uniques + record.uniques
     end
@@ -166,41 +159,32 @@ local function aggregate_daily(history, start_date, end_date)
   return daily, total_count, total_uniques
 end
 
----Parse time range keyword to start/end dates
----@param time_range string Time range keyword (e.g., "last week", "7d", "30d")
----@return string?, string? # Start date, end date (nil if invalid)
+---Parse time range keyword into start/end dates
+---@param time_range string Time range keyword
+---@return string?, string? # start_date, end_date (ISO format)
 local function parse_time_range(time_range)
-  if not time_range or time_range == "" then
-    return nil, nil
-  end
-
   local now = os.time()
-  local today = os.date("%Y-%m-%d", now)
+  local today = tostring(os.date("!%Y-%m-%d", now))
 
-  -- Handle "last week" / "last 7 days"
-  if time_range:match("last%s+week") or time_range == "7d" then
-    local week_ago = now - (7 * 24 * 60 * 60)
-    return os.date("%Y-%m-%d", week_ago), today
-  end
-
-  -- Handle "last month" / "30d"
-  if time_range:match("last%s+month") or time_range == "30d" then
-    local month_ago = now - (30 * 24 * 60 * 60)
-    return os.date("%Y-%m-%d", month_ago), today
-  end
-
-  -- Handle "last 90 days" / "90d"
-  if time_range:match("last%s+90%s+days") or time_range == "90d" then
-    local ninety_ago = now - (90 * 24 * 60 * 60)
-    return os.date("%Y-%m-%d", ninety_ago), today
+  if time_range == "7d" or time_range == "last week" then
+    local start = tostring(os.date("!%Y-%m-%d", now - 7 * 86400))
+    return start, today
+  elseif time_range == "30d" or time_range == "last month" then
+    local start = tostring(os.date("!%Y-%m-%d", now - 30 * 86400))
+    return start, today
+  elseif time_range == "90d" or time_range == "last quarter" then
+    local start = tostring(os.date("!%Y-%m-%d", now - 90 * 86400))
+    return start, today
+  elseif time_range == "all" then
+    return nil, nil -- No filtering
   end
 
   return nil, nil
 end
 
 ---Query clones or views with time range
----@param query AnalyticsQuery Query parameters
----@return AggregatedStats?, string? # Aggregated stats or nil, error message
+---@param query GHStats.AnalyticsQuery Query parameters
+---@return GHStats.AggregatedStats|nil, string? # Aggregated stats or nil, error message
 function M.query_metric(query)
   if not query.repo or query.repo == "" then
     return nil, "Repository required"
@@ -208,6 +192,16 @@ function M.query_metric(query)
 
   if query.metric ~= "clones" and query.metric ~= "views" then
     return nil, "Metric must be 'clones' or 'views'"
+  end
+
+  -- Parse time_range if provided
+  local start_date = query.start_date
+  local end_date = query.end_date
+
+  if query.time_range then
+    local range_start, range_end = parse_time_range(query.time_range)
+    start_date = start_date or range_start
+    end_date = end_date or range_end
   end
 
   -- Read history
@@ -220,34 +214,29 @@ function M.query_metric(query)
     return {
       repo = query.repo,
       metric = query.metric,
-      period_start = query.start_date or "N/A",
-      period_end = query.end_date or "N/A",
+      period_start = start_date or "N/A",
+      period_end = end_date or "N/A",
       total_count = 0,
       total_uniques = 0,
       daily_breakdown = {},
     }, nil
   end
 
-  -- Parse time range keywords (e.g., "last week")
-  local start_date = query.start_date
-  local end_date = query.end_date
-
-  if not start_date and query.time_range then
-    start_date, end_date = parse_time_range(query.time_range)
-  end
-
-  -- Aggregate with deduplication and today exclusion
+  -- Aggregate with date filtering
   local daily, total_count, total_uniques = aggregate_daily(history, start_date, end_date)
 
   -- Determine actual period
   local dates = vim.tbl_keys(daily)
   table.sort(dates)
 
+  local period_start = dates[1] or "N/A"
+  local period_end = dates[#dates] or "N/A"
+
   return {
     repo = query.repo,
     metric = query.metric,
-    period_start = dates[1] or "N/A",
-    period_end = dates[#dates] or "N/A",
+    period_start = period_start,
+    period_end = period_end,
     total_count = total_count,
     total_uniques = total_uniques,
     daily_breakdown = daily,
@@ -258,7 +247,7 @@ end
 ---@param metric "clones"|"views" Metric type
 ---@param start_date? string Filter start
 ---@param end_date? string Filter end
----@return table<string, AggregatedStats>, string? # Map of repo -> stats, error
+---@return table<string, GHStats.AggregatedStats>, string? # Map of repo -> stats, error
 function M.query_all_repos(metric, start_date, end_date)
   local config = require("github_stats.config")
   local repos = config.get_repos()
@@ -292,7 +281,7 @@ end
 ---Get top referrers from latest data
 ---@param repo string Repository identifier
 ---@param limit? integer Max results (default: 10)
----@return GithubApiReferrer[], string? # Top referrers, error
+---@return GHStats.GithubApiReferrer[], string? # Top referrers, error
 function M.get_top_referrers(repo, limit)
   limit = limit or 10
 
@@ -326,7 +315,7 @@ end
 ---Get top paths from latest data
 ---@param repo string Repository identifier
 ---@param limit? integer Max results (default: 10)
----@return GithubApiPath[], string? # Top paths, error
+---@return GHStats.GithubApiPath[], string? # Top paths, error
 function M.get_top_paths(repo, limit)
   limit = limit or 10
 
@@ -364,8 +353,7 @@ function M.rollup_weekly(daily_breakdown)
   local weekly = {}
 
   for date, stats in pairs(daily_breakdown) do
-    local year_str, month_str, day_str =
-      date:match("^(%d%d%d%d)-(%d%d)-(%d%d)$")
+    local year_str, month_str, day_str = date:match("^(%d%d%d%d)-(%d%d)-(%d%d)$")
 
     if year_str then
       local year = tonumber(year_str)
@@ -379,25 +367,32 @@ function M.rollup_weekly(daily_breakdown)
           day = day,
         })
 
-        local wday = tonumber(os.date("%w", ts)) -- 0 = Sunday
+        local wday = tonumber(os.date("%w", ts)) or 0
         local week_start_ts = ts - (wday * 86400)
-        local week_start = os.date("%Y-%m-%d", week_start_ts)
+        local week_start_date = os.date("%Y-%m-%d", week_start_ts)
 
-        if not weekly[week_start] then
-          weekly[week_start] = { count = 0, uniques = 0 }
+        if not week_start_date then
+          goto continue
         end
 
-        weekly[week_start].count =
-          weekly[week_start].count + stats.count
-        weekly[week_start].uniques =
-          weekly[week_start].uniques + stats.uniques
+        if not weekly[week_start_date] then
+          weekly[week_start_date] = { count = 0, uniques = 0 }
+        end
+
+        -- Type-safe Zugriff auf stats
+        local count_val = stats.count or 0
+        local uniques_val = stats.uniques or 0
+
+        weekly[week_start_date].count = weekly[week_start_date].count + count_val
+        weekly[week_start_date].uniques = weekly[week_start_date].uniques + uniques_val
       end
     end
+
+    ::continue::
   end
 
   return weekly
 end
-
 ---Get monthly rollup - uses deduplicated data
 ---@param daily_breakdown table<string, {count: integer, uniques: integer}>
 ---@return table<string, {count: integer, uniques: integer}> # YYYY-MM -> stats

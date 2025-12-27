@@ -12,8 +12,6 @@ local utils = require("github_stats.usercommands.utils")
 
 local M = {}
 
-local notify, levels = vim.notify, vim.log.levels
-local str_format = string.format
 local tbl_filter, startswith = vim.tbl_filter, vim.startswith
 
 ---Execute chart command

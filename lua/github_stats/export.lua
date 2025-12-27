@@ -66,7 +66,7 @@ end
 ---Export aggregated stats to Markdown
 ---@param repo string Repository identifier
 ---@param metric string Metric type
----@param stats AggregatedStats Aggregated statistics
+---@param stats GHStats.AggregatedStats Aggregated statistics
 ---@param filepath string Output file path
 ---@return boolean, string? # Success flag, error message
 function M.export_markdown(repo, metric, stats, filepath)
@@ -114,7 +114,7 @@ end
 
 ---Export summary of all repos to Markdown
 ---@param metric string Metric type
----@param results table<string, AggregatedStats> Map of repo -> stats
+---@param results table<string, GHStats.AggregatedStats> Map of repo -> stats
 ---@param filepath string Output file path
 ---@return boolean, string? # Success flag, error message
 function M.export_summary_markdown(metric, results, filepath)

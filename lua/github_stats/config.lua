@@ -11,11 +11,11 @@ local loop = vim.loop
 local str_format = string.format
 local tbl_concat = table.concat
 
----@type SetupOptions?
+---@type GHStats.SetupOptions?
 local config = nil
 
 ---Default configuration
----@type SetupOptions
+---@type GHStats.SetupOptions
 local DEFAULT_CONFIG = {
   repos = {},
   token_source = "env",
@@ -133,7 +133,7 @@ local function ensure_config_exists()
 end
 
 ---Initialize configuration from setup() or config.json
----@param opts? SetupOptions Setup options
+---@param opts? GHStats.SetupOptions Setup options
 ---@return boolean, string? # Success flag, error message
 function M.init(opts)
   opts = opts or {}
@@ -202,7 +202,7 @@ function M.get_config_dir()
 end
 
 ---Get current configuration
----@return SetupOptions?
+---@return GHStats.SetupOptions?
 function M.get()
   return config
 end
