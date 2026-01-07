@@ -163,7 +163,7 @@ chmod 600 ~/.github_token
 Then in setup:
 ```lua
 require("github_stats").setup({
- aaaaaaaaaaaaaa repos = { "username/repo" },
+  repos = { "username/repo" },
   token_source = "file",
   token_file = "~/.github_token",
 })aa
