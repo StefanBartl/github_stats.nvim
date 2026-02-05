@@ -68,7 +68,7 @@ A Neovim plugin for automatic collection and analysis of GitHub repository traff
 
 ```lua
 {
-  "StefanBartl/github-stats.nvim",
+  "StefanBartl/github_stats.nvim",
   config = function()
     require("github_stats").setup({
       repos = { "user/repo1", "user/repo2" },
@@ -81,7 +81,7 @@ A Neovim plugin for automatic collection and analysis of GitHub repository traff
 
 ```lua
 use {
-  "StefanBartl/github-stats.nvim",
+  "StefanBartl/github_stats.nvim",
   config = function()
     require("github_stats").setup({
       repos = { "user/repo1", "user/repo2" },
