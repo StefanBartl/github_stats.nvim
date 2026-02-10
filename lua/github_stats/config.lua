@@ -17,6 +17,7 @@ local config = nil
 ---Default configuration
 ---@type GHStats.SetupOptions
 local DEFAULT_CONFIG = {
+	notify_fetch = true,
 	repos = {
 		"StefanBartl/color_my_ascii.nvim",
 		"StefanBartl/github_stats.nvim",

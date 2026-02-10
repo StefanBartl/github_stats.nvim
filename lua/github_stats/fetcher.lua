@@ -20,205 +20,211 @@ M.last_fetch_summary = nil
 ---Get path to last_fetch tracking file
 ---@return string
 local function get_last_fetch_file()
-  return config.get_storage_root() .. "/../last_fetch.json"
+	return config.get_storage_root() .. "/../last_fetch.json"
 end
 
 ---Load last fetch timestamp
 ---@return number? # Unix timestamp of last fetch, or nil
 local function load_last_fetch()
-  local file = get_last_fetch_file()
-  local stat = vim.loop.fs_stat(file)
-  if not stat then
-    return nil
-  end
+	local file = get_last_fetch_file()
+	local stat = vim.loop.fs_stat(file)
+	if not stat then
+		return nil
+	end
 
-  local ok, content = pcall(vim.fn.readfile, file)
-  if not ok then
-    return nil
-  end
+	local ok, content = pcall(vim.fn.readfile, file)
+	if not ok then
+		return nil
+	end
 
-  local json_str = tbl_concat(content, "\n")
-  local parse_ok, data = pcall(vim.json.decode, json_str)
-  if not parse_ok then
-    return nil
-  end
+	local json_str = tbl_concat(content, "\n")
+	local parse_ok, data = pcall(vim.json.decode, json_str)
+	if not parse_ok then
+		return nil
+	end
 
-  return data.timestamp
+	return data.timestamp
 end
 
 ---Save current fetch timestamp
 ---@param timestamp number Unix timestamp
 local function save_last_fetch(timestamp)
-  local file = get_last_fetch_file()
-  local data = { timestamp = timestamp }
-  local json_str = vim.json.encode(data)
+	local file = get_last_fetch_file()
+	local data = { timestamp = timestamp }
+	local json_str = vim.json.encode(data)
 
-  pcall(vim.fn.writefile, { json_str }, file)
+	pcall(vim.fn.writefile, { json_str }, file)
 end
 
 ---Check if fetch interval has elapsed
 ---@return boolean # True if enough time has passed
 local function should_fetch()
-  local cfg = config.get()
-  if not cfg then
-    return false
-  end
+	local cfg = config.get()
+	if not cfg then
+		return false
+	end
 
-  local last_fetch = load_last_fetch()
-  if not last_fetch then
-    return true -- Never fetched before
-  end
+	local last_fetch = load_last_fetch()
+	if not last_fetch then
+		return true -- Never fetched before
+	end
 
-  local now = os.time()
-  local interval_seconds = cfg.fetch_interval_hours * 3600
-  local elapsed = now - last_fetch
+	local now = os.time()
+	local interval_seconds = cfg.fetch_interval_hours * 3600
+	local elapsed = now - last_fetch
 
-  return elapsed >= interval_seconds
+	return elapsed >= interval_seconds
 end
 
 ---Fetch all metrics for a single repository
 ---@param repo string Repository identifier
 ---@param callback fun(success: string[], errors: table<string, string>)
 local function fetch_repo(repo, callback)
-  local metrics = { "clones", "views", "referrers", "paths" }
-  local completed = 0
-  local success = {}
-  local errors = {}
+	local metrics = { "clones", "views", "referrers", "paths" }
+	local completed = 0
+	local success = {}
+	local errors = {}
 
-  local function check_complete()
-    completed = completed + 1
-    if completed == #metrics then
-      callback(success, errors)
-    end
-  end
+	local function check_complete()
+		completed = completed + 1
+		if completed == #metrics then
+			callback(success, errors)
+		end
+	end
 
-  for _, metric in ipairs(metrics) do
-    api.fetch_metric_async(repo, metric, function(data, err)
-      if err or not data then
-        errors[repo .. "/" .. metric] = err
-      else
-        local save_ok, save_err = storage.write_metric(repo, metric, data)
-        if save_ok then
-          table.insert(success, repo .. "/" .. metric)
-        else
-          errors[repo .. "/" .. metric] = save_err or "Unknown storage error"
-        end
-      end
-      check_complete()
-    end)
-  end
+	for _, metric in ipairs(metrics) do
+		api.fetch_metric_async(repo, metric, function(data, err)
+			if err or not data then
+				errors[repo .. "/" .. metric] = err
+			else
+				local save_ok, save_err = storage.write_metric(repo, metric, data)
+				if save_ok then
+					table.insert(success, repo .. "/" .. metric)
+				else
+					errors[repo .. "/" .. metric] = save_err or "Unknown storage error"
+				end
+			end
+			check_complete()
+		end)
+	end
 end
 
 ---Fetch all repositories and metrics
 ---@param force boolean Whether to bypass interval check
 ---@param callback? fun(summary: GHStats.FetchSummary) Optional completion callback
 function M.fetch_all(force, callback)
-  local repos = config.get_repos()
+	local repos = config.get_repos()
 
-  if #repos == 0 then
-    config.notify("[github-stats] No repositories configured", "warn")
-    return
-  end
+	if #repos == 0 then
+		config.notify("[github-stats] No repositories configured", "warn")
+		return
+	end
 
-  if not force and not should_fetch() then
-    config.notify("[github-stats] Fetch interval not elapsed (use 'force' to bypass)", "info")
-    return
-  end
+	local cfg, notify_fetch = config.get(), false
+	if not cfg then
+		notify_fetch = false
+	else
+		notify_fetch = cfg.notify_fetch
+	end
 
-  config.notify(str_format("[github-stats] Starting fetch: %d repos, force=%s", #repos, tostring(force)), "info")
+	if not force and not should_fetch() then
+		if notify_fetch == true then
+			config.notify("[github-stats] Fetch interval not elapsed (use 'force' to bypass)", "info")
+		end
+		return
+	end
 
-  local completed = 0
-  local all_success = {}
-  local all_errors = {}
+	config.notify(str_format("[github-stats] Starting fetch: %d repos, force=%s", #repos, tostring(force)), "info")
 
-  local function check_all_complete()
-    completed = completed + 1
-    if completed == #repos then
-      -- Save fetch timestamp
-      save_last_fetch(os.time())
+	local completed = 0
+	local all_success = {}
+	local all_errors = {}
 
-      -- Create summary
-      local summary = {
-        success = all_success,
-        errors = all_errors,
-        timestamp = os.date("%Y-%m-%dT%H:%M:%S"),
-      }
+	local function check_all_complete()
+		completed = completed + 1
+		if completed == #repos then
+			-- Save fetch timestamp
+			save_last_fetch(os.time())
 
-      -- Store for debug access
-      M.last_fetch_summary = summary
+			-- Create summary
+			local summary = {
+				success = all_success,
+				errors = all_errors,
+				timestamp = os.date("%Y-%m-%dT%H:%M:%S"),
+			}
 
-      -- Notify user
-      local error_count = vim.tbl_count(all_errors)
-      if error_count > 0 then
-        config.notify(
-          str_format("[github-stats] Fetched %d metrics, %d errors", #all_success, error_count),
-          "warn"
-        )
-      else
-        config.notify(
-          str_format("[github-stats] Successfully fetched %d metrics", #all_success),
-          "info"
-        )
-      end
+			-- Store for debug access
+			M.last_fetch_summary = summary
 
-      if callback then
-        callback(summary)
-      end
-    end
-  end
+			-- Notify user
+			local error_count = vim.tbl_count(all_errors)
+			if error_count > 0 then
+				config.notify(
+					str_format("[github-stats] Fetched %d metrics, %d errors", #all_success, error_count),
+					"warn"
+				)
+			else
+				config.notify(str_format("[github-stats] Successfully fetched %d metrics", #all_success), "info")
+			end
 
-  -- Fetch all repos in parallel
-  for _, repo in ipairs(repos) do
-    fetch_repo(repo, function(success, errors)
-      vim.list_extend(all_success, success)
-      all_errors = vim.tbl_extend("force", all_errors, errors)
-      check_all_complete()
-    end)
-  end
+			if callback then
+				callback(summary)
+			end
+		end
+	end
+
+	-- Fetch all repos in parallel
+	for _, repo in ipairs(repos) do
+		fetch_repo(repo, function(success, errors)
+			vim.list_extend(all_success, success)
+			all_errors = vim.tbl_extend("force", all_errors, errors)
+			check_all_complete()
+		end)
+	end
 end
 
 ---Automatic fetch (respects interval)
 function M.auto_fetch()
-  M.fetch_all(false)
+	M.fetch_all(false)
 end
 
 ---Manual fetch with force option
 ---@param force boolean Whether to force fetch
 function M.manual_fetch(force)
-  M.fetch_all(force)
+	M.fetch_all(force)
 end
 
 ---Fetch all metrics for a single repository
 ---@param repo string Repository identifier
 ---@param callback fun(success: string[], errors: table<string, string>)
 function M.fetch_repo(repo, callback)
-  local metrics = { "clones", "views", "referrers", "paths" }
-  local completed = 0
-  local success = {}
-  local errors = {}
+	local metrics = { "clones", "views", "referrers", "paths" }
+	local completed = 0
+	local success = {}
+	local errors = {}
 
-  local function check_complete()
-    completed = completed + 1
-    if completed == #metrics then
-      callback(success, errors)
-    end
-  end
+	local function check_complete()
+		completed = completed + 1
+		if completed == #metrics then
+			callback(success, errors)
+		end
+	end
 
-  for _, metric in ipairs(metrics) do
-    api.fetch_metric_async(repo, metric, function(data, err)
-      if err or not data then
-        errors[repo .. "/" .. metric] = err
-      else
-        local save_ok, save_err = storage.write_metric(repo, metric, data)
-        if save_ok then
-          table.insert(success, repo .. "/" .. metric)
-        else
-          errors[repo .. "/" .. metric] = save_err or "Unknown storage error"
-        end
-      end
-      check_complete()
-    end)
-  end
+	for _, metric in ipairs(metrics) do
+		api.fetch_metric_async(repo, metric, function(data, err)
+			if err or not data then
+				errors[repo .. "/" .. metric] = err
+			else
+				local save_ok, save_err = storage.write_metric(repo, metric, data)
+				if save_ok then
+					table.insert(success, repo .. "/" .. metric)
+				else
+					errors[repo .. "/" .. metric] = save_err or "Unknown storage error"
+				end
+			end
+			check_complete()
+		end)
+	end
 end
 
 return M

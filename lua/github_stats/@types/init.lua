@@ -7,6 +7,7 @@
 ---@field custom table<string, fun(): string, string> Custom user-defined presets
 
 ---@class GHStats.SetupOptions
+---@field notify_fetch boolean Notify at startup whether a fetch was performed or not
 ---@field repos string[] List of repositories
 ---@field token_source "env"|"file" Token source
 ---@field token_env_var? string Environment variable name
