@@ -210,8 +210,11 @@ local function cleanup_dashboard()
 end
 
 ---Open dashboard
+---@param force_refresh? boolean If true, force-fetch fresh data (bypassing the
+---  fetch interval) and re-render once it arrives, instead of only showing
+---  whatever is already cached on disk
 ---@return nil
-function M.open()
+function M.open(force_refresh)
   -- Get configured repositories
   local repos = config.get_repos()
 
@@ -261,11 +264,25 @@ function M.open()
     end,
   })
 
-  -- Initial render
+  -- Initial render (shows cached data immediately, even if a force-fetch
+  -- is about to run in the background)
   M.schedule_render(true)
 
   -- Set cursor to first entry
   render.set_cursor_to_current(state)
+
+  if force_refresh then
+    local fetcher = require("github_stats.fetcher")
+    fetcher.fetch_all(true, function()
+      -- vim.system callbacks may run outside the main event-loop context,
+      -- so defer the buffer-touching re-render to a safe schedule point.
+      vim.schedule(function()
+        if dashboard_state.get_state() then
+          M.schedule_render(true)
+        end
+      end)
+    end)
+  end
 end
 
 return M
