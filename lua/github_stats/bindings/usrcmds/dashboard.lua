@@ -1,4 +1,4 @@
----@module 'github_stats.usercommands.dashboard'
+---@module 'github_stats.bindings.usrcmds.dashboard'
 ---@brief Dashboard command handler
 ---@description
 --- Handles GithubStatsDashboard command execution.

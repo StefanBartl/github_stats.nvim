@@ -5,7 +5,7 @@
 --- Validates configuration, dependencies, and API connectivity.
 --- Cross-platform support for Windows, macOS, Linux.
 
-local config = require("lua.github_stats.config")
+local config = require("github_stats.config")
 
 local M = {}
 

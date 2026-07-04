@@ -16,7 +16,6 @@ CONTENTS                                              *github_stats-contents*
    11. API .................................... |github_stats-api|
    12. Storage ................................ |github_stats-storage|
    13. Troubleshooting ........................ |github_stats-troubleshooting|
-   14. License ................................ |github_stats-license|
 
 ==============================================================================
 INTRODUCTION                                      *github_stats-introduction*
@@ -53,10 +52,30 @@ Create token:~
 ==============================================================================
 INSTALLATION                                      *github_stats-installation*
 
-With lazy.nvim:~
+When to use which:~
+    Default (lazy)        Minimal startup impact, loads on first command use
+    lazy = false           Loads immediately at startup
+    event = "VimEnter"      Loads after UI init (RECOMMENDED - matches the
+                            plugin's own auto-fetch/dashboard auto-open timing)
+
+With lazy.nvim (recommended):~
 >lua
     {
-      "StefanBartl/github-stats.nvim",
+      "StefanBartl/github_stats.nvim",
+      event = "VimEnter",
+      config = function()
+        require("github_stats").setup({
+          repos = { "user/repo1", "user/repo2" },
+        })
+      end,
+    }
+<
+
+With lazy.nvim (eager):~
+>lua
+    {
+      "StefanBartl/github_stats.nvim",
+      lazy = false,
       config = function()
         require("github_stats").setup({
           repos = { "user/repo1", "user/repo2" },
@@ -68,7 +87,7 @@ With lazy.nvim:~
 With packer.nvim:~
 >lua
     use {
-      "StefanBartl/github-stats.nvim",
+      "StefanBartl/github_stats.nvim",
       config = function()
         require("github_stats").setup({
           repos = { "user/repo1", "user/repo2" },
@@ -118,7 +137,7 @@ stdpath('config') allows:
   • Consistent repository lists
   • Everything in one backup-able location
 
-See docs/configuration/INTRO.md for detailed guide.
+See docs/configurations/INTRO.md for detailed guide.
 
 Configuration Options:~
 

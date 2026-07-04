@@ -41,7 +41,7 @@ local function show_details(state)
 
   local repo = state.repos[state.selected_index]
   local analytics = require("github_stats.analytics")
-  local utils = require("github_stats.usercommands.utils")
+  local utils = require("github_stats.bindings.usrcmds.utils")
 
   -- Calculate date range
   local now = os.time()
@@ -152,7 +152,7 @@ end
 ---@param state DashboardState Dashboard state
 ---@diagnostic disable-next-line: unused-local
 local function show_help(state)
-  local utils = require("github_stats.usercommands.utils")
+  local utils = require("github_stats.bindings.usrcmds.utils")
 
   local lines = {
     "GitHub Stats Dashboard - Keyboard Shortcuts",

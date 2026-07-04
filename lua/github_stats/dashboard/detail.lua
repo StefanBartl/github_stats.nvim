@@ -220,7 +220,7 @@ function M.show_detail(repo)
   end
 
   -- Create floating window
-  local utils = require("github_stats.usercommands.utils")
+  local utils = require("github_stats.bindings.usrcmds.utils")
   utils.show_float(lines, string.format("GitHub Stats: %s", repo))
 end
 

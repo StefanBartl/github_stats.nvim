@@ -1,26 +1,25 @@
----@module 'github_stats.usercommands.paths'
----@brief Top repository paths display
+---@module 'github_stats.bindings.usrcmds.referrers'
+---@brief Top referrer sources display
 ---@description
---- Shows the most visited paths within a repository.
+--- Shows the top referring domains/sources for a repository.
 --- Supports configurable limit on number of results.
 
 local analytics = require("github_stats.analytics")
-local utils = require("github_stats.usercommands.utils")
+local utils = require("github_stats.bindings.usrcmds.utils")
 
 local M = {}
 
 local notify, levels = vim.notify, vim.log.levels
-local tbl_insert = table.insert
 local str_format = string.format
 
----Execute paths command
+---Execute referrers command
 ---@param args table Command arguments from nvim_create_user_command
 function M.execute(args)
   local parts = vim.split(args.args, "%s+")
 
   if #parts < 1 then
     notify(
-      "[github-stats] Usage: GithubStatsPaths {repo} [limit]",
+      "[github-stats] Usage: GithubStatsReferrers {repo} [limit]",
       levels.ERROR
     )
     return
@@ -29,7 +28,7 @@ function M.execute(args)
   local repo = parts[1]
   local limit = tonumber(parts[2]) or 10
 
-  local paths, err = analytics.get_top_paths(repo, limit)
+  local referrers, err = analytics.get_top_referrers(repo, limit)
 
   if err then
     notify(
@@ -39,9 +38,9 @@ function M.execute(args)
     return
   end
 
-  if #paths == 0 then
+  if #referrers == 0 then
     notify(
-      "[github-stats] No path data available",
+      "[github-stats] No referrer data available",
       levels.INFO
     )
     return
@@ -49,25 +48,24 @@ function M.execute(args)
 
   -- Build output
   local lines = {
-    str_format("Top Paths: %s", repo),
+    str_format("Top Referrers: %s", repo),
     string.rep("=", 60),
     "",
   }
 
-  for i, path_data in ipairs(paths) do
-    tbl_insert(lines, str_format("%2d. %s", i, path_data.path))
-    tbl_insert(lines, str_format("    Title: %s", path_data.title))
-    tbl_insert(
+  for i, ref in ipairs(referrers) do
+    table.insert(lines, str_format("%2d. %s", i, ref.referrer))
+    table.insert(
       lines,
       str_format(
         "    Count: %s, Uniques: %s",
-        utils.format_number(path_data.count),
-        utils.format_number(path_data.uniques)
+        utils.format_number(ref.count),
+        utils.format_number(ref.uniques)
       )
     )
   end
 
-  utils.show_float(lines, str_format("Top Paths: %s", repo))
+  utils.show_float(lines, str_format("Top Referrers: %s", repo))
 end
 
 ---Get completion candidates
