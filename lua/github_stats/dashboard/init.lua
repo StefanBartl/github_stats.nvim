@@ -8,7 +8,7 @@ local config = require("github_stats.config")
 local ui_state = require("github_stats.state.ui_state")
 local dashboard_state = require("github_stats.dashboard.state")
 local render = require("github_stats.dashboard.render")
-local keymaps = require("github_stats.dashboard.keymaps")
+local keymaps = require("github_stats.bindings.keymaps")
 
 local M = {}
 

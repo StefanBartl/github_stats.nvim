@@ -1,9 +1,5 @@
 ---@module 'github_stats.@types.dashboard'
 
----@class GHStats.UIState
----@field dashboard_open boolean Whether dashboard is currently open
----@field last_notification integer? Timestamp of last notification
-
 ---@class GHStats.DashboardState
 ---@field repos string[] List of repository identifiers
 ---@field current_index integer Currently selected repository index (1-based)
@@ -34,6 +30,7 @@
 
 ---@class GHStats.DashboardConfig
 ---@field enabled boolean Whether dashboard is enabled
+---@field auto_open? boolean Whether to open the dashboard automatically on VimEnter
 ---@field refresh_interval_seconds integer Auto-refresh interval
 ---@field sort_by? "clones"|"views"|"name"|"trend" Default sort criteria
 ---@field time_range? "7d"|"30d"|"90d"|"all" Default time range filter

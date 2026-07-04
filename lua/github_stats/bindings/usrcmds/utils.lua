@@ -1,4 +1,4 @@
----@module 'github_stats.usercommands.utils'
+---@module 'github_stats.bindings.usrcmds.utils'
 ---@brief Shared utility functions for user commands
 ---@description
 --- Provides common functionality used across multiple command handlers,

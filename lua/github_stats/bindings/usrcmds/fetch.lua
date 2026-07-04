@@ -1,4 +1,4 @@
----@module 'github_stats.usercommands.fetch'
+---@module 'github_stats.bindings.usrcmds.fetch'
 ---@brief Manual and forced fetch trigger
 ---@description
 --- Handles GithubStatsFetch command with optional force parameter.

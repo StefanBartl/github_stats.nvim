@@ -1,4 +1,4 @@
----@module 'github_stats.usercommands.debug'
+---@module 'github_stats.bindings.usrcmds.debug'
 ---@brief Diagnostic information display
 ---@description
 --- Tests configuration, token access, and API connectivity.
@@ -7,7 +7,7 @@
 local config = require("github_stats.config")
 local api = require("github_stats.api")
 local fetcher = require("github_stats.fetcher")
-local utils = require("github_stats.usercommands.utils")
+local utils = require("github_stats.bindings.usrcmds.utils")
 
 local M = {}
 

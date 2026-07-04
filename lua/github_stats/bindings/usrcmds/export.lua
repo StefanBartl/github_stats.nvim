@@ -1,4 +1,4 @@
----@module 'github_stats.usercommands.export'
+---@module 'github_stats.bindings.usrcmds.export'
 ---@brief Export data to CSV or Markdown
 ---@description
 --- Exports traffic statistics to various file formats.

@@ -1,4 +1,4 @@
----@module 'github_stats.usercommands.show'
+---@module 'github_stats.bindings.usrcmds.show'
 ---@brief Detailed statistics display for specific repo/metric
 ---@description
 --- Shows aggregated statistics for a single repository and metric.
@@ -7,7 +7,7 @@
 
 local date_presets = require("github_stats.date_presets")
 local analytics = require("github_stats.analytics")
-local utils = require("github_stats.usercommands.utils")
+local utils = require("github_stats.bindings.usrcmds.utils")
 local config = require("github_stats.config")
 
 local M = {}

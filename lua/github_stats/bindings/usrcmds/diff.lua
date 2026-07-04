@@ -1,10 +1,10 @@
----@module 'github_stats.usercommands.diff'
+---@module 'github_stats.bindings.usrcmds.diff'
 ---@brief Period-over-period comparison
 ---@description
 --- Compares traffic metrics between two time periods.
 
 local diff = require("github_stats.diff")
-local utils = require("github_stats.usercommands.utils")
+local utils = require("github_stats.bindings.usrcmds.utils")
 
 local M = {}
 

@@ -1,20 +1,20 @@
----@module 'github_stats.usercommands'
+---@module 'github_stats.bindings.usrcmds'
 ---@brief User command registration and orchestration
 ---@description
 --- Central registry for all GitHub Stats user commands.
 --- Each command is implemented in a separate module under usercommands/.
 --- Provides autocompletion where applicable.
 
-local fetch = require("github_stats.usercommands.fetch")
-local show = require("github_stats.usercommands.show")
-local summary = require("github_stats.usercommands.summary")
-local referrers = require("github_stats.usercommands.referrers")
-local paths = require("github_stats.usercommands.paths")
-local debug = require("github_stats.usercommands.debug")
-local chart = require("github_stats.usercommands.chart")
-local export = require("github_stats.usercommands.export")
-local diff = require("github_stats.usercommands.diff")
-local dashboard = require("github_stats.usercommands.dashboard")
+local fetch = require("github_stats.bindings.usrcmds.fetch")
+local show = require("github_stats.bindings.usrcmds.show")
+local summary = require("github_stats.bindings.usrcmds.summary")
+local referrers = require("github_stats.bindings.usrcmds.referrers")
+local paths = require("github_stats.bindings.usrcmds.paths")
+local debug = require("github_stats.bindings.usrcmds.debug")
+local chart = require("github_stats.bindings.usrcmds.chart")
+local export = require("github_stats.bindings.usrcmds.export")
+local diff = require("github_stats.bindings.usrcmds.diff")
+local dashboard = require("github_stats.bindings.usrcmds.dashboard")
 
 local M = {}
 

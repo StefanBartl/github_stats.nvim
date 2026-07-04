@@ -1,9 +1,11 @@
-# Future Features Roadmap
+# Roadmap
 
-This document outlines planned features for GitHub Stats, organized by implementation scope and priority.
+This document tracks planned features, open questions, and housekeeping items
+for GitHub Stats, organized by implementation scope and priority.
 
 ## Table of Contents
 
+- [Resolved Housekeeping](#resolved-housekeeping)
 - [Large Features (v2.0.0)](#large-features-v200)
   - [Dashboard UI](#dashboard-ui)
   - [Webhook Integration](#webhook-integration)
@@ -17,6 +19,16 @@ This document outlines planned features for GitHub Stats, organized by implement
   - [Comparison Baseline](#comparison-baseline)
   - [Fetch Progress Indicators](#fetch-progress-indicators)
 - [Experimental Ideas](#experimental-ideas)
+
+---
+
+## Resolved Housekeeping
+
+- **Lazy-load strategy**: The plugin auto-fetches on `VimEnter` and can
+  auto-open the dashboard, so `event = "VimEnter"` is the recommended
+  `lazy.nvim` load strategy (see [README installation](../README.md#installation)).
+  `lazy = false` remains a valid alternative for users who want the plugin
+  available immediately at startup.
 
 ---
 

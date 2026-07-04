@@ -1,4 +1,13 @@
 # GitHub Stats Collector for Neovim
+
+```
+   ____ _ _   _   _       _       ____  _        _
+  / ___(_) |_| | | |_   _| |__   / ___|| |_ __ _| |_ ___
+ | |  _| | __| |_| | | | | '_ \  \___ \| __/ _` | __/ __|
+ | |_| | | |_|  _  | |_| | |_) |  ___) | || (_| | |_\__ \
+  \____|_|\__|_| |_|\__,_|_.__/  |____/ \__\__,_|\__|___/
+```
+
 ![version](https://img.shields.io/badge/version-1.2-blue.svg)
 ![State](https://img.shields.io/badge/status-beta-orange.svg)
 ![Lazy.nvim compatible](https://img.shields.io/badge/lazy.nvim-supported-success)
@@ -6,6 +15,8 @@
 ![Lua](https://img.shields.io/badge/language-Lua-yellow.svg)
 
 A Neovim plugin for automatic collection and analysis of GitHub repository traffic statistics.
+
+> Looking for a quicker way to jump between your repositories from within Neovim? Check out [reposcope.nvim](https://github.com/StefanBartl/reposcope.nvim), a Telescope-based repository browser/switcher that pairs well with the traffic insights this plugin collects.
 
 ---
 
@@ -23,7 +34,6 @@ A Neovim plugin for automatic collection and analysis of GitHub repository traff
 - [Troubleshooting](#troubleshooting)
 - [Performance](#performance)
 - [Cross-Platform Support](#cross-platform-support)
-- [License](#license)
 - [Contributing](#contributing)
 - [Support](#support)
 
@@ -64,11 +74,34 @@ A Neovim plugin for automatic collection and analysis of GitHub repository traff
 
 ## Installation
 
+**When to use which:**
+
+| Variant | Startup impact | Commands available | When to use |
+|---|---|---|---|
+| **Default (lazy)** | Minimal | On first use of a `:GithubStats*` command | Large config, many plugins |
+| **`lazy = false`** | Loads immediately | Right from the start | Want the daily auto-fetch guaranteed from the first frame |
+| **`event = "VimEnter"`** | After UI init | After editor UI ready | **Recommended** — daily auto-fetch / dashboard auto-open timing, minimal startup impact |
+
 ### lazy.nvim
 
+*Load after UI init (recommended, matches the plugin's own `VimEnter` auto-fetch):*
 ```lua
 {
   "StefanBartl/github_stats.nvim",
+  event = "VimEnter",
+  config = function()
+    require("github_stats").setup({
+      repos = { "user/repo1", "user/repo2" },
+    })
+  end,
+}
+```
+
+*Load at startup (eager):*
+```lua
+{
+  "StefanBartl/github_stats.nvim",
+  lazy = false,
   config = function()
     require("github_stats").setup({
       repos = { "user/repo1", "user/repo2" },
@@ -142,7 +175,7 @@ If you sync your Neovim configuration across multiple systems (via Git/dotfiles)
 - Maintain consistent repository lists
 - Backup everything in one place
 
-See [docs/configuration/INTRO.md](docs/configuration/INTRO.md) for detailed configuration guide.
+See [docs/configurations/INTRO.md](docs/configurations/INTRO.md) for detailed configuration guide.
 
 ### Token Setup
 
@@ -166,7 +199,7 @@ require("github_stats").setup({
   repos = { "username/repo" },
   token_source = "file",
   token_file = "~/.github_token",
-})aa
+})
 ```
 
 ### Custom Storage Paths
@@ -499,12 +532,14 @@ Performs comprehensive diagnostics:
 
 ## Documentation
 
-- **[Configuration Guide](docs/configuration/INTRO.md)** – Detailed setup instructions
-  - [Preparation](docs/configuration/PREPARATION.md)
-  - [Option A: Direct Setup](docs/configuration/OPTION-A.md)
-  - [Option B: Config File](docs/configuration/OPTION-B.md)
+- **[Configuration Guide](docs/configurations/INTRO.md)** – Detailed setup instructions
+  - [Preparation](docs/configurations/PREPARATION.md)
+  - [Option A: Direct Setup](docs/configurations/OPTION-A.md)
+  - [Option B: Config File](docs/configurations/OPTION-B.md)
 - **[User Commands](docs/USERCOMMANDS.md)** – Complete command reference
+- **[Bindings Reference](docs/BINDINGS.md)** – All commands, keymaps, and autocmds in one place
 - **[Troubleshooting Guide](docs/TROUBLESHOOTING.md)** – Common issues and solutions
+- **[Roadmap](docs/ROADMAP.md)** – Planned features and housekeeping
 
 ---
 
@@ -616,12 +651,6 @@ The plugin uses GitHub REST API v3:
 - `GET /repos/{owner}/{repo}/traffic/views` – View statistics
 - `GET /repos/{owner}/{repo}/traffic/popular/referrers` – Top referrers
 - `GET /repos/{owner}/{repo}/traffic/popular/paths` – Top paths
-
----
-
-## License
-
-[MIT License](./LICENSE)
 
 ---
 

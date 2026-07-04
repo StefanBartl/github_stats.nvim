@@ -1,4 +1,4 @@
----@module 'github_stats.usercommands.chart'
+---@module 'github_stats.bindings.usrcmds.chart'
 ---@brief Visualization with sparklines and charts
 ---@description
 --- Displays traffic data as ASCII charts and sparklines.
@@ -8,7 +8,7 @@ local config = require("github_stats.config")
 local date_presets = require("github_stats.date_presets")
 local analytics = require("github_stats.analytics")
 local visualization = require("github_stats.visualization")
-local utils = require("github_stats.usercommands.utils")
+local utils = require("github_stats.bindings.usrcmds.utils")
 
 local M = {}
 

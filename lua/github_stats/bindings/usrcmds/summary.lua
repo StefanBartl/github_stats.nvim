@@ -1,11 +1,11 @@
----@module 'github_stats.usercommands.summary'
+---@module 'github_stats.bindings.usrcmds.summary'
 ---@brief Cross-repository summary statistics
 ---@description
 --- Displays aggregated statistics across all configured repositories
 --- for a given metric type (clones or views).
 
 local analytics = require("github_stats.analytics")
-local utils = require("github_stats.usercommands.utils")
+local utils = require("github_stats.bindings.usrcmds.utils")
 
 local M = {}
 
