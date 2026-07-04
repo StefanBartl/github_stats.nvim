@@ -12,12 +12,6 @@ local keymaps = require("github_stats.bindings.keymaps")
 
 local M = {}
 
----@type GHStats.DashboardState?
-local state = nil
-
----@type uv.uv_timer_t?
--- local auto_refresh_timer = nil
-
 ---Render debounce timer
 ---@type uv.uv_timer_t?
 local render_timer = nil
@@ -156,41 +150,10 @@ local function create_dashboard_window(buf)
   return win
 end
 
----Stop auto-refresh timer if running
----@param _state GHStats.DashboardState
-local function stop_auto_refresh(_state)
-  if _state.auto_refresh_timer then
-    local timer = _state.auto_refresh_timer
-    if timer and not timer:is_closing() then
-      timer:stop()
-      timer:close()
-    end
-    _state.auto_refresh_timer = nil
-  end
-end
-
----Close dashboard window
----@param _state GHStats.DashboardState
-function M.close(_state)
-  -- Stop auto-refresh
-  stop_auto_refresh(_state)
-
-  -- Close window
-  if _state.window and vim.api.nvim_win_is_valid(_state.window) then
-    vim.api.nvim_win_close(_state.window, true)
-  end
-
-  -- Delete buffer
-  if _state.buffer and vim.api.nvim_buf_is_valid(_state.buffer) then
-    vim.api.nvim_buf_delete(_state.buffer, { force = true })
-  end
-
-  _state.is_open = false
-  _state.window = nil
-  _state.buffer = nil
-end
-
----Cleanup dashboard resources
+---Cleanup dashboard resources: stop the render timer, stop/clear the
+---auto-refresh timer (via dashboard_state.clear_state()), and close the
+---window/buffer (via ui_state.cleanup_all()). Safe to call when nothing is
+---open.
 ---@return nil
 local function cleanup_dashboard()
   -- Stop render timer
@@ -202,11 +165,18 @@ local function cleanup_dashboard()
   -- Mark dashboard as closed
   dashboard_state.mark_closed()
 
-  -- Clear state
+  -- Clear state (also stops/closes any auto-refresh timer)
   dashboard_state.clear_state()
 
   -- Cleanup UI state (closes window and deletes buffer)
   ui_state.cleanup_all()
+end
+
+---Close the dashboard, if open. Public API counterpart to M.open() - safe to
+---call with no dashboard open (e.g. from tests or external Lua consumers).
+---@return nil
+function M.close()
+  cleanup_dashboard()
 end
 
 ---Open dashboard
@@ -243,7 +213,7 @@ function M.open(force_refresh)
   ui_state.set_win(win)
 
   -- Initialize dashboard state
-  state = dashboard_state.init_state(repos)
+  local state = dashboard_state.init_state(repos)
 
   -- Set buffer and window in state
   state.buffer = buf
