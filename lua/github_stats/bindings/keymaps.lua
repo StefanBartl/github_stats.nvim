@@ -16,6 +16,7 @@ local movement = require("github_stats.dashboard.movement")
 local render = require("github_stats.dashboard.render")
 local ui_state = require("github_stats.state.ui_state")
 local detail = require("github_stats.dashboard.detail")
+local actions = require("github_stats.dashboard.actions")
 
 local M = {}
 
@@ -165,10 +166,32 @@ function M.setup_keymaps(buf)
 		end
 	end, which_key_entries, "GitHub Stats: show repository details")
 
-	-- Refresh: configurable (default r)
+	-- Refresh: configurable (default r) -- re-renders with already-cached data
 	map_key(buf, keybindings.refresh_selected, function()
 		require("github_stats.dashboard").schedule_render(true)
 	end, which_key_entries, "GitHub Stats: refresh dashboard")
+
+	-- Refresh all: configurable (default R) -- force-fetches every configured repo
+	map_key(buf, keybindings.refresh_all, function()
+		config.notify("[github-stats] Refreshing all repositories...", "info")
+		actions.refresh_all()
+	end, which_key_entries, "GitHub Stats: refresh all repositories")
+
+	-- Force refresh: configurable (default f) -- force-fetches the selected repo
+	map_key(buf, keybindings.force_refresh, function()
+		config.notify("[github-stats] Force-refreshing selected repository...", "info")
+		actions.force_refresh_selected()
+	end, which_key_entries, "GitHub Stats: force refresh selected repository")
+
+	-- Cycle sort: configurable (default s)
+	map_key(buf, keybindings.cycle_sort, function()
+		actions.cycle_sort()
+	end, which_key_entries, "GitHub Stats: cycle sort criteria")
+
+	-- Cycle time range: configurable (default t)
+	map_key(buf, keybindings.cycle_time_range, function()
+		actions.cycle_time_range()
+	end, which_key_entries, "GitHub Stats: cycle time range")
 
 	-- Quit: configurable (default q), plus fixed Esc fallback
 	if keybindings.quit and keybindings.quit ~= "" then
@@ -192,6 +215,10 @@ function M.setup_keymaps(buf)
 				.. "  gg/G      - Jump to top/bottom\n"
 				.. string.format("  %-9s - View repository details\n", keybindings.show_details)
 				.. string.format("  %-9s - Refresh dashboard\n", keybindings.refresh_selected)
+				.. string.format("  %-9s - Refresh all repositories\n", keybindings.refresh_all)
+				.. string.format("  %-9s - Force refresh selected repository\n", keybindings.force_refresh)
+				.. string.format("  %-9s - Cycle sort criteria\n", keybindings.cycle_sort)
+				.. string.format("  %-9s - Cycle time range\n", keybindings.cycle_time_range)
 				.. string.format("  %-9s - Quit\n", keybindings.quit)
 				.. string.format("  %-9s - Show this help", keybindings.show_help),
 			vim.log.levels.INFO

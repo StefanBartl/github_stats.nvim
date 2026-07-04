@@ -406,9 +406,9 @@ Navigation:~
   <Enter>         Show detailed statistics for selected repository
 
 Actions:~
-  r               Refresh selected repository
-  R               Refresh all repositories
-  f               Force fetch (bypass interval)
+  r               Re-render from cached data (no API call)
+  R               Force-fetch all repositories from GitHub (bypass interval)
+  f               Force-fetch selected repository from GitHub (bypass interval)
   s               Cycle sort criteria (clones/views/name/trend)
   t               Cycle time range (7d/30d/90d/all)
 

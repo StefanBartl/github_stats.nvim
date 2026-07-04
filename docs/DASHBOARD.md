@@ -91,9 +91,9 @@ Press `t` to cycle through:
 
 ### Manual Refresh
 
-- `r`: Refresh only the selected repository
-- `R`: Refresh all repositories
-- `f`: Force refresh (bypass interval check)
+- `r`: Re-render the dashboard from already-fetched (cached) data — no API call
+- `R`: Force-fetch all repositories from the GitHub API (bypasses the fetch interval)
+- `f`: Force-fetch only the selected repository from the GitHub API (bypasses the fetch interval)
 
 ### Auto-Refresh
 
@@ -122,11 +122,11 @@ refresh_interval_seconds = 0
 | `<C-d>` / `<C-u>` | Scroll half page |
 | `<PageDown>` / `<PageUp>` | Scroll full page |
 | `<Enter>` | Show detailed view |
-| `r` | Refresh selected repository |
-| `R` | Refresh all repositories |
-| `f` | Force refresh |
-| `s` | Cycle sort criteria |
-| `t` | Cycle time range |
+| `r` | Re-render from cached data |
+| `R` | Force-fetch all repositories |
+| `f` | Force-fetch selected repository |
+| `s` | Cycle sort criteria (clones → views → name → trend) |
+| `t` | Cycle time range (7d → 30d → 90d → all) |
 | `?` | Show help overlay |
 | `q` / `<Esc>` | Quit dashboard |
 
@@ -240,7 +240,7 @@ luarepos = {
 
 **Solutions:**
 
-1. Press r to refresh selected repository
+1. Press `f` to force-fetch the selected repository from GitHub (plain `r` only re-renders cached data, it won't fetch anything new)
 2. Verify repository name in config.json
 3. Check token has repo scope: `:GithubStatsDebug`
 

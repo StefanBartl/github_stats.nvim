@@ -50,14 +50,22 @@ Defaults come from [`lua/github_stats/config/DEFAULTS.lua`](../lua/github_stats/
 | `navigate_down` | `j` | Move selection down |
 | `navigate_up` | `k` | Move selection up |
 | `show_details` | `<CR>` | Open detailed view for the selected repo |
-| `refresh_selected` | `r` | Re-render the dashboard |
+| `refresh_selected` | `r` | Re-render the dashboard from already-cached data (no API call) |
+| `refresh_all` | `R` | Force-fetch all configured repositories from GitHub, then re-render |
+| `force_refresh` | `f` | Force-fetch the selected repository from GitHub, then re-render |
+| `cycle_sort` | `s` | Cycle sort criteria: `clones` → `views` → `name` → `trend` |
+| `cycle_time_range` | `t` | Cycle time range: `7d` → `30d` → `90d` → `all` |
 | `quit` | `q` | Close the dashboard |
 | `show_help` | `?` | Show the keybinding help overlay |
 
-> **Known gap:** `refresh_all`, `force_refresh`, `cycle_sort`, and
-> `cycle_time_range` are present in the config schema and type definitions but
-> have no bound action yet — tracked as a follow-up, not implemented in this
-> pass.
+Sorting and time-range filtering are applied on every render based on
+`state.sort_by`/`state.time_range` (see
+[`lua/github_stats/dashboard/render.lua`](../lua/github_stats/dashboard/render.lua)); the
+cycle keys just advance that state. `refresh_all`/`force_refresh` are
+implemented in
+[`lua/github_stats/dashboard/actions.lua`](../lua/github_stats/dashboard/actions.lua)
+and go through [`lua/github_stats/fetcher.lua`](../lua/github_stats/fetcher.lua)
+to hit the GitHub API, bypassing the normal fetch-interval check.
 
 ### Fixed
 

@@ -32,39 +32,175 @@ local function format_number(num)
   return formatted
 end
 
----Build header lines
+---Fixed-width content area between the header box's left/right borders
+local HEADER_CONTENT_WIDTH = 72
+
+---Pad or truncate a string to an exact display width
+---@param str string
+---@param width integer
+---@return string
+local function fit_width(str, width)
+  if #str >= width then
+    return str:sub(1, width)
+  end
+  return str .. string.rep(" ", width - #str)
+end
+
+---Build header lines, including a status line reflecting live sort/range state
+---@param state GHStats.DashboardState Current dashboard state
 ---@return string[] # Header lines
-local function build_header()
+local function build_header(state)
+  local hint = fit_width(
+    -- NOTE: this format string is exactly 72 chars wide once %-6s/%-4s are
+    -- filled with their widest values ("clones"/"trend" and "all"). Keep it
+    -- at that width -- fit_width() below silently truncates anything longer.
+    string.format(
+      "  Sort:%-6s Range:%-4s s:sort  t:range  R:refresh-all  f:force  q:quit",
+      state.sort_by or "name",
+      state.time_range or "30d"
+    ),
+    HEADER_CONTENT_WIDTH
+  )
+
   return {
     "╔════════════════════════════════════════════════════════════════════════╗",
     "║                     GitHub Stats Dashboard                             ║",
-    "║  Navigate: j/k  •  View: <CR>  •  Refresh: r  •  Quit: q               ║",
+    "║" .. hint .. "║",
     "╚════════════════════════════════════════════════════════════════════════╝",
   }
+end
+
+---Compute a simple trend percentage: growth of the second half of the period
+---versus the first half, based on daily clone counts
+---@param daily_breakdown table<string, {count: integer, uniques: integer}>
+---@return number # Percentage change, 0 if not enough data to compare
+local function compute_trend(daily_breakdown)
+  local dates = vim.tbl_keys(daily_breakdown)
+  if #dates < 2 then
+    return 0
+  end
+  table.sort(dates)
+
+  local mid = math.floor(#dates / 2)
+  local older_total, recent_total = 0, 0
+
+  for i = 1, mid do
+    older_total = older_total + (daily_breakdown[dates[i]].count or 0)
+  end
+  for i = mid + 1, #dates do
+    recent_total = recent_total + (daily_breakdown[dates[i]].count or 0)
+  end
+
+  if older_total == 0 then
+    return recent_total > 0 and 100 or 0
+  end
+
+  return ((recent_total - older_total) / older_total) * 100
+end
+
+---Format a trend value as a visual indicator with percentage
+---@param trend number
+---@return string
+local function trend_indicator(trend)
+  if trend > 0.5 then
+    return string.format("⬆ +%.0f%%", trend)
+  elseif trend < -0.5 then
+    return string.format("⬇ %.0f%%", trend)
+  end
+  return "⬌ 0%"
+end
+
+---@class GHStats.DashboardRepoStats
+---@field clones GHStats.AggregatedStats|nil
+---@field views GHStats.AggregatedStats|nil
+---@field trend number
+
+---Query clones/views for a repository, respecting the dashboard's time range
+---@param repo string Repository identifier
+---@param time_range string Dashboard time range ("7d"|"30d"|"90d"|"all")
+---@return GHStats.DashboardRepoStats
+local function fetch_repo_stats(repo, time_range)
+  local stats_clones, _ = analytics.query_metric({
+    repo = repo,
+    metric = "clones",
+    time_range = time_range,
+  })
+
+  local stats_views, _ = analytics.query_metric({
+    repo = repo,
+    metric = "views",
+    time_range = time_range,
+  })
+
+  local trend = compute_trend(stats_clones and stats_clones.daily_breakdown or {})
+
+  return { clones = stats_clones, views = stats_views, trend = trend }
+end
+
+---Sort state.repos in place according to state.sort_by, then restore the
+---previously selected repository's position (by name) so the selection
+---doesn't jump around when the underlying data hasn't actually changed.
+---@param state GHStats.DashboardState Current dashboard state
+---@param stats_by_repo table<string, GHStats.DashboardRepoStats>
+local function sort_repos(state, stats_by_repo)
+  local previously_selected = state.repos[state.current_index]
+
+  if state.sort_by == "name" then
+    table.sort(state.repos)
+  elseif state.sort_by == "clones" then
+    table.sort(state.repos, function(a, b)
+      local ca = (stats_by_repo[a] and stats_by_repo[a].clones and stats_by_repo[a].clones.total_count) or 0
+      local cb = (stats_by_repo[b] and stats_by_repo[b].clones and stats_by_repo[b].clones.total_count) or 0
+      if ca == cb then
+        return a < b
+      end
+      return ca > cb
+    end)
+  elseif state.sort_by == "views" then
+    table.sort(state.repos, function(a, b)
+      local va = (stats_by_repo[a] and stats_by_repo[a].views and stats_by_repo[a].views.total_count) or 0
+      local vb = (stats_by_repo[b] and stats_by_repo[b].views and stats_by_repo[b].views.total_count) or 0
+      if va == vb then
+        return a < b
+      end
+      return va > vb
+    end)
+  elseif state.sort_by == "trend" then
+    table.sort(state.repos, function(a, b)
+      local ta = (stats_by_repo[a] and stats_by_repo[a].trend) or 0
+      local tb = (stats_by_repo[b] and stats_by_repo[b].trend) or 0
+      if ta == tb then
+        return a < b
+      end
+      return ta > tb
+    end)
+  end
+
+  if previously_selected then
+    for i, repo in ipairs(state.repos) do
+      if repo == previously_selected then
+        dashboard_state.set_current_index(i)
+        break
+      end
+    end
+  end
 end
 
 ---Build entry lines for a single repository
 ---@param repo string Repository identifier
 ---@param index integer Repository index for numbering
 ---@param is_selected boolean Whether this entry is currently selected
+---@param stats GHStats.DashboardRepoStats Precomputed stats for this repo
 ---@return string[] # Entry lines
-local function build_entry(repo, index, is_selected)
+local function build_entry(repo, index, is_selected, stats)
   local lines = {}
 
-  -- Title line with selection indicator
+  -- Title line with selection indicator and trend
   local indicator = is_selected and "▶" or " "
-  table.insert(lines, string.format("%s %d. %s", indicator, index, repo))
+  table.insert(lines, string.format("%s %d. %s  %s", indicator, index, repo, trend_indicator(stats.trend)))
 
-  -- Fetch stats (with error handling)
-  local stats_clones, _ = analytics.query_metric({
-    repo = repo,
-    metric = "clones",
-  })
-
-  local stats_views, _ = analytics.query_metric({
-    repo = repo,
-    metric = "views",
-  })
+  local stats_clones = stats.clones
+  local stats_views = stats.views
 
   -- Format metrics
   local clones_count = stats_clones and stats_clones.total_count or 0
@@ -104,14 +240,24 @@ end
 local function build_lines(state)
   local lines = {}
 
-  -- Header
-  vim.list_extend(lines, build_header())
+  -- Gather stats for all repos first (needed for clones/views/trend sorting)
+  ---@type table<string, GHStats.DashboardRepoStats>
+  local stats_by_repo = {}
+  for _, repo in ipairs(state.repos) do
+    stats_by_repo[repo] = fetch_repo_stats(repo, state.time_range or "30d")
+  end
+
+  -- Apply current sort criteria, preserving the selected repo
+  sort_repos(state, stats_by_repo)
+
+  -- Header (reflects live sort_by/time_range)
+  vim.list_extend(lines, build_header(state))
 
   -- Entries
   for i, repo in ipairs(state.repos) do
     -- Use state.current_index as single source of truth
     local is_selected = (i == state.current_index)
-    vim.list_extend(lines, build_entry(repo, i, is_selected))
+    vim.list_extend(lines, build_entry(repo, i, is_selected, stats_by_repo[repo]))
   end
 
   return lines
