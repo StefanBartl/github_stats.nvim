@@ -422,10 +422,11 @@ Interactive TUI dashboard for monitoring all repositories at a glance:
 | `j` / `<Down>` | Navigate down |
 | `k` / `<Up>` | Navigate up |
 | `<Enter>` | Show detailed view |
-| `r` | Refresh selected repository |
-| `R` | Refresh all repositories |
-| `s` | Cycle sort order |
-| `t` | Cycle time range |
+| `r` | Re-render from cached data |
+| `R` | Force-fetch all repositories from GitHub |
+| `f` | Force-fetch selected repository from GitHub |
+| `s` | Cycle sort order (clones → views → name → trend) |
+| `t` | Cycle time range (7d → 30d → 90d → all) |
 | `?` | Show help |
 | `q` / `<Esc>` | Quit dashboard |
 
