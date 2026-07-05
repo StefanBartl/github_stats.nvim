@@ -22,6 +22,79 @@ for GitHub Stats, organized by implementation scope and priority.
 
 ---
 
+## Implementation Plan
+
+Reviewed against the state of the codebase as of this pass. Ordered by
+priority: fix real bugs first, then cheap/high-value gaps, then the larger
+speculative features below, in roughly the order they're already grouped.
+
+### Priority 0 — bugs (root cause known, not yet fixed)
+
+1. **Dashboard scrolling cuts off the last entry**
+   ([docs/devs/BUGS.md](devs/BUGS.md)). Root cause found this pass:
+   [`dashboard/state.lua`](../lua/github_stats/dashboard/state.lua)'s
+   `calculate_total_lines()`/`get_repo_line()`/`get_repo_from_line()` all
+   assume **6 lines per entry** ("1 title + 4 metrics + 1 separator"), but
+   [`dashboard/render.lua`](../lua/github_stats/dashboard/render.lua)'s
+   `build_entry()` only ever emits **5 lines** (title, Clones, Views, Period,
+   separator — there's no fourth metric line). Every scroll/cursor
+   calculation is off by one line per entry, compounding with repo count.
+   Fix: either make `build_entry` emit 6 lines (e.g. split Clones/Views onto
+   4 lines) or correct the `* 6` factor to `* 5` everywhere it's hardcoded —
+   the latter is the smaller, more honest fix since it matches what's
+   actually rendered.
+2. **`render.lua`'s `set_cursor_to_current` uses `target_line = 5 * state.current_index`**,
+   which neither matches the (buggy) `* 6` assumption in `state.lua` nor
+   accounts for `HEADER_LINES` at all — a second, independent instance of the
+   same class of bug. Should be reunified with
+   `dashboard_state.get_repo_line()` once (1) is fixed, so there's exactly
+   one formula for "which line is repo N on".
+3. **Test suite drift**: `lua/github_stats/tests/dashboard_spec.lua` and
+   `.../tests/integration/dashboard_flow_spec.lua` reference modules that
+   don't exist (`dashboard.renderer`, `dashboard.navigator` — the real names
+   are `dashboard.render`/no navigator module) and were calling
+   `dashboard.close()`/`dashboard.open()` against signatures that have since
+   been fixed to match (see "Resolved Housekeeping" below). No `busted`
+   runner is set up locally or in CI to catch this automatically — worth
+   fixing the spec files *and* wiring up a CI job (`stylua`/`luacheck`/`busted`)
+   per [Checklist.md §7](ROADMAP/Checklist.md#7-tooling).
+
+### Priority 1 — small, already-scoped features (v1.3.x in the roadmap below)
+
+Cheapest wins, in order: **Autocomplete Date Suggestions** (2-3 days, pure UX
+polish on existing `date_presets.lua`), **Export Templates** (3-5 days,
+extends the existing `export.lua`), **Fetch Progress Indicators** (3-4 days,
+UI-only, no new data model). **Comparison Baseline** is slightly bigger
+(needs a new persisted "baseline" snapshot format) but still self-contained.
+
+### Priority 2 — medium features, pick one at a time
+
+**Notification Thresholds** is the best next candidate: it's additive
+(a new `thresholds.lua` consuming the existing `analytics`/`fetcher` output),
+doesn't touch the dashboard, and the rule schema in the roadmap entry below
+is already concrete enough to implement directly. **Repository Groups/Tags**
+is next-best (config + a thin aggregation layer over existing
+`analytics.query_all_repos`). **Interactive Chart Navigation** is the
+largest of the three (new stateful UI component, its own keymaps) — do it
+after the dashboard's own Priority-0 line-math bug is fixed, since the chart
+navigator would otherwise inherit the same class of scroll/cursor bugs.
+
+### Priority 3 — large features
+
+**Webhook Integration** stays last: it needs an HTTP server in pure Lua,
+cross-platform NAT/ngrok handling, and HMAC verification — by far the
+largest effort (4-5 weeks per the estimate below) and the least aligned with
+the plugin's current "local polling" model. Revisit only once Priority 0-2
+are done and there's a concrete user request for real-time updates.
+
+### Not prioritized
+
+**Experimental Ideas** (AI-powered insights, GitHub Actions integration)
+remain parked — no action needed until there's a concrete design, per their
+own section below.
+
+---
+
 ## Resolved Housekeeping
 
 - **Lazy-load strategy**: The plugin auto-fetches on `VimEnter` and can
@@ -29,6 +102,22 @@ for GitHub Stats, organized by implementation scope and priority.
   `lazy.nvim` load strategy (see [README installation](../README.md#installation)).
   `lazy = false` remains a valid alternative for users who want the plugin
   available immediately at startup.
+- **Dashboard keymaps were configured but not implemented**: `refresh_all`,
+  `force_refresh`, `cycle_sort`, `cycle_time_range` are now wired up
+  (`dashboard/actions.lua`), `state.time_range` is actually threaded into
+  `analytics.query_metric`, and dashboard sorting (including a real "trend"
+  metric) is applied on every render.
+- **`setup(opts)` never forwarded `opts` to `config.init()`**: the
+  documented primary usage pattern (`setup({ repos = {...} })`) was silently
+  ignored in favor of `config.json`/defaults. Fixed.
+- **`:GithubStatsDashboard!` force-refresh was a no-op**: the bang was
+  captured but `dashboard.open()` took no parameters. Fixed.
+- **`dashboard.close()` crashed when called with no arguments** (the only
+  way anything ever called it): unified onto the same `cleanup_dashboard()`
+  teardown path used elsewhere.
+- **`config.lua` → `config/init.lua` + `config/DEFAULTS.lua`**, and
+  `usercommands/`/`dashboard/keymaps.lua` → `bindings/{usrcmds,keymaps,autocmds}`,
+  per [Checklist.md §2](ROADMAP/Checklist.md#2-modularität-und-struktur).
 
 ---
 
