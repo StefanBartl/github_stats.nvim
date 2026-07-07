@@ -156,10 +156,12 @@ When first created, the file contains:
     "username/repo2",
     "organization/project"
   ],
+  "watch_users": ["username"],
   "token_source": "env",
   "token_env_var": "GITHUB_TOKEN",
   "fetch_interval_hours": 24,
-  "notification_level": "all"
+  "notification_level": "all",
+  "background": { "enabled": true }
 }
 ```
 
@@ -179,7 +181,9 @@ When first created, the file contains:
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `repos` | `array` | Yes | `[]` | List of repositories in "owner/repo" format |
+| `repos` | `array` | Yes, unless `watch_users` is set | `[]` | List of individually tracked repositories in "owner/repo" format |
+| `watch_users` | `array` | No | `[]` | GitHub usernames whose public repos are auto-discovered and tracked in addition to `repos` |
+| `background.enabled` | `boolean` | No | `true` | Master switch for the silent background fetch/discovery cycle |
 | `token_source` | `string` | No | `"env"` | Token source: `"env"` or `"file"` |
 | `token_env_var` | `string` | No | `"GITHUB_TOKEN"` | Environment variable name (when `token_source="env"`) |
 | `token_file` | `string` | Conditional | - | Path to token file (when `token_source="file"`) |
@@ -420,7 +424,7 @@ Shows:
 
 #### "No repositories configured"
 
-**Cause:** Empty `repos` array
+**Cause:** Empty `repos` array and no `watch_users` either
 
 **Solution:**
 
@@ -431,6 +435,13 @@ Edit config.json:
     "username/repo1",
     "username/repo2"
   ]
+}
+```
+
+Or auto-discover instead of listing repos individually:
+```json
+{
+  "watch_users": ["username"]
 }
 ```
 

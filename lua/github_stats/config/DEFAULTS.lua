@@ -25,6 +25,10 @@ local DEFAULT_CONFIG = {
 	token_env_var = "GITHUB_TOKEN",
 	fetch_interval_hours = 24,
 	notification_level = "all",
+	watch_users = {},
+	background = {
+		enabled = true,
+	},
 	date_presets = {
 		enabled = true,
 		builtins = {

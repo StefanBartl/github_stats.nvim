@@ -26,14 +26,26 @@ function M.execute(_args)
 		return
 	end
 
+	local tracked_repos = config.get_repos()
+	local static_count = #(cfg.repos or {})
+	local discovered_count = #tracked_repos - static_count
+
 	local lines = {
 		"GitHub Stats Debug Info",
 		string.rep("=", 60),
 		"",
-		str_format("Repositories: %d", #cfg.repos),
+		str_format("Repositories: %d tracked (%d explicit, %d discovered)", #tracked_repos, static_count, discovered_count),
 		str_format("Token source: %s", cfg.token_source),
 		str_format("Notification level: %s", cfg.notification_level or "all"),
+		str_format(
+			"Background fetch: %s",
+			(cfg.background == nil or cfg.background.enabled ~= false) and "enabled" or "disabled"
+		),
 	}
+
+	if cfg.watch_users and #cfg.watch_users > 0 then
+		tbl_insert(lines, str_format("Watched users: %s", table.concat(cfg.watch_users, ", ")))
+	end
 
 	-- Test token
 	local token, token_err = config.get_token()
@@ -72,8 +84,8 @@ function M.execute(_args)
 	tbl_insert(lines, "")
 	tbl_insert(lines, "Testing first repository...")
 
-	if #cfg.repos > 0 then
-		local test_repo = cfg.repos[1]
+	if #tracked_repos > 0 then
+		local test_repo = tracked_repos[1]
 		tbl_insert(lines, str_format("Repo: %s", test_repo))
 
 		-- Test API call

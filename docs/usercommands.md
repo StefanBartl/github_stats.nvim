@@ -673,9 +673,11 @@ None
 **Output Sections:**
 
 1. **Configuration Status**
-   - Number of configured repositories
+   - Number of tracked repositories (explicit + auto-discovered breakdown)
    - Token source (environment variable or file)
    - Notification level
+   - Background fetch status (enabled/disabled)
+   - Watched users (if `watch_users` is configured)
 
 2. **Token Status**
    - Presence/absence of token
@@ -703,9 +705,11 @@ None
 GitHub Stats Debug Info
 ============================================================
 
-Repositories: 5
+Repositories: 8 tracked (5 explicit, 3 discovered)
 Token source: env
 Notification level: all
+Background fetch: enabled
+Watched users: username
 Token: Present (40 chars)
 
 Last Fetch Summary:
