@@ -12,6 +12,8 @@ Configure GitHub Stats directly in your Neovim init file using the `setup()` fun
     - [Minimal Configuration](#minimal-configuration)
     - [Complete Example](#complete-example)
   - [Advanced Configuration](#advanced-configuration)
+    - [Auto-Discovered Repos (watch_users)](#auto-discovered-repos-watch_users)
+    - [Disabling Background Fetching](#disabling-background-fetching)
     - [Using Token File](#using-token-file)
     - [Custom Storage Paths](#custom-storage-paths)
     - [Reduced Notifications](#reduced-notifications)
@@ -100,16 +102,46 @@ require("github_stats").setup({
     "username/repo1",
     "username/repo2",
   },
+  watch_users = { "username" },  -- auto-tracks all public repos of "username" too
   token_source = "env",
   token_env_var = "GITHUB_TOKEN",
   fetch_interval_hours = 24,
   notification_level = "all",
+  background = { enabled = true },
 })
 ```
 
 ---
 
 ## Advanced Configuration
+
+### Auto-Discovered Repos (`watch_users`)
+
+Instead of listing every repository individually, track everything a
+GitHub user publishes:
+
+```lua
+require("github_stats").setup({
+  repos = { "org/private-project" },  -- still tracked individually
+  watch_users = { "username" },       -- ALL public repos of "username"
+})
+```
+
+`watch_users` is re-resolved on every background cycle (see below), so new
+repos show up automatically. It's additive to `repos`, not a replacement.
+
+### Disabling Background Fetching
+
+By default, the plugin runs a silent background cycle for the whole
+session (not just once at startup) that stays quiet on success and only
+notifies on real errors. To rely on manual `:GithubStatsFetch` only:
+
+```lua
+require("github_stats").setup({
+  repos = { "username/repo" },
+  background = { enabled = false },
+})
+```
 
 ### Using Token File
 
@@ -358,12 +390,14 @@ Shows:
 
 #### "Configuration error: repos is required"
 
-**Cause:** No repositories specified in setup
+**Cause:** No repositories specified in setup, and no `watch_users` either
 
 **Solution:**
 ```lua
 require("github_stats").setup({
   repos = { "username/repo" },  -- ✅ Add repositories
+  -- or:
+  -- watch_users = { "username" },  -- ✅ auto-track all public repos of a user
 })
 ```
 
@@ -473,11 +507,17 @@ Copy and customize this template:
 ```lua
 -- GitHub Stats Configuration
 require("github_stats").setup({
-  -- Repository list (required)
+  -- Repository list (required, unless watch_users is set)
   repos = {
     "username/repo1",
     "username/repo2",
   },
+
+  -- Auto-discover all public repos of these users (optional, additive to repos)
+  -- watch_users = { "username" },
+
+  -- Background fetch/discovery cycle (optional, defaults to enabled)
+  -- background = { enabled = true },
 
   -- Token configuration
   token_source = "env",              -- "env" or "file"

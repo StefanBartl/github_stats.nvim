@@ -97,6 +97,15 @@ own section below.
 
 ## Resolved Housekeeping
 
+- **The plugin only fetched once, at `VimEnter`, and always notified**: it
+  now runs a persistent, silent background cycle for the whole session
+  (`background.lua`) that periodically checks whether a fetch is due —
+  success is silent, real errors still surface (subject to
+  `notification_level`). `watch_users` lets you auto-track every public
+  repo of a GitHub user in one line instead of hand-maintaining `repos`
+  (`api.list_user_repos`, `repo_discovery.lua`, merged into
+  `config.get_repos()`). Both are on by default; `background = { enabled =
+  false }` opts back out to manual-only fetching.
 - **Lazy-load strategy**: The plugin auto-fetches on `VimEnter` and can
   auto-open the dashboard, so `event = "VimEnter"` is the recommended
   `lazy.nvim` load strategy (see [README installation](../README.md#installation)).

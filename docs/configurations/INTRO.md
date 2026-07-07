@@ -10,6 +10,8 @@
   - [Configuration Options](#configuration-options)
     - [Core Options](#core-options)
       - [`repos`](#repos)
+      - [`watch_users`](#watch_users)
+      - [`background.enabled`](#backgroundenabled)
       - [`token_source`](#token_source)
       - [`token_env_var`](#token_env_var)
       - [`token_file`](#token_file)
@@ -93,11 +95,30 @@ Both methods support the same configuration options and can be used interchangea
 
 #### `repos`
 **Type:** `string[]`
-**Required:** Yes (at least one repository)
+**Required:** Yes, unless `watch_users` is set
 **Format:** `"owner/repository"`
 **Example:** `["username/repo1", "organization/repo2"]`
 
-List of repositories to collect statistics for. Repository names must match exactly as they appear on GitHub (case-sensitive).
+List of individually tracked repositories. Repository names must match exactly as they appear on GitHub (case-sensitive). Works together with `watch_users` — both lists are merged.
+
+#### `watch_users`
+**Type:** `string[]`
+**Default:** `{}`
+**Example:** `["username"]`
+
+GitHub usernames whose public repositories are auto-discovered and tracked in addition to `repos`. Re-resolved on every background cycle, so newly created repos show up automatically without editing config. Traffic stats still require push access to each repo, so entries you don't have access to simply never populate data.
+
+```lua
+require("github_stats").setup({
+  watch_users = { "username" },  -- tracks every public repo of "username"
+})
+```
+
+#### `background.enabled`
+**Type:** `boolean`
+**Default:** `true`
+
+Master switch for the silent background fetch/discovery cycle (started on `VimEnter`, stays active for the whole session). When `false`, only manual `:GithubStatsFetch` ever fetches data — see [Background Fetching & Auto-Discovered Repos](../../README.md#background-fetching--auto-discovered-repos) in the README for the full behavior.
 
 #### `token_source`
 **Type:** `"env" | "file"`

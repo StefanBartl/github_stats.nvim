@@ -112,11 +112,21 @@ end
 ---Fetch all repositories and metrics
 ---@param force boolean Whether to bypass interval check
 ---@param callback? fun(summary: GHStats.FetchSummary) Optional completion callback
-function M.fetch_all(force, callback)
+---@param opts? { background?: boolean } When `background` is true, this is a
+---  silent background cycle: the "starting fetch"/"no repos configured"/
+---  "interval not elapsed" info notifications are suppressed, but the
+---  "fetched N, M errors" notification still fires (still subject to
+---  `notification_level`) so real problems aren't hidden.
+function M.fetch_all(force, callback, opts)
+	opts = opts or {}
+	local background = opts.background == true
+
 	local repos = config.get_repos()
 
 	if #repos == 0 then
-		config.notify("[github-stats] No repositories configured", "warn")
+		if not background then
+			config.notify("[github-stats] No repositories configured", "warn")
+		end
 		return
 	end
 
@@ -128,13 +138,15 @@ function M.fetch_all(force, callback)
 	end
 
 	if not force and not should_fetch() then
-		if notify_fetch == true then
+		if notify_fetch == true and not background then
 			config.notify("[github-stats] Fetch interval not elapsed (use 'force' to bypass)", "info")
 		end
 		return
 	end
 
-	config.notify(str_format("[github-stats] Starting fetch: %d repos, force=%s", #repos, tostring(force)), "info")
+	if not background then
+		config.notify(str_format("[github-stats] Starting fetch: %d repos, force=%s", #repos, tostring(force)), "info")
+	end
 
 	local completed = 0
 	local all_success = {}
@@ -156,14 +168,16 @@ function M.fetch_all(force, callback)
 			-- Store for debug access
 			M.last_fetch_summary = summary
 
-			-- Notify user
+			-- Notify user: error summary always fires (still gated by
+			-- notification_level) even in background mode, so real problems
+			-- surface; the plain success message is suppressed in the background.
 			local error_count = vim.tbl_count(all_errors)
 			if error_count > 0 then
 				config.notify(
 					str_format("[github-stats] Fetched %d metrics, %d errors", #all_success, error_count),
 					"warn"
 				)
-			else
+			elseif not background then
 				config.notify(str_format("[github-stats] Successfully fetched %d metrics", #all_success), "info")
 			end
 

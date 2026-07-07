@@ -159,6 +159,108 @@ function M.fetch_all_metrics(repo, callback)
   end
 end
 
+---Maximum pages to follow when listing a user's repositories (safety cap:
+---100 repos/page, so 30 pages covers up to 3000 repos before giving up)
+local MAX_USER_REPO_PAGES = 30
+
+---Fetch a single page of a user's public repositories
+---@param username string GitHub username
+---@param page integer Page number (1-based)
+---@param token string? GitHub token (optional; public listing works without one, but an
+---  authenticated request gets a much higher rate limit)
+---@param callback fun(repo_names: string[]|nil, err: string?, page_count: integer)
+local function fetch_user_repos_page(username, page, token, callback)
+  local url = string.format("%s/users/%s/repos?per_page=100&page=%d", API_BASE, username, page)
+
+  local args
+  if token then
+    args = build_curl_args(url, token)
+  else
+    args = { "curl", "-s", "-H", "Accept: application/vnd.github+json", url }
+  end
+
+  vim.system(args, { text = true }, function(result)
+    schedule(function()
+      if result.code ~= 0 then
+        callback(nil, string.format("curl failed with code %d: %s", result.code, result.stderr or ""), 0)
+        return
+      end
+
+      local data, parse_err = parse_response(result.stdout)
+      if not data then
+        callback(nil, parse_err, 0)
+        return
+      end
+
+      if type(data) ~= "table" then
+        callback(nil, "Unexpected response shape (expected array)", 0)
+        return
+      end
+
+      local names = {}
+      for _, repo in ipairs(data) do
+        if type(repo) == "table" and type(repo.full_name) == "string" then
+          table.insert(names, repo.full_name)
+        end
+      end
+
+      callback(names, nil, #data)
+    end)
+  end)
+end
+
+---List all public repositories for a GitHub user, following pagination
+---@param username string GitHub username
+---@param callback fun(repo_names: string[]|nil, err: string?) Completion callback
+function M.list_user_repos(username, callback)
+  if type(username) ~= "string" or username == "" then
+    schedule(function()
+      callback(nil, "Invalid username")
+    end)
+    return
+  end
+
+  -- Authenticate if a token is available (raises the rate limit); the
+  -- endpoint itself works unauthenticated for public repos too.
+  local token = config.get_token()
+
+  local all_names = {}
+
+  local function fetch_page(page)
+    if page > MAX_USER_REPO_PAGES then
+      schedule(function()
+        callback(all_names, nil)
+      end)
+      return
+    end
+
+    fetch_user_repos_page(username, page, token, function(names, err, page_count)
+      if not names then
+        if page == 1 then
+          -- First page failed outright: propagate the error, nothing to return.
+          callback(nil, err)
+        else
+          -- Later page failed after some pages succeeded: return what we have.
+          callback(all_names, err)
+        end
+        return
+      end
+
+      vim.list_extend(all_names, names)
+
+      if page_count < 100 then
+        -- Short page: this was the last one.
+        callback(all_names, nil)
+        return
+      end
+
+      fetch_page(page + 1)
+    end)
+  end
+
+  fetch_page(1)
+end
+
 ---Rate limit info retrieval (optional, for monitoring)
 ---@param callback fun(data: table|nil, error: string|nil)
 function M.get_rate_limit(callback)

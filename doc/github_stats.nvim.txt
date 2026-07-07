@@ -24,7 +24,10 @@ GitHub Stats is a Neovim plugin for automatic collection and analysis of
 GitHub repository traffic statistics.
 
 Features:~
-  • Automatic daily data collection
+  • Silent background data collection (session-persistent, no messages
+    unless something actually fails)
+  • Auto-discovered repos: track every public repo of a GitHub user with
+    one line (watch_users), on top of any explicitly listed repos
   • Flexible configuration (setup() or config.json)
   • Historical JSON storage with custom paths
   • Smart date defaults in commands
@@ -141,9 +144,21 @@ See docs/configurations/INTRO.md for detailed guide.
 
 Configuration Options:~
 
-repos                   List of repositories (format: "owner/repo")
+repos                   List of individually tracked repositories
+                        (format: "owner/repo")
                         Type: string[]
-                        Required: Yes
+                        Required: only if watch_users is not set
+
+watch_users             GitHub usernames whose public repos are
+                        auto-discovered and tracked in addition to repos
+                        Type: string[]
+                        Default: {}
+
+background.enabled      Master switch for the silent background
+                        fetch/discovery cycle. When false, only manual
+                        :GithubStatsFetch ever fetches data.
+                        Type: boolean
+                        Default: true
 
 token_source            Token source ("env" or "file")
                         Type: string
@@ -179,6 +194,34 @@ Custom Storage Paths Example:~
       repos = { "username/repo" },
       config_dir = "~/my-github-stats",
       data_dir = "/mnt/nas/github-data",
+    })
+<
+
+Background Fetching & Auto-Discovered Repos:~
+
+By default a silent background cycle starts on VimEnter and stays active
+for the whole session (not just a one-shot startup check). It periodically
+checks whether a fetch is due (per fetch_interval_hours) and fetches
+quietly: no notification on success. Real failures (bad token, network,
+rate limit) still notify, subject to notification_level.
+
+Track every public repo of a GitHub user with one line:
+>lua
+    require("github_stats").setup({
+      repos = { "username/some-other-repo" },  -- still tracked individually
+      watch_users = { "username" },            -- all public repos of this user
+    })
+<
+
+watch_users is re-resolved every background cycle (new repos show up
+automatically) and is additive to repos. Repos you lack push access to
+simply never populate data, silently.
+
+Disable background fetching entirely:
+>lua
+    require("github_stats").setup({
+      repos = { "username/repo" },
+      background = { enabled = false },  -- only manual :GithubStatsFetch runs
     })
 <
 

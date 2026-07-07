@@ -165,13 +165,46 @@ function M.get()
 	return config
 end
 
----Get list of repositories
+---@type string[]
+local discovered_repos = {}
+
+---Set the repositories discovered via `watch_users` (replaces any previous set)
+---@param repos string[] Repository names ("owner/repo") discovered from watch_users
+---@return nil
+function M.set_discovered_repos(repos)
+	discovered_repos = repos or {}
+end
+
+---Get list of repositories: the explicitly configured `repos` plus any
+---repositories discovered via `watch_users`, deduped (explicit list first,
+---so its configured order is preserved).
 ---@return string[]
 function M.get_repos()
 	if not config then
 		return {}
 	end
-	return config.repos or {}
+
+	local static_repos = config.repos or {}
+	if #discovered_repos == 0 then
+		return static_repos
+	end
+
+	local seen = {}
+	local merged = {}
+	for _, repo in ipairs(static_repos) do
+		if not seen[repo] then
+			seen[repo] = true
+			table.insert(merged, repo)
+		end
+	end
+	for _, repo in ipairs(discovered_repos) do
+		if not seen[repo] then
+			seen[repo] = true
+			table.insert(merged, repo)
+		end
+	end
+
+	return merged
 end
 
 ---Get GitHub token from configured source

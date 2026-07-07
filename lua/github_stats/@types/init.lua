@@ -6,9 +6,14 @@
 ---@field builtins string[] List of enabled built-in preset names
 ---@field custom table<string, fun(): string, string> Custom user-defined presets
 
+---@class GHStats.BackgroundConfig
+---@field enabled boolean Master switch for the silent background fetch/discovery cycle. When false, only manual `:GithubStatsFetch` (and dashboard refresh keys) ever fetch data.
+
 ---@class GHStats.SetupOptions
 ---@field notify_fetch boolean Notify at startup whether a fetch was performed or not
----@field repos string[] List of repositories
+---@field repos string[] List of individually tracked repositories ("owner/repo")
+---@field watch_users? string[] GitHub usernames whose public repositories are auto-discovered and tracked in addition to `repos`
+---@field background? GHStats.BackgroundConfig Background fetch/discovery configuration
 ---@field token_source "env"|"file" Token source
 ---@field token_env_var? string Environment variable name
 ---@field token_file? string Path to token file

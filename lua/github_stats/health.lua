@@ -87,20 +87,33 @@ local function check_config()
 		return false, "Failed to load configuration"
 	end
 
-	-- Check repos
-	if #cfg.repos == 0 then
-		return false, "No repositories configured. Edit config.json or plugin initialization."
+	local has_static_repos = #(cfg.repos or {}) > 0
+	local has_watch_users = cfg.watch_users and #cfg.watch_users > 0
+
+	-- Check repos: either an explicit list, or usernames to auto-discover from
+	if not has_static_repos and not has_watch_users then
+		return false, "No repositories configured (set 'repos' or 'watch_users'). Edit config.json or plugin initialization."
 	end
 
-	-- Validate each repo
-	for i, repo in ipairs(cfg.repos) do
+	-- Validate each explicitly configured repo (discovered repos are
+	-- validated implicitly, since they come straight from the GitHub API)
+	for i, repo in ipairs(cfg.repos or {}) do
 		local valid, repo_err = validate_repo_format(repo)
 		if not valid then
 			return false, str_format("Invalid repo[%d] '%s': %s", i, repo, repo_err)
 		end
 	end
 
-	return true, str_format("Configuration valid (%d repos)", #cfg.repos)
+	if has_watch_users then
+		return true,
+			str_format(
+				"Configuration valid (%d explicit repos, watching users: %s)",
+				#(cfg.repos or {}),
+				table.concat(cfg.watch_users, ", ")
+			)
+	end
+
+	return true, str_format("Configuration valid (%d repos)", #(cfg.repos or {}))
 end
 
 ---Check token availability
@@ -347,6 +360,24 @@ function M.check()
 			"Or configure token_file in config.json",
 			"Get token from: https://github.com/settings/tokens",
 		})
+	end
+
+	health.start("GitHub Stats Background")
+
+	do
+		local cfg = config.get()
+		local background_enabled = not cfg or not cfg.background or cfg.background.enabled ~= false
+		if background_enabled then
+			health.ok("Background fetch enabled (silent; only errors are notified)")
+		else
+			health.info("Background fetch disabled (background.enabled = false) - manual :GithubStatsFetch only")
+		end
+
+		if cfg and cfg.watch_users and #cfg.watch_users > 0 then
+			health.ok(str_format("Auto-discovering repos for: %s", table.concat(cfg.watch_users, ", ")))
+		else
+			health.info("No watch_users configured - only explicitly listed repos are tracked")
+		end
 	end
 
 	health.start("GitHub Stats Dependencies")
