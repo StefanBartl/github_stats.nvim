@@ -13,7 +13,6 @@ local fn = vim.fn
 local fs = vim.fs
 local loop = vim.loop
 local str_format = string.format
-local tbl_concat = table.concat
 
 ---Sanitize repository name for filesystem
 ---@param repo string Repository in "owner/repo" format
@@ -33,35 +32,20 @@ local function get_metric_dir(repo, metric)
   return fs.joinpath(root, "data", repo_safe, metric)
 end
 
----Ensure directory exists
----@param path string Directory path
----@return boolean, string? # Success flag, error message
-local function ensure_dir(path)
-  local ok, err = pcall(fn.mkdir, path, "p")
-  if not ok then
-    return false, str_format("Failed to create directory: %s", err)
-  end
-  return true, nil
-end
-
 ---Generate timestamp-based filename
 ---@return string # ISO 8601 filename-safe format
 local function generate_filename()
   return os.date("!%Y-%m-%dT%H-%M-%S") .. ".json"
 end
 
----Write metric data atomically
+---Write metric data atomically. Delegates the encode+atomic-write to
+---lib.nvim.fs.json.write (which also creates parent directories).
 ---@param repo string Repository identifier
 ---@param metric string Metric type
 ---@param data table API response data
 ---@return boolean, string? # Success flag, error message
 function M.write_metric(repo, metric, data)
   local dir = get_metric_dir(repo, metric)
-  local ok, err = ensure_dir(dir)
-  if not ok then
-    return false, err
-  end
-
   local filename = generate_filename()
   local filepath = fs.joinpath(dir, filename)
 
@@ -71,28 +55,7 @@ function M.write_metric(repo, metric, data)
     data = data,
   }
 
-  -- Encode to JSON
-  local json_ok, json = pcall(vim.json.encode, storage_data)
-  if not json_ok then
-    return false, str_format("JSON encode failed: %s", json)
-  end
-
-  -- Write atomically (write to temp, then rename)
-  local temp_file = filepath .. ".tmp"
-  local write_ok, write_err = pcall(fn.writefile, {json}, temp_file)
-  if not write_ok then
-    return false, str_format("Write failed: %s", write_err)
-  end
-
-  -- Atomic rename
-  local rename_ok, rename_err = pcall(loop.fs_rename, temp_file, filepath)
-  if not rename_ok then
-    -- Cleanup temp file on failure
-    pcall(fn.delete, temp_file)
-    return false, str_format("Rename failed: %s", rename_err)
-  end
-
-  return true, nil
+  return require("lib.nvim.fs.json").write(filepath, storage_data)
 end
 
 ---Read all metric files for a repository
@@ -115,17 +78,14 @@ function M.read_metric_history(repo, metric)
   end
 
   -- Read and parse each file
+  local json = require("lib.nvim.fs.json")
   local results = {}
   for _, file in ipairs(files) do
     if file:match("%.json$") and not file:match("%.tmp$") then
       local filepath = fs.joinpath(dir, file)
-
-      local read_ok, content = pcall(fn.readfile, filepath)
-      if read_ok then
-        local parse_ok, parsed = pcall(vim.json.decode, tbl_concat(content, "\n"))
-        if parse_ok and type(parsed) == "table" then
-          table.insert(results, parsed)
-        end
+      local parsed = json.read(filepath)
+      if type(parsed) == "table" then
+        table.insert(results, parsed)
       end
     end
   end
@@ -145,56 +105,32 @@ local function get_last_fetch_path()
   return fs.joinpath(root, "last_fetch.json")
 end
 
----Read last fetch timestamps
+---Read last fetch timestamps. Missing file -> empty table, no error (no
+---fetch has happened yet); existing-but-corrupt file -> empty table, with
+---an error message (preserved distinction from this module's prior version).
 ---@return GHStats.LastFetchData, string? # Map of repo:metric -> timestamp, error
 function M.read_last_fetch()
   local path = get_last_fetch_path()
 
-  local ok, content = pcall(fn.readfile, path)
-  if not ok then
-    -- File doesn't exist yet, return empty
+  if fn.filereadable(path) == 0 then
     return {}, nil
   end
 
-  local parse_ok, parsed = pcall(vim.json.decode, tbl_concat(content, "\n"))
-  if not parse_ok then
-    return {}, str_format("Invalid last_fetch.json: %s", parsed)
+  local parsed, err = require("lib.nvim.fs.json").read(path)
+  if not parsed then
+    return {}, str_format("Invalid last_fetch.json: %s", err)
   end
 
   return parsed, nil
 end
 
----Write last fetch timestamps
+---Write last fetch timestamps. Delegates the encode+atomic-write to
+---lib.nvim.fs.json.write (which also creates parent directories).
 ---@param data GHStats.LastFetchData Map of repo:metric -> timestamp
 ---@return boolean, string? # Success flag, error message
 function M.write_last_fetch(data)
   local path = get_last_fetch_path()
-  local dir = fs.dirname(path)
-
-  local ok, err = ensure_dir(dir)
-  if not ok then
-    return false, err
-  end
-
-  local json_ok, json = pcall(vim.json.encode, data)
-  if not json_ok then
-    return false, str_format("JSON encode failed: %s", json)
-  end
-
-  -- Atomic write
-  local temp_file = path .. ".tmp"
-  local write_ok, write_err = pcall(fn.writefile, {json}, temp_file)
-  if not write_ok then
-    return false, str_format("Write failed: %s", write_err)
-  end
-
-  local rename_ok, rename_err = pcall(loop.fs_rename, temp_file, path)
-  if not rename_ok then
-    pcall(fn.delete, temp_file)
-    return false, str_format("Rename failed: %s", rename_err)
-  end
-
-  return true, nil
+  return require("lib.nvim.fs.json").write(path, data)
 end
 
 ---Update last fetch timestamp for a specific repo/metric

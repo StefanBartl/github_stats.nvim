@@ -11,7 +11,6 @@ local storage = require("github_stats.storage")
 local M = {}
 
 local str_format = string.format
-local tbl_concat = table.concat
 
 ---Store for detailed error information (accessible via debug command)
 ---@type GHStats.FetchSummary?
@@ -23,37 +22,18 @@ local function get_last_fetch_file()
 	return config.get_storage_root() .. "/../last_fetch.json"
 end
 
----Load last fetch timestamp
+---Load last fetch timestamp. Delegates the read+decode to lib.nvim.fs.json.
 ---@return number? # Unix timestamp of last fetch, or nil
 local function load_last_fetch()
-	local file = get_last_fetch_file()
-	local stat = vim.loop.fs_stat(file)
-	if not stat then
-		return nil
-	end
-
-	local ok, content = pcall(vim.fn.readfile, file)
-	if not ok then
-		return nil
-	end
-
-	local json_str = tbl_concat(content, "\n")
-	local parse_ok, data = pcall(vim.json.decode, json_str)
-	if not parse_ok then
-		return nil
-	end
-
-	return data.timestamp
+	local data = require("lib.nvim.fs.json").read(get_last_fetch_file())
+	return data and data.timestamp
 end
 
----Save current fetch timestamp
+---Save current fetch timestamp. Delegates the encode+atomic-write to
+---lib.nvim.fs.json.write (which also creates parent directories).
 ---@param timestamp number Unix timestamp
 local function save_last_fetch(timestamp)
-	local file = get_last_fetch_file()
-	local data = { timestamp = timestamp }
-	local json_str = vim.json.encode(data)
-
-	pcall(vim.fn.writefile, { json_str }, file)
+	require("lib.nvim.fs.json").write(get_last_fetch_file(), { timestamp = timestamp })
 end
 
 ---Check if fetch interval has elapsed

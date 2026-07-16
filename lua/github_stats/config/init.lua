@@ -9,7 +9,6 @@ local M = {}
 local fn = vim.fn
 local loop = vim.loop
 local str_format = string.format
-local tbl_concat = table.concat
 
 -- No prefix: every M.notify() call site already inlines its own
 -- "[github-stats] " text, so a lib.nvim prefix here would double it.
@@ -84,13 +83,23 @@ local function ensure_config_exists()
 	-- Create default config if file doesn't exist
 	stat = loop.fs_stat(config_file)
 	if not stat then
-		local default_json = vim.json.encode(DEFAULT_CONFIG)
-		local ok, err = pcall(fn.writefile, { default_json }, config_file)
+		local ok, err = require("lib.nvim.fs.json").write(config_file, DEFAULT_CONFIG)
 		if not ok then
 			return false, str_format("Failed to create config file: %s", err)
 		end
 	end
 
+	return true, nil
+end
+
+---Read config.json and merge it over DEFAULT_CONFIG into module-level `config`.
+---@return boolean, string? # Success flag, error message
+local function load_config_file()
+	local parsed, err = require("lib.nvim.fs.json").read(PATHS.config_file)
+	if not parsed then
+		return false, str_format("Failed to load config.json: %s", err)
+	end
+	config = vim.tbl_deep_extend("force", DEFAULT_CONFIG, parsed)
 	return true, nil
 end
 
@@ -114,19 +123,7 @@ function M.init(opts)
 	-- Priority 2: config.json
 	local stat = loop.fs_stat(PATHS.config_file)
 	if stat then
-		local file_ok, content = pcall(fn.readfile, PATHS.config_file)
-		if not file_ok then
-			return false, str_format("Failed to read config file: %s", content)
-		end
-
-		local json_str = tbl_concat(content, "\n")
-		local parse_ok, parsed = pcall(vim.json.decode, json_str)
-		if not parse_ok then
-			return false, str_format("Failed to parse config JSON: %s", parsed)
-		end
-
-		config = vim.tbl_deep_extend("force", DEFAULT_CONFIG, parsed)
-		return true, nil
+		return load_config_file()
 	end
 
 	-- Priority 3: Create default config.json
@@ -136,19 +133,7 @@ function M.init(opts)
 	end
 
 	-- Re-read created config
-	local file_ok, content = pcall(fn.readfile, PATHS.config_file)
-	if not file_ok then
-		return false, str_format("Failed to read created config: %s", content)
-	end
-
-	local json_str = tbl_concat(content, "\n")
-	local parse_ok, parsed = pcall(vim.json.decode, json_str)
-	if not parse_ok then
-		return false, str_format("Failed to parse created config: %s", parsed)
-	end
-
-	config = vim.tbl_deep_extend("force", DEFAULT_CONFIG, parsed)
-	return true, nil
+	return load_config_file()
 end
 
 ---Get storage root directory
