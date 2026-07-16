@@ -3,11 +3,18 @@
 ---@description
 --- Provides common functionality used across multiple command handlers,
 --- including floating window creation and string splitting.
+---
+--- show_float delegates to lib.nvim.ui.kit.note (centered title+message
+--- float, auto-sized, q/<Esc>-to-close via nice_quit — the same default keys
+--- this module bound by hand). note.open focuses nothing by default; the
+--- wrapper restores focus so behaviour matches the original nvim_open_win(...,
+--- true, ...) call, and preserves the (buf, win) return order the one
+--- destructuring caller (bindings/usrcmds/show.lua) depends on.
+
+local note = require("lib.nvim.ui.kit.note")
+local format = require("lib.lua.strings.format")
 
 local M = {}
-
-local api = vim.api
-local set_option_value = api.nvim_set_option_value
 
 ---Split string into lines, handling various line endings
 ---@param str string Input string
@@ -36,73 +43,20 @@ function M.show_float(lines, title)
     lines = tmp
   end
 
-  -- Create buffer
-  local buf = api.nvim_create_buf(false, true)
-  api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-  set_option_value("modifiable", false, { buf = buf })
-  set_option_value("bufhidden", "wipe", { buf = buf })
-
-  -- Calculate dimensions
-  local width = 0
-  for _, line in ipairs(lines) do
-    width = math.max(width, #line)
+  local surf = note.open({ message = lines, title = title })
+  if not surf then
+    return nil, nil
   end
-  width = math.min(width + 4, vim.o.columns - 10)
+  surf:focus()
 
-  local height = math.min(#lines + 2, vim.o.lines - 10)
-
-  -- Center position
-  local row = math.floor((vim.o.lines - height) / 2)
-  local col = math.floor((vim.o.columns - width) / 2)
-
-  -- Window options
-  local opts = {
-    relative = "editor",
-    width = width,
-    height = height,
-    row = row,
-    col = col,
-    style = "minimal",
-    border = "rounded",
-    title = title,
-    title_pos = "center",
-  }
-
-  -- Create window
-  local win = api.nvim_open_win(buf, true, opts)
-
-  -- Set window options
-  set_option_value("wrap", false, { win = win })
-  set_option_value("cursorline", true, { win = win })
-
-  -- Keymaps to close
-  local close_keys = { "q", "<Esc>" }
-  for _, key in ipairs(close_keys) do
-    api.nvim_buf_set_keymap(
-      buf,
-      "n",
-      key,
-      ":close<CR>",
-      { noremap = true, silent = true }
-    )
-  end
-  -- Return buffer and window handles
-  return buf, win
+  return surf.bufnr, surf.winid
 end
 
 ---Format number with thousands separator
 ---@param num number Number to format
 ---@return string # Formatted string with commas
 function M.format_number(num)
-  local formatted = tostring(num)
-  local k
-  while true do
-    formatted, k = formatted:gsub("^(-?%d+)(%d%d%d)", "%1,%2")
-    if k == 0 then
-      break
-    end
-  end
-  return formatted
+  return format.format_number(num)
 end
 
 return M

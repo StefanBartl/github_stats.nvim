@@ -5,13 +5,19 @@ Quelle: [`Zentrale-Prinzipien.md`](E:/repos/Notes/MyNotes/Checklists/Lua/Zentral
 github_stats.nvim konkret gegen die 10 Punkte, statt die generische Liste zu
 wiederholen.
 
-**Hinweis zu `lib.nvim`:** Die Quell-Checkliste verlangt durchgängig
-`StefanBartl/lib.nvim` (`lib.notify`, `lib.map`, `lib.cross`, `lib.lazy`,
-`lib.memo`, ...). github_stats.nvim hat **keine** Abhängigkeit zu `lib.nvim` —
-das Plugin bringt eigene, funktional äquivalente Bausteine mit
-(`config.notify`, `bindings/keymaps.lua`, cross-platform-Checks in
-`health.lua`). Ob `lib.nvim` nachträglich eingeführt wird, ist eine separate
-Architekturentscheidung, keine stillschweigende Annahme dieses Dokuments.
+**Hinweis zu `lib.nvim`:** Die separate Architekturentscheidung ist inzwischen
+gefallen — github_stats.nvim hängt jetzt von `StefanBartl/lib.nvim` ab. Drei
+konkrete Duplikate wurden ersetzt: `bindings/usrcmds/utils.lua`s `show_float`
+delegiert an `lib.nvim.ui.kit.note` (statt einer handgebauten zentrierten
+Float-Erstellung), das über 5 Dateien verstreute `format_number` läuft jetzt
+über `lib.lua.strings.format.format_number`, und `repo_discovery.lua`s
+Dedup-Schleife nutzt `lib.lua.tables.unique_table.unique`. `config.notify`
+bleibt bestehen — es ist keine reine Weiterleitung, sondern behält die
+Plugin-eigene `notification_level`-Gating-Logik (silent/errors/all) und
+delegiert nur den eigentlichen `vim.notify`-Aufruf an `lib.nvim.notify`
+(mit leerem Prefix, da alle Call-Sites ihr `"[github-stats] "` bereits selbst
+inline mitgeben). `bindings/keymaps.lua` und die Cross-Platform-Checks in
+`health.lua` sind unverändert eigenständig geblieben.
 
 ---
 

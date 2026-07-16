@@ -7,6 +7,7 @@
 local M = {}
 
 local str_format = string.format
+local format_number = require("lib.lua.strings.format").format_number
 
 ---Parse period string (YYYY-MM or YYYY) into start and end timestamps
 ---@param period string Period identifier (YYYY-MM or YYYY)
@@ -237,21 +238,6 @@ function M.compare_periods(repo, metric, period1, period2)
       unique_change_str = unique_change_str,
     },
   }, nil
-end
-
----Format number with thousands separator
----@param num number
----@return string
-local function format_number(num)
-  local formatted = tostring(math.floor(num))
-  local k
-  while true do
-    formatted, k = formatted:gsub("^(-?%d+)(%d%d%d)", "%1,%2")
-    if k == 0 then
-      break
-    end
-  end
-  return formatted
 end
 
 ---Format comparison result for display

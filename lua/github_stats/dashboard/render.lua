@@ -7,6 +7,7 @@
 local analytics = require("github_stats.analytics")
 local ui_state = require("github_stats.state.ui_state")
 local dashboard_state = require("github_stats.dashboard.state")
+local lib_format_number = require("lib.lua.strings.format").format_number
 
 local M = {}
 
@@ -14,22 +15,13 @@ local M = {}
 M.HEADER_LINES = 4
 
 ---Format number with thousands separator
----@param num number Number to format
+---@param num number|nil Number to format
 ---@return string # Formatted string with commas
 local function format_number(num)
   if not num then
     return "0"
   end
-
-  local formatted = tostring(math.floor(num))
-  local k
-  while true do
-    formatted, k = formatted:gsub("^(-?%d+)(%d%d%d)", "%1,%2")
-    if k == 0 then
-      break
-    end
-  end
-  return formatted
+  return lib_format_number(num)
 end
 
 ---Fixed-width content area between the header box's left/right borders

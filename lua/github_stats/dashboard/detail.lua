@@ -7,21 +7,7 @@ local M = {}
 
 local visualization = require("github_stats.visualization")
 local analytics = require("github_stats.analytics")
-
----Format number with thousands separator
----@param num number
----@return string
-local function format_number(num)
-  local formatted = tostring(math.floor(num))
-  local k
-  while true do
-    formatted, k = formatted:gsub("^(-?%d+)(%d%d%d)", "%1,%2")
-    if k == 0 then
-      break
-    end
-  end
-  return formatted
-end
+local format_number = require("lib.lua.strings.format").format_number
 
 ---Generate sparkline section for a metric
 ---@param metric_name string Display name (e.g., "CLONES", "VIEWS")
