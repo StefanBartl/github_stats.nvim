@@ -9,25 +9,11 @@ local date_presets = require("github_stats.date_presets")
 local analytics = require("github_stats.analytics")
 local utils = require("github_stats.bindings.usrcmds.utils")
 local config = require("github_stats.config")
+local format_number = require("lib.lua.strings.format").format_number
 
 local M = {}
 
 local tbl_filter, startswith = vim.tbl_filter, vim.startswith
-
----Format number with thousands separator
----@param num number
----@return string
-local function format_number(num)
-  local formatted = tostring(num)
-  local k
-  while true do
-    formatted, k = formatted:gsub("^(-?%d+)(%d%d%d)", "%1,%2")
-    if k == 0 then
-      break
-    end
-  end
-  return formatted
-end
 
 ---Execute show command with backspace support
 ---@param args table Command arguments from nvim_create_user_command

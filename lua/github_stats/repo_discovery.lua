@@ -8,6 +8,7 @@
 --- hand-maintain it.
 
 local api = require("github_stats.api")
+local unique = require("lib.lua.tables.unique_table").unique
 
 local M = {}
 
@@ -22,20 +23,12 @@ function M.discover(usernames, callback)
 
   local completed = 0
   local all_names = {}
-  local seen = {}
   local errors = {}
 
   local function check_complete()
     completed = completed + 1
     if completed == #usernames then
-      local deduped = {}
-      for _, name in ipairs(all_names) do
-        if not seen[name] then
-          seen[name] = true
-          table.insert(deduped, name)
-        end
-      end
-      callback(deduped, errors)
+      callback(unique(all_names), errors)
     end
   end
 

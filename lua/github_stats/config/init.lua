@@ -11,6 +11,10 @@ local loop = vim.loop
 local str_format = string.format
 local tbl_concat = table.concat
 
+-- No prefix: every M.notify() call site already inlines its own
+-- "[github-stats] " text, so a lib.nvim prefix here would double it.
+local notifier = require("lib.nvim.notify").create("")
+
 ---@type GHStats.SetupOptions?
 local config = nil
 
@@ -282,7 +286,7 @@ function M.notify(message, level)
 		vim_level = vim.log.levels.ERROR
 	end
 
-	vim.notify(message, vim_level)
+	notifier.notify(message, vim_level)
 end
 
 return M

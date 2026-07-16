@@ -9,6 +9,7 @@ local M = {}
 local min, max = math.min, math.max
 local tbl_insert, tbl_sort, tbl_concat = table.insert, table.sort, table.concat
 local str_format, str_rep = string.format, string.rep
+local format_number = require("lib.lua.strings.format").format_number
 
 ---Sparkline characters (Unicode block elements)
 ---@type string[]
@@ -88,20 +89,6 @@ function M.calculate_stats(data)
   }
 end
 
----Format number with thousands separator
----@param num number
----@return string
-local function format_number(num)
-  local formatted = tostring(math.floor(num))
-  local k
-  while true do
-    formatted, k = formatted:gsub("^(-?%d+)(%d%d%d)", "%1,%2")
-    if k == 0 then
-      break
-    end
-  end
-  return formatted
-end
 
 ---Generate horizontal bar chart
 ---@param data table<string, number> Map of label -> value

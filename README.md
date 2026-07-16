@@ -90,6 +90,7 @@ A Neovim plugin for automatic collection and analysis of GitHub repository traff
 ```lua
 {
   "StefanBartl/github_stats.nvim",
+  dependencies = { "StefanBartl/lib.nvim" },
   event = "VimEnter",
   config = function()
     require("github_stats").setup({
@@ -103,6 +104,7 @@ A Neovim plugin for automatic collection and analysis of GitHub repository traff
 ```lua
 {
   "StefanBartl/github_stats.nvim",
+  dependencies = { "StefanBartl/lib.nvim" },
   lazy = false,
   config = function()
     require("github_stats").setup({
@@ -117,6 +119,7 @@ A Neovim plugin for automatic collection and analysis of GitHub repository traff
 ```lua
 use {
   "StefanBartl/github_stats.nvim",
+  requires = { "StefanBartl/lib.nvim" },
   config = function()
     require("github_stats").setup({
       repos = { "user/repo1", "user/repo2" },
