@@ -213,15 +213,7 @@ end
 ---@param num number
 ---@return string
 function M.format_number(num)
-  local formatted = tostring(math.floor(num))
-  local k
-  while true do
-    formatted, k = formatted:gsub("^(-?%d+)(%d%d%d)", "%1,%2")
-    if k == 0 then
-      break
-    end
-  end
-  return formatted
+  return require("lib.lua.strings.format").format_number(math.floor(num))
 end
 
 return M
