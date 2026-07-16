@@ -52,24 +52,11 @@ local function resolve_data_dir(custom_path, config_dir)
 	return config_dir .. "/data"
 end
 
----Get config directory path
----@return string
-local function get_config_dir()
-	local config_path = fn.stdpath("config")
-	return config_path .. "lua/plugins/github-stats"
-end
-
----Get config file path
----@return string
-local function get_config_file()
-	return get_config_dir() .. "/config.json"
-end
-
 ---Create default config file if it doesn't exist
 ---@return boolean, string? # Success flag, error message
 local function ensure_config_exists()
-	local config_dir = get_config_dir()
-	local config_file = get_config_file()
+	local config_dir = PATHS.config_dir
+	local config_file = PATHS.config_file
 
 	-- Create directory if needed
 	local stat = loop.fs_stat(config_dir)
