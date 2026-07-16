@@ -193,22 +193,15 @@ function M.get_repos()
 		return static_repos
 	end
 
-	local seen = {}
-	local merged = {}
+	local combined = {}
 	for _, repo in ipairs(static_repos) do
-		if not seen[repo] then
-			seen[repo] = true
-			table.insert(merged, repo)
-		end
+		table.insert(combined, repo)
 	end
 	for _, repo in ipairs(discovered_repos) do
-		if not seen[repo] then
-			seen[repo] = true
-			table.insert(merged, repo)
-		end
+		table.insert(combined, repo)
 	end
 
-	return merged
+	return require("lib.lua.tables").dedup_list(combined)
 end
 
 ---Get GitHub token from configured source
