@@ -156,7 +156,7 @@ require("github_stats").setup({
 
 ### Option B: Config File (Best for syncing across systems)
 
-Create `~/.config/nvim/github-stats/config.json`:
+Create `~/.config/nvim/lua/plugins/github-stats/config.json`:
 
 ```json
 {
@@ -659,9 +659,9 @@ See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for comprehensive trouble
 
 | Platform | Default Config Path |
 |----------|---------------------|
-| Linux | `~/.config/nvim/github-stats/` |
-| macOS | `~/.config/nvim/github-stats/` |
-| Windows | `%LOCALAPPDATA%\nvim\github-stats\` |
+| Linux | `~/.config/nvim/lua/plugins/github-stats/` |
+| macOS | `~/.config/nvim/lua/plugins/github-stats/` |
+| Windows | `%LOCALAPPDATA%\nvim\lua\plugins\github-stats\` |
 
 Custom paths can be specified via `config_dir` and `data_dir` options.
 
@@ -672,7 +672,7 @@ Custom paths can be specified via `config_dir` and `data_dir` options.
 ### Data Structure
 
 ```
-~/.config/nvim/github-stats/
+~/.config/nvim/lua/plugins/github-stats/
 ├── config.json                    # User configuration (optional)
 ├── last_fetch.json                # Interval tracking
 └── data/

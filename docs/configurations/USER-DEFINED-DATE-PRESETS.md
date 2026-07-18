@@ -30,7 +30,7 @@ Date presets allow quick access to common time ranges without typing full ISO da
 
 ## Configuration Structure
 
-Date presets are configured in `~/.config/nvim/github-stats/config.json`:
+Date presets are configured in `~/.config/nvim/lua/plugins/github-stats/config.json`:
 ```json
 {
   "repos": [ ... ],

@@ -2,7 +2,7 @@
 ---@brief Configuration management
 ---@description
 --- Handles loading, validation, and access to user configuration.
---- Configuration is stored in ~/.config/nvim/github-stats/config.json
+--- Configuration is stored in ~/.config/nvim/lua/plugins/github-stats/config.json
 
 local M = {}
 
@@ -37,7 +37,7 @@ local function resolve_config_dir(custom_path)
 	end
 
 	local config_path = fn.stdpath("config")
-	return config_path .. "lua/plugins/github-stats"
+	return config_path .. "/lua/plugins/github-stats"
 end
 
 ---Get data directory path

@@ -451,7 +451,7 @@ If you're currently using `config.json` (Option B) and want to migrate to direct
 ### Step 1: Read Current Config
 
 ```bash
-cat ~/.config/nvim/github-stats/config.json
+cat ~/.config/nvim/lua/plugins/github-stats/config.json
 ```
 
 **Example output:**
@@ -490,10 +490,10 @@ If you no longer need `config.json`:
 
 ```bash
 # Backup first
-cp ~/.config/nvim/github-stats/config.json ~/.config/nvim/github-stats/config.json.backup
+cp ~/.config/nvim/lua/plugins/github-stats/config.json ~/.config/nvim/lua/plugins/github-stats/config.json.backup
 
 # Remove (optional)
-rm ~/.config/nvim/github-stats/config.json
+rm ~/.config/nvim/lua/plugins/github-stats/config.json
 ```
 
 **Note:** The plugin will use `setup()` configuration even if `config.json` exists (setup has priority).

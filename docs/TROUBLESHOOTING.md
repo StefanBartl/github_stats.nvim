@@ -239,8 +239,8 @@ username/repo/paths: Failed to parse JSON response
 Plugin creates it automatically, but you can create manually:
 
 ```bash
-mkdir -p ~/.config/nvim/github-stats
-cat > ~/.config/nvim/github-stats/config.json << 'EOF'
+mkdir -p ~/.config/nvim/lua/plugins/github-stats
+cat > ~/.config/nvim/lua/plugins/github-stats/config.json << 'EOF'
 {
   "repos": [
     "username/repo1",
@@ -274,7 +274,7 @@ Validate your JSON:
 
 ```bash
 # Using jq (if installed)
-cat ~/.config/nvim/github-stats/config.json | jq .
+cat ~/.config/nvim/lua/plugins/github-stats/config.json | jq .
 
 # Or use online validator:
 # https://jsonlint.com/
@@ -418,11 +418,11 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 **Linux/macOS:**
 ```bash
 # Check permissions
-ls -la ~/.config/nvim/github-stats/
+ls -la ~/.config/nvim/lua/plugins/github-stats/
 
 # Fix permissions
-chmod 755 ~/.config/nvim/github-stats/
-chmod 644 ~/.config/nvim/github-stats/config.json
+chmod 755 ~/.config/nvim/lua/plugins/github-stats/
+chmod 644 ~/.config/nvim/lua/plugins/github-stats/config.json
 ```
 
 **Windows:**
@@ -431,7 +431,7 @@ chmod 644 ~/.config/nvim/github-stats/config.json
 whoami
 
 # Verify folder ownership
-icacls "%LOCALAPPDATA%\nvim\github-stats"
+icacls "%LOCALAPPDATA%\nvim\lua\plugins\github-stats"
 ```
 
 ---
@@ -463,10 +463,10 @@ Get-PSDrive C
 **Cleanup Old Data:**
 ```bash
 # Show storage size
-du -sh ~/.config/nvim/github-stats/data/
+du -sh ~/.config/nvim/lua/plugins/github-stats/data/
 
 # Remove old data (keep last 30 days)
-find ~/.config/nvim/github-stats/data/ -name "*.json" -mtime +30 -delete
+find ~/.config/nvim/lua/plugins/github-stats/data/ -name "*.json" -mtime +30 -delete
 ```
 
 ---
@@ -475,7 +475,7 @@ find ~/.config/nvim/github-stats/data/ -name "*.json" -mtime +30 -delete
 
 ### Controlling Notification Verbosity
 
-Edit `~/.config/nvim/github-stats/config.json`:
+Edit `~/.config/nvim/lua/plugins/github-stats/config.json`:
 
 ```json
 {
@@ -574,10 +574,10 @@ Forces immediate fetch, useful for testing.
 
 ```bash
 # Show latest fetch for a repo
-cat ~/.config/nvim/github-stats/data/username_repo/clones/*.json | tail -1
+cat ~/.config/nvim/lua/plugins/github-stats/data/username_repo/clones/*.json | tail -1
 
 # List all stored data
-find ~/.config/nvim/github-stats/data/ -name "*.json"
+find ~/.config/nvim/lua/plugins/github-stats/data/ -name "*.json"
 ```
 
 ---
@@ -595,7 +595,7 @@ If problems persist:
 
 2. Check configuration:
    ```bash
-   cat ~/.config/nvim/github-stats/config.json
+   cat ~/.config/nvim/lua/plugins/github-stats/config.json
    ```
 
 3. Test token manually:
@@ -620,7 +620,7 @@ If problems persist:
 | Token issue | `:checkhealth github_stats` | Verify token permissions |
 | Too many notifications | Edit config.json | Set `notification_level: "errors"` |
 | Network timeout | `curl api.github.com` | Check connectivity |
-| Storage full | `du -sh ~/.config/nvim/github-stats/` | Clean old files |
+| Storage full | `du -sh ~/.config/nvim/lua/plugins/github-stats/` | Clean old files |
 | Invalid JSON | `jq . config.json` | Validate syntax |
 
 ---

@@ -65,7 +65,7 @@ Both methods support the same configuration options and can be used interchangea
 
 | Aspect | Option A (Direct Setup) | Option B (Config File) |
 |--------|-------------------------|------------------------|
-| **Location** | Neovim init file (`init.lua`) | `~/.config/nvim/github-stats/config.json` |
+| **Location** | Neovim init file (`init.lua`) | `~/.config/nvim/lua/plugins/github-stats/config.json` |
 | **Best For** | Quick setup, single system | Multi-system sync, backup |
 | **Flexibility** | Lua functions, conditionals | Static JSON |
 | **Version Control** | Part of Neovim config | Separate file (optional) |
@@ -201,10 +201,10 @@ notification_level = "errors"  -- Only show problems
 
 #### `config_dir`
 **Type:** `string | nil`
-**Default:** `stdpath('config') .. '/github-stats'`
+**Default:** `stdpath('config') .. '/lua/plugins/github-stats'`
 **Platform-specific defaults:**
-- Linux/macOS: `~/.config/nvim/github-stats`
-- Windows: `%LOCALAPPDATA%\nvim\github-stats`
+- Linux/macOS: `~/.config/nvim/lua/plugins/github-stats`
+- Windows: `%LOCALAPPDATA%\nvim\lua\plugins\github-stats`
 
 Custom directory for configuration file (`config.json`) storage.
 
@@ -326,7 +326,7 @@ ls -la ~/.github_token
 ### Default Storage Structure
 
 ```
-~/.config/nvim/github-stats/
+~/.config/nvim/lua/plugins/github-stats/
 ├── config.json                    # Configuration (Option B)
 ├── last_fetch.json                # Fetch interval tracking
 └── data/
@@ -351,7 +351,7 @@ require("github_stats").setup({
 
 Results in:
 ```
-~/.config/nvim/github-stats/
+~/.config/nvim/lua/plugins/github-stats/
 ├── config.json               # Config stays here
 └── last_fetch.json
 
@@ -416,7 +416,7 @@ Results in:
 1. **Cross-System Sync**: Store in Neovim config, sync via Git
    ```bash
    # In dotfiles repository
-   ~/.config/nvim/github-stats/config.json
+   ~/.config/nvim/lua/plugins/github-stats/config.json
    ```
 
 2. **Separation of Concerns**: Keep plugin config separate from init.lua
@@ -435,7 +435,7 @@ Results in:
 
 1. **Structure:**
    ```
-   ~/.config/nvim/github-stats/
+   ~/.config/nvim/lua/plugins/github-stats/
    ├── config.json        # ✅ Sync this
    ├── last_fetch.json    # ❌ Don't sync (system-specific)
    └── data/              # ✅ Sync this (if you want shared history)

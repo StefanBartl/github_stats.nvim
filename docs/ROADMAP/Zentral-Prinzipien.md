@@ -70,7 +70,7 @@ der GitHub-API. N/A.
 ## 7. Cache vorhanden und explizit?
 
 Kein reiner In-Memory-Cache, aber ein expliziter, persistenter
-Daten-Cache: `~/.config/nvim/github-stats/data/**/*.json`
+Daten-Cache: `~/.config/nvim/lua/plugins/github-stats/data/**/*.json`
 ([`storage.lua`](../../lua/github_stats/storage.lua)) plus
 `last_fetch.json` zur Intervall-Steuerung. Regenerierbar (force-fetch),
 invalidierbar (einfach löschen). Liegt allerdings nicht in
