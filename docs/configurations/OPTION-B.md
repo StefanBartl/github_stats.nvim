@@ -111,22 +111,22 @@ The plugin automatically creates a default configuration file at:
 
 **Linux/macOS:**
 ```
-~/.config/nvim/github-stats/config.json
+~/.config/nvim/lua/plugins/github-stats/config.json
 ```
 
 **Windows:**
 ```
-%LOCALAPPDATA%\nvim\github-stats\config.json
+%LOCALAPPDATA%\nvim\lua\plugins\github-stats\config.json
 ```
 
 ### Step 3: Edit Configuration
 
 ```bash
 # Linux/macOS
-nvim ~/.config/nvim/github-stats/config.json
+nvim ~/.config/nvim/lua/plugins/github-stats/config.json
 
 # Windows (PowerShell)
-nvim "$env:LOCALAPPDATA\nvim\github-stats\config.json"
+nvim "$env:LOCALAPPDATA\nvim\lua\plugins\github-stats\config.json"
 ```
 
 ---
@@ -205,7 +205,7 @@ If you use Neovim on multiple systems (work laptop, home desktop, remote server)
 ### Directory Structure
 
 ```
-~/.config/nvim/github-stats/
+~/.config/nvim/lua/plugins/github-stats/
 ├── config.json        # ✅ Sync this
 ├── last_fetch.json    # ❌ Don't sync (system-specific)
 └── data/              # ⚠️  Optional (can sync for shared history)
@@ -291,12 +291,12 @@ After pull, restart Neovim to apply configuration.
 
 ```bash
 # From source system
-rsync -avz ~/.config/nvim/github-stats/config.json \
-  user@remote:~/.config/nvim/github-stats/
+rsync -avz ~/.config/nvim/lua/plugins/github-stats/config.json \
+  user@remote:~/.config/nvim/lua/plugins/github-stats/
 
 # With data (optional)
-rsync -avz ~/.config/nvim/github-stats/data/ \
-  user@remote:~/.config/nvim/github-stats/data/
+rsync -avz ~/.config/nvim/lua/plugins/github-stats/data/ \
+  user@remote:~/.config/nvim/lua/plugins/github-stats/data/
 ```
 
 #### Using Symbolic Links
@@ -306,12 +306,12 @@ If configuration is in a shared location:
 ```bash
 # Create shared config
 mkdir -p ~/Dropbox/nvim-config/github-stats
-mv ~/.config/nvim/github-stats/config.json \
+mv ~/.config/nvim/lua/plugins/github-stats/config.json \
    ~/Dropbox/nvim-config/github-stats/
 
 # Create symlink
 ln -s ~/Dropbox/nvim-config/github-stats/config.json \
-      ~/.config/nvim/github-stats/config.json
+      ~/.config/nvim/lua/plugins/github-stats/config.json
 ```
 
 Repeat on all systems.
@@ -324,10 +324,10 @@ Repeat on all systems.
 
 ```bash
 # Linux/macOS
-cat ~/.config/nvim/github-stats/config.json
+cat ~/.config/nvim/lua/plugins/github-stats/config.json
 
 # Validate JSON syntax
-cat ~/.config/nvim/github-stats/config.json | jq .
+cat ~/.config/nvim/lua/plugins/github-stats/config.json | jq .
 ```
 
 **Expected:** Valid JSON output without errors
@@ -411,7 +411,7 @@ Shows:
 
 1. Validate JSON:
    ```bash
-   cat ~/.config/nvim/github-stats/config.json | jq .
+   cat ~/.config/nvim/lua/plugins/github-stats/config.json | jq .
    ```
 
 2. Common fixes:
@@ -452,16 +452,16 @@ Restart Neovim.
 **Linux/macOS:**
 ```bash
 # Fix permissions
-chmod 644 ~/.config/nvim/github-stats/config.json
+chmod 644 ~/.config/nvim/lua/plugins/github-stats/config.json
 
 # Verify ownership
-ls -la ~/.config/nvim/github-stats/config.json
+ls -la ~/.config/nvim/lua/plugins/github-stats/config.json
 ```
 
 **Windows:**
 ```powershell
 # Check file exists and is readable
-Get-Content "$env:LOCALAPPDATA\nvim\github-stats\config.json"
+Get-Content "$env:LOCALAPPDATA\nvim\lua\plugins\github-stats\config.json"
 ```
 
 ---
@@ -473,7 +473,7 @@ If you want to switch from config.json to direct setup:
 ### Step 1: Read Current Configuration
 
 ```bash
-cat ~/.config/nvim/github-stats/config.json
+cat ~/.config/nvim/lua/plugins/github-stats/config.json
 ```
 
 ### Step 2: Convert to Lua Setup
@@ -510,13 +510,13 @@ require("github_stats").setup({
 
 **Keep config.json (backup):**
 ```bash
-mv ~/.config/nvim/github-stats/config.json \
-   ~/.config/nvim/github-stats/config.json.backup
+mv ~/.config/nvim/lua/plugins/github-stats/config.json \
+   ~/.config/nvim/lua/plugins/github-stats/config.json.backup
 ```
 
 **Remove config.json:**
 ```bash
-rm ~/.config/nvim/github-stats/config.json
+rm ~/.config/nvim/lua/plugins/github-stats/config.json
 ```
 
 **Note:** The plugin will use `setup()` configuration even if `config.json` exists (setup has priority).
@@ -594,7 +594,7 @@ rm ~/.config/nvim/github-stats/config.json
 2. **Restrict file permissions:**
    ```bash
    # Config file (readable by all, writable by owner)
-   chmod 644 ~/.config/nvim/github-stats/config.json
+   chmod 644 ~/.config/nvim/lua/plugins/github-stats/config.json
 
    # Token file (readable/writable by owner only)
    chmod 600 ~/.github_token
@@ -611,13 +611,13 @@ rm ~/.config/nvim/github-stats/config.json
 
 1. **Backup configuration:**
    ```bash
-   cp ~/.config/nvim/github-stats/config.json \
+   cp ~/.config/nvim/lua/plugins/github-stats/config.json \
       ~/backups/github-stats-config-$(date +%Y%m%d).json
    ```
 
 2. **Validate after edits:**
    ```bash
-   cat ~/.config/nvim/github-stats/config.json | jq .
+   cat ~/.config/nvim/lua/plugins/github-stats/config.json | jq .
    ```
 
 3. **Test after changes:**
@@ -630,7 +630,7 @@ rm ~/.config/nvim/github-stats/config.json
 
 For many repositories, organize by category (using comments in a separate file):
 
-**In ~/.config/nvim/github-stats/repos.txt:**
+**In ~/.config/nvim/lua/plugins/github-stats/repos.txt:**
 ```
 # Personal Projects
 personal/project1

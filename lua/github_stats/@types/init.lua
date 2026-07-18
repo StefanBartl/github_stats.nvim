@@ -19,7 +19,7 @@
 ---@field token_file? string Path to token file
 ---@field fetch_interval_hours? number Fetch interval
 ---@field notification_level? "all"|"errors"|"silent" Notification level
----@field config_dir? string Custom config directory (default: stdpath('config')/github-stats)
+---@field config_dir? string Custom config directory (default: stdpath('config')/lua/plugins/github-stats)
 ---@field data_dir? string Custom data directory (default: config_dir/data)
 ---@field date_presets? GHStats.DatePresetConfig Date range preset configuration
 ---@field dashboard GHStats.DashboardConfig Dashboard configuration

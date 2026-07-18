@@ -6,7 +6,7 @@
 --- Provides commands for manual fetching and analytics.
 ---
 --- Configuration:
----   Edit ~/.config/nvim/github-stats/config.json
+---   Edit ~/.config/nvim/lua/plugins/github-stats/config.json
 ---
 --- Available commands:
 ---   :GithubStatsFetch [force]              - Fetch all metrics

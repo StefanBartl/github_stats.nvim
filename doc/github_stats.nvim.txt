@@ -117,7 +117,7 @@ Option A: Direct Setup (Recommended)~
 
 Option B: Config File~
 
-Create: ~/.config/nvim/github-stats/config.json
+Create: ~/.config/nvim/lua/plugins/github-stats/config.json
 >json
     {
       "repos": ["username/repo1", "username/repo2"],
@@ -182,7 +182,7 @@ notification_level      Notification verbosity
 
 config_dir              Custom config directory (advanced)
                         Type: string
-                        Default: stdpath('config') .. '/github-stats'
+                        Default: stdpath('config') .. '/lua/plugins/github-stats'
 
 data_dir                Custom data directory (advanced)
                         Type: string
@@ -836,7 +836,7 @@ STORAGE                                              *github_stats-storage*
 
 Data Structure:~
 >
-    ~/.config/nvim/github-stats/
+    ~/.config/nvim/lua/plugins/github-stats/
     ├── config.json                    # User configuration (Option B)
     ├── last_fetch.json                # Interval tracking
     └── data/
@@ -926,7 +926,7 @@ Diagnostic Workflow:~
     1. :checkhealth github_stats
     2. :GithubStatsDebug
     3. :messages
-    4. Check config: ~/.config/nvim/github-stats/config.json
+    4. Check config: ~/.config/nvim/lua/plugins/github-stats/config.json
 
 For comprehensive troubleshooting guide, see:
     docs/TROUBLESHOOTING.md
