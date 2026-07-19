@@ -15,21 +15,31 @@ GitHub Stats. Implementation lives under `lua/github_stats/bindings/`.
 
 ## User Commands
 
-Registered in [`lua/github_stats/bindings/usrcmds/init.lua`](../lua/github_stats/bindings/usrcmds/init.lua).
-See [docs/USERCOMMANDS.md](USERCOMMANDS.md) for full usage examples.
+One command, `:GithubStats <subcommand>` (built via
+[`lib.nvim.usercmd.composer`](https://github.com/StefanBartl/lib.nvim), with
+`<Tab>` completion at every level — subcommand name, then each positional
+argument; repo names and date presets complete dynamically from live
+config). Registered in
+[`lua/github_stats/bindings/usrcmds/init.lua`](../lua/github_stats/bindings/usrcmds/init.lua).
+See [docs/usercommands.md](usercommands.md) for full usage examples.
+
+**Bang now attaches to the verb, not the subcommand**: forced dashboard
+refresh is `:GithubStats! dashboard`, not `:GithubStats dashboard!` (Vim's
+`!` always binds to the command name itself, so collapsing multiple
+commands into one verb moves it there).
 
 | Command | Args | Description |
 |---|---|---|
-| `:GithubStatsFetch` | `[force]` | Fetch all metrics, respecting (or bypassing) the configured interval |
-| `:GithubStatsShow` | `{repo} {metric} [start] [end]` | Show detailed stats for a repository/metric |
-| `:GithubStatsSummary` | `{clones\|views}` | Aggregated summary across all configured repos |
-| `:GithubStatsReferrers` | `{repo} [limit]` | Top referrers for a repository |
-| `:GithubStatsPaths` | `{repo} [limit]` | Top paths for a repository |
-| `:GithubStatsChart` | `{repo} {clones\|views\|both} [start] [end]` | ASCII sparkline/comparison chart |
-| `:GithubStatsExport` | `{repo\|all} {metric} {filepath}` | Export to CSV or Markdown |
-| `:GithubStatsDiff` | `{repo} {metric} {period1} {period2}` | Compare two periods |
-| `:GithubStatsDebug` | – | Print configuration/token/last-fetch diagnostics |
-| `:GithubStatsDashboard[!]` | – | Open the dashboard (`!` requests a forced refresh) |
+| `:GithubStats fetch` | `[force]` | Fetch all metrics, respecting (or bypassing) the configured interval |
+| `:GithubStats show` | `{repo} {metric} [start] [end]` | Show detailed stats for a repository/metric |
+| `:GithubStats summary` | `{clones\|views}` | Aggregated summary across all configured repos |
+| `:GithubStats referrers` | `{repo} [limit]` | Top referrers for a repository |
+| `:GithubStats paths` | `{repo} [limit]` | Top paths for a repository |
+| `:GithubStats chart` | `{repo} {clones\|views\|both} [start] [end]` | ASCII sparkline/comparison chart |
+| `:GithubStats export` | `{repo\|all} {metric} {filepath}` | Export to CSV or Markdown |
+| `:GithubStats diff` | `{repo} {metric} {period1} {period2}` | Compare two periods |
+| `:GithubStats debug` | – | Print configuration/token/last-fetch diagnostics |
+| `:GithubStats[!] dashboard` | – | Open the dashboard (`!` requests a forced refresh) |
 
 All commands with repo/metric/path arguments support Tab-completion.
 
@@ -38,7 +48,7 @@ All commands with repo/metric/path arguments support Tab-completion.
 ## Dashboard Keymaps
 
 Registered in [`lua/github_stats/bindings/keymaps.lua`](../lua/github_stats/bindings/keymaps.lua),
-scoped to the dashboard buffer (`:GithubStatsDashboard`).
+scoped to the dashboard buffer (`:GithubStats dashboard`).
 
 ### Configurable
 

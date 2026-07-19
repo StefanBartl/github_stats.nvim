@@ -41,7 +41,7 @@ Two guards, then two actions:
   plugin's public entry point) could in principle run more than once in a
   session (reload, re-`require`), and we never want two competing timers.
 - **Guard 2 — `background.enabled = false`**: bails out before creating
-  anything. The user is then fully on manual `:GithubStatsFetch`.
+  anything. The user is then fully on manual `:GithubStats fetch`.
 - **Action 1**: one deferred cycle 1 second after `VimEnter`, so it doesn't
   compete with Neovim's own startup work.
 - **Action 2**: a *recurring* `vim.loop` timer — this is the actual "runs for
@@ -139,7 +139,7 @@ end
 So: the "starting fetch" and "successfully fetched" info notifications are
 skipped when `background = true`, but the "N errors" warning is
 **unconditional** — it always fires when there were errors, in both
-background and explicit (`:GithubStatsFetch`, dashboard `R`/`f`) calls. That
+background and explicit (`:GithubStats fetch`, dashboard `R`/`f`) calls. That
 warning still passes through `config.notify()`, so `notification_level =
 "silent"` still means silent if that's what the user actually wants; the
 `background` flag only changes the *default* noise level of routine

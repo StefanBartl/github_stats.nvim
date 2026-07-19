@@ -72,8 +72,8 @@ Available built-in presets:
 
 **Usage:**
 ```vim
-:GithubStatsShow username/repo clones last_month
-:GithubStatsChart username/repo views this_quarter
+:GithubStats show username/repo clones last_month
+:GithubStats chart username/repo views this_quarter
 ```
 
 ---
@@ -103,7 +103,7 @@ end
 
 **Usage:**
 ```vim
-:GithubStatsShow username/repo clones last_14_days
+:GithubStats show username/repo clones last_14_days
 ```
 
 ---
@@ -133,8 +133,8 @@ end
 
 **Usage:**
 ```vim
-:GithubStatsShow username/repo clones fiscal_year
-:GithubStatsDiff username/repo views 2024-04 fiscal_year
+:GithubStats show username/repo clones fiscal_year
+:GithubStats diff username/repo views 2024-04 fiscal_year
 ```
 
 ---
@@ -167,8 +167,8 @@ end
 
 **Usage:**
 ```vim
-:GithubStatsShow username/repo clones current_sprint
-:GithubStatsChart username/repo both current_sprint
+:GithubStats show username/repo clones current_sprint
+:GithubStats chart username/repo both current_sprint
 ```
 
 ---

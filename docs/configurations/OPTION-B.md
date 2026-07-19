@@ -392,7 +392,7 @@ Verifies:
 ### Debug Information
 
 ```vim
-:GithubStatsDebug
+:GithubStats debug
 ```
 
 Shows:
@@ -623,7 +623,7 @@ rm ~/.config/nvim/lua/plugins/github-stats/config.json
 3. **Test after changes:**
    ```vim
    :checkhealth github_stats
-   :GithubStatsDebug
+   :GithubStats debug
    ```
 
 ### Organization
@@ -673,13 +673,13 @@ After configuration:
 
 3. **Perform initial fetch:**
    ```vim
-   :GithubStatsFetch force
+   :GithubStats fetch force
    ```
 
 4. **View statistics:**
    ```vim
-   :GithubStatsShow username/repo clones
-   :GithubStatsSummary clones
+   :GithubStats show username/repo clones
+   :GithubStats summary clones
    ```
 
 For troubleshooting, see [docs/TROUBLESHOOTING.md](../TROUBLESHOOTING.md).

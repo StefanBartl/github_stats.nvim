@@ -156,7 +156,7 @@ watch_users             GitHub usernames whose public repos are
 
 background.enabled      Master switch for the silent background
                         fetch/discovery cycle. When false, only manual
-                        :GithubStatsFetch ever fetches data.
+                        :GithubStats fetch ever fetches data.
                         Type: boolean
                         Default: true
 
@@ -221,7 +221,7 @@ Disable background fetching entirely:
 >lua
     require("github_stats").setup({
       repos = { "username/repo" },
-      background = { enabled = false },  -- only manual :GithubStatsFetch runs
+      background = { enabled = false },  -- only manual :GithubStats fetch runs
     })
 <
 
@@ -251,8 +251,15 @@ Then in setup:
 ==============================================================================
 COMMANDS                                            *github_stats-commands*
 
-                                                        *:GithubStatsFetch*
-:GithubStatsFetch [force]
+One command, :GithubStats <subcommand> (built via lib.nvim.usercmd.composer,
+with <Tab> completion at every level -- subcommand name, then each
+positional argument; repo names and date presets complete dynamically from
+live config). Bang attaches to the VERB, not the subcommand: :GithubStats!
+dashboard (not :GithubStats dashboard!). See |github_stats-dashboard| for
+the dashboard subcommand.
+                                                             *:GithubStats*
+                                                      *:GithubStats-fetch*
+:GithubStats fetch [force]
     Fetches statistics for all configured repositories.
 
     Optional: `force` - Ignores interval and forces immediate fetch
@@ -260,11 +267,11 @@ COMMANDS                                            *github_stats-commands*
     Autocompletion: `force`
 
     Examples:~
-        :GithubStatsFetch           " Respects 24h interval
-        :GithubStatsFetch force     " Immediate fetch
+        :GithubStats fetch           " Respects 24h interval
+        :GithubStats fetch force     " Immediate fetch
 
-                                                        *:GithubStatsShow*
-:GithubStatsShow {repo} {metric} [start_date] [end_date]
+                                                       *:GithubStats-show*
+:GithubStats show {repo} {metric} [start_date] [end_date]
     Shows detailed statistics for a repository and metric.
 
     Parameters:~
@@ -281,12 +288,12 @@ COMMANDS                                            *github_stats-commands*
     Autocompletion: Repository names, metrics
 
     Examples:~
-        :GithubStatsShow username/repo clones
-        :GithubStatsShow username/repo views 2025-01-01
-        :GithubStatsShow username/repo clones 2025-01-01 2025-12-31
+        :GithubStats show username/repo clones
+        :GithubStats show username/repo views 2025-01-01
+        :GithubStats show username/repo clones 2025-01-01 2025-12-31
 
-                                                     *:GithubStatsSummary*
-:GithubStatsSummary {metric}
+                                                    *:GithubStats-summary*
+:GithubStats summary {metric}
     Shows summary across all configured repositories.
 
     Parameters:~
@@ -297,11 +304,11 @@ COMMANDS                                            *github_stats-commands*
     Autocompletion: Metrics
 
     Examples:~
-        :GithubStatsSummary clones
-        :GithubStatsSummary views
+        :GithubStats summary clones
+        :GithubStats summary views
 
-                                                    *:GithubStatsReferrers*
-:GithubStatsReferrers {repo} [limit]
+                                                  *:GithubStats-referrers*
+:GithubStats referrers {repo} [limit]
     Shows top referrers for a repository.
 
     Parameters:~
@@ -311,11 +318,11 @@ COMMANDS                                            *github_stats-commands*
     Autocompletion: Repository names
 
     Examples:~
-        :GithubStatsReferrers username/repo
-        :GithubStatsReferrers username/repo 20
+        :GithubStats referrers username/repo
+        :GithubStats referrers username/repo 20
 
-                                                       *:GithubStatsPaths*
-:GithubStatsPaths {repo} [limit]
+                                                      *:GithubStats-paths*
+:GithubStats paths {repo} [limit]
     Shows most visited paths in a repository.
 
     Parameters:~
@@ -325,11 +332,11 @@ COMMANDS                                            *github_stats-commands*
     Autocompletion: Repository names
 
     Examples:~
-        :GithubStatsPaths username/repo
-        :GithubStatsPaths username/repo 20
+        :GithubStats paths username/repo
+        :GithubStats paths username/repo 20
 
-                                                       *:GithubStatsChart*
-:GithubStatsChart {repo} {metric} [start_date] [end_date]
+                                                      *:GithubStats-chart*
+:GithubStats chart {repo} {metric} [start_date] [end_date]
     Displays ASCII sparkline chart for traffic data.
 
     Parameters:~
@@ -345,12 +352,12 @@ COMMANDS                                            *github_stats-commands*
     Autocompletion: Repository names, metrics
 
     Examples:~
-        :GithubStatsChart username/repo clones
-        :GithubStatsChart username/repo both
-        :GithubStatsChart username/repo views 2025-01-01 2025-12-31
+        :GithubStats chart username/repo clones
+        :GithubStats chart username/repo both
+        :GithubStats chart username/repo views 2025-01-01 2025-12-31
 
-                                                      *:GithubStatsExport*
-:GithubStatsExport {repo|all} {metric} {filepath}
+                                                     *:GithubStats-export*
+:GithubStats export {repo|all} {metric} {filepath}
     Exports data to CSV or Markdown format.
 
     Parameters:~
@@ -365,12 +372,12 @@ COMMANDS                                            *github_stats-commands*
     Autocompletion: Repository names, metrics, file paths
 
     Examples:~
-        :GithubStatsExport username/repo clones ~/data.csv
-        :GithubStatsExport username/repo views ~/report.md
-        :GithubStatsExport all clones ~/summary.md
+        :GithubStats export username/repo clones ~/data.csv
+        :GithubStats export username/repo views ~/report.md
+        :GithubStats export all clones ~/summary.md
 
-                                                        *:GithubStatsDiff*
-:GithubStatsDiff {repo} {metric} {period1} {period2}
+                                                       *:GithubStats-diff*
+:GithubStats diff {repo} {metric} {period1} {period2}
     Compares metrics between two time periods.
 
     Parameters:~
@@ -386,11 +393,11 @@ COMMANDS                                            *github_stats-commands*
     Autocompletion: Repository names, metrics, period suggestions
 
     Examples:~
-        :GithubStatsDiff username/repo clones 2025-01 2025-02
-        :GithubStatsDiff username/repo views 2024 2025
+        :GithubStats diff username/repo clones 2025-01 2025-02
+        :GithubStats diff username/repo views 2024 2025
 
-                                                       *:GithubStatsDebug*
-:GithubStatsDebug
+                                                      *:GithubStats-debug*
+:GithubStats debug
     Shows debug information and tests API connectivity.
 
     Information Shown:~
@@ -422,9 +429,10 @@ The dashboard provides an interactive TUI for monitoring multiple repositories
 simultaneously with real-time statistics and visual trend indicators.
 
 Opening the Dashboard:~
+                                                   *:GithubStats-dashboard*
 >
-    :GithubStatsDashboard       Open dashboard
-    :GithubStatsDashboard!      Open with forced refresh
+    :GithubStats dashboard       Open dashboard
+    :GithubStats! dashboard      Open with forced refresh
 
 
 Dashboard Layout:~
@@ -666,9 +674,9 @@ Built-in Presets:~
 
 Usage with Commands:~
 >
-    :GithubStatsShow username/repo clones last_month
-    :GithubStatsChart username/repo views this_quarter
-    :GithubStatsDiff username/repo clones last_week this_week
+    :GithubStats show username/repo clones last_month
+    :GithubStats chart username/repo views this_quarter
+    :GithubStats diff username/repo clones last_week this_week
 
 
 Custom Presets:~
@@ -707,8 +715,8 @@ Example Configuration:~
 
 Using Custom Presets:~
 >
-    :GithubStatsShow username/repo clones fiscal_year
-    :GithubStatsChart username/repo both current_sprint
+    :GithubStats show username/repo clones fiscal_year
+    :GithubStats chart username/repo both current_sprint
 
 
 Configuration Options:~
@@ -735,13 +743,13 @@ Autocompletion:~
 
 Tab-completion shows all available presets when entering date parameters
 in commands that support date ranges:
-  • |:GithubStatsShow|
-  • |:GithubStatsChart|
-  • |:GithubStatsDiff|
+  • |:GithubStats-show|
+  • |:GithubStats-chart|
+  • |:GithubStats-diff|
 
 Example:~
 >
-    :GithubStatsShow username/repo clones <Tab>
+    :GithubStats show username/repo clones <Tab>
     " Shows: today, yesterday, last_week, ..., fiscal_year, current_sprint
 
 
@@ -896,12 +904,12 @@ Solution:~
 Problem: "No data found for username/repo"~
 Possible Causes:~
     1. Repository name in configuration incorrect (case-sensitive)
-    2. No data fetched yet → :GithubStatsFetch force
+    2. No data fetched yet → :GithubStats fetch force
     3. Token lacks permission for repository
 
 Problem: "Fetched X metrics, Y errors"~
 Solution:~
-    Run :GithubStatsDebug to see detailed error information for each
+    Run :GithubStats debug to see detailed error information for each
     failed repository/metric combination.
 
     Common error codes:
@@ -924,7 +932,7 @@ Solution:~
 
 Diagnostic Workflow:~
     1. :checkhealth github_stats
-    2. :GithubStatsDebug
+    2. :GithubStats debug
     3. :messages
     4. Check config: ~/.config/nvim/lua/plugins/github-stats/config.json
 

@@ -12,7 +12,7 @@ See [Preparation](configurations/PREPARATION.md) for a full walkthrough of creat
 
 | Variant | Startup impact | Commands available | When to use |
 |---|---|---|---|
-| **Default (lazy)** | Minimal | On first use of a `:GithubStats*` command | Large config, many plugins |
+| **Default (lazy)** | Minimal | On first use of a `:GithubStats` subcommand | Large config, many plugins |
 | **`lazy = false`** | Loads immediately | Right from the start | Want the daily auto-fetch guaranteed from the first frame |
 | **`event = "VimEnter"`** | After UI init | After editor UI ready | **Recommended** — daily auto-fetch / dashboard auto-open timing, minimal startup impact |
 

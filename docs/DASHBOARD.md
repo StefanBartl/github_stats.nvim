@@ -31,10 +31,10 @@ The dashboard provides a unified view of all configured repositories with:
 ## Opening the Dashboard
 ```vim
 " Basic usage
-:GithubStatsDashboard
+:GithubStats dashboard
 
-" Open with forced refresh
-:GithubStatsDashboard!
+" Open with forced refresh (bang attaches to the verb, not the subcommand)
+:GithubStats! dashboard
 ```
 
 **Auto-Open on Startup:**
@@ -196,7 +196,7 @@ The dashboard caches statistics for 60 seconds to improve performance.
 Initial render may be slow if no data is cached locally.
 
 **Solutions:**
-- Run `:GithubStatsFetch` before opening dashboard
+- Run `:GithubStats fetch` before opening dashboard
 - Enable auto-fetch on startup
 - Use `auto_open = false` to prevent startup delay
 
@@ -242,6 +242,6 @@ luarepos = {
 
 1. Press `f` to force-fetch the selected repository from GitHub (plain `r` only re-renders cached data, it won't fetch anything new)
 2. Verify repository name in config.json
-3. Check token has repo scope: `:GithubStatsDebug`
+3. Check token has repo scope: `:GithubStats debug`
 
 ---
