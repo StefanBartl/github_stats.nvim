@@ -2,18 +2,24 @@
 
 Complete reference for all available user commands.
 
+One command, `:GithubStats <subcommand>` (built via
+[`lib.nvim.usercmd.composer`](https://github.com/StefanBartl/lib.nvim)), with
+`<Tab>` completion at every level — subcommand name, then each positional
+argument. Repository names and date presets complete dynamically from live
+configuration.
+
 ## Table of Contents
 
 - [Command Overview](#command-overview)
-- [GithubStatsFetch](#githubstatsfetch)
-- [GithubStatsShow](#githubstatsshow)
-- [GithubStatsSummary](#githubstatssummary)
-- [GithubStatsReferrers](#githubstatsreferrers)
-- [GithubStatsPaths](#githubstatspaths)
-- [GithubStatsChart](#githubstatschart)
-- [GithubStatsExport](#githubstatsexport)
-- [GithubStatsDiff](#githubstatsdiff)
-- [GithubStatsDebug](#githubstatsdebug)
+- [GithubStats fetch](#githubstats-fetch)
+- [GithubStats show](#githubstats-show)
+- [GithubStats summary](#githubstats-summary)
+- [GithubStats referrers](#githubstats-referrers)
+- [GithubStats paths](#githubstats-paths)
+- [GithubStats chart](#githubstats-chart)
+- [GithubStats export](#githubstats-export)
+- [GithubStats diff](#githubstats-diff)
+- [GithubStats debug](#githubstats-debug)
 - [Common Patterns](#common-patterns)
 
 ---
@@ -22,23 +28,23 @@ Complete reference for all available user commands.
 
 | Command | Purpose | Autocompletion |
 |---------|---------|----------------|
-| `:GithubStatsFetch` | Fetch traffic data manually | `force` |
-| `:GithubStatsShow` | Detailed statistics for repo/metric | Repos, metrics |
-| `:GithubStatsSummary` | Aggregate across all repositories | Metrics |
-| `:GithubStatsReferrers` | Top referrer sources | Repos |
-| `:GithubStatsPaths` | Most visited paths | Repos |
-| `:GithubStatsChart` | Visual charts and sparklines | Repos, metrics |
-| `:GithubStatsExport` | Export to CSV/Markdown | Repos, metrics, paths |
-| `:GithubStatsDiff` | Period-over-period comparison | Repos, metrics, periods |
-| `:GithubStatsDebug` | Diagnostic information | None |
+| `:GithubStats fetch` | Fetch traffic data manually | `force` |
+| `:GithubStats show` | Detailed statistics for repo/metric | Repos, metrics |
+| `:GithubStats summary` | Aggregate across all repositories | Metrics |
+| `:GithubStats referrers` | Top referrer sources | Repos |
+| `:GithubStats paths` | Most visited paths | Repos |
+| `:GithubStats chart` | Visual charts and sparklines | Repos, metrics |
+| `:GithubStats export` | Export to CSV/Markdown | Repos, metrics, paths |
+| `:GithubStats diff` | Period-over-period comparison | Repos, metrics, periods |
+| `:GithubStats debug` | Diagnostic information | None |
 
 ---
 
-## GithubStatsFetch
+## GithubStats fetch
 
 **Usage:**
 ```vim
-:GithubStatsFetch [force]
+:GithubStats fetch [force]
 ```
 
 **Description:**
@@ -60,10 +66,10 @@ Triggers a manual fetch of GitHub traffic statistics for all configured reposito
 **Examples:**
 ```vim
 " Respects 24-hour interval (default)
-:GithubStatsFetch
+:GithubStats fetch
 
 " Force immediate fetch
-:GithubStatsFetch force
+:GithubStats fetch force
 ```
 
 **Output:**
@@ -77,7 +83,7 @@ Or with errors:
 [github-stats] Fetched 18 metrics, 2 errors
 ```
 
-Check `:GithubStatsDebug` for error details.
+Check `:GithubStats debug` for error details.
 
 **Related:**
 - See [Configuration Guide](configuration/INTRO.md) for `fetch_interval_hours`
@@ -85,11 +91,11 @@ Check `:GithubStatsDebug` for error details.
 
 ---
 
-## GithubStatsShow
+## GithubStats show
 
 **Usage:**
 ```vim
-:GithubStatsShow {repo} {metric} [start_date] [end_date]
+:GithubStats show {repo} {metric} [start_date] [end_date]
 ```
 
 **Description:**
@@ -114,17 +120,17 @@ Displays detailed statistics for a single repository and metric, including total
 **Examples:**
 ```vim
 " All available data (no date filters)
-:GithubStatsShow username/repo clones
+:GithubStats show username/repo clones
 
 " Only start date (end defaults to today)
-:GithubStatsShow username/repo views 2025-01-01
+:GithubStats show username/repo views 2025-01-01
 
 " Complete date range
-:GithubStatsShow username/repo clones 2025-01-01 2025-12-31
+:GithubStats show username/repo clones 2025-01-01 2025-12-31
 
 " Using autocomplete
-:GithubStatsShow <Tab>           " Lists repositories
-:GithubStatsShow username/repo <Tab>  " Suggests: clones, views
+:GithubStats show <Tab>           " Lists repositories
+:GithubStats show username/repo <Tab>  " Suggests: clones, views
 ```
 
 **Output Example:**
@@ -157,17 +163,17 @@ Daily Breakdown:
 ```
 
 **Related:**
-- `:GithubStatsChart` for visual representation
-- `:GithubStatsExport` to save data
-- `:GithubStatsDiff` for period comparison
+- `:GithubStats chart` for visual representation
+- `:GithubStats export` to save data
+- `:GithubStats diff` for period comparison
 
 ---
 
-## GithubStatsSummary
+## GithubStats summary
 
 **Usage:**
 ```vim
-:GithubStatsSummary {metric}
+:GithubStats summary {metric}
 ```
 
 **Description:**
@@ -188,11 +194,11 @@ Shows aggregated statistics across all configured repositories for the specified
 
 **Examples:**
 ```vim
-:GithubStatsSummary clones
-:GithubStatsSummary views
+:GithubStats summary clones
+:GithubStats summary views
 
 " Using autocomplete
-:GithubStatsSummary <Tab>  " Suggests: clones, views
+:GithubStats summary <Tab>  " Suggests: clones, views
 ```
 
 **Output Example:**
@@ -222,16 +228,16 @@ Repository: organization/repo3
 - Useful for quick overview of all projects
 
 **Related:**
-- `:GithubStatsShow` for detailed single-repository view
-- `:GithubStatsExport all` for exporting summary
+- `:GithubStats show` for detailed single-repository view
+- `:GithubStats export all` for exporting summary
 
 ---
 
-## GithubStatsReferrers
+## GithubStats referrers
 
 **Usage:**
 ```vim
-:GithubStatsReferrers {repo} [limit]
+:GithubStats referrers {repo} [limit]
 ```
 
 **Description:**
@@ -248,13 +254,13 @@ Displays the top referring domains or sources for a repository, sorted by traffi
 **Examples:**
 ```vim
 " Top 10 referrers (default)
-:GithubStatsReferrers username/repo
+:GithubStats referrers username/repo
 
 " Top 20 referrers
-:GithubStatsReferrers username/repo 20
+:GithubStats referrers username/repo 20
 
 " Using autocomplete
-:GithubStatsReferrers <Tab>  " Lists repositories
+:GithubStats referrers <Tab>  " Lists repositories
 ```
 
 **Output Example:**
@@ -285,15 +291,15 @@ Top Referrers: username/repo
 - Discover unexpected popularity sources
 
 **Related:**
-- `:GithubStatsPaths` for most visited repository paths
+- `:GithubStats paths` for most visited repository paths
 
 ---
 
-## GithubStatsPaths
+## GithubStats paths
 
 **Usage:**
 ```vim
-:GithubStatsPaths {repo} [limit]
+:GithubStats paths {repo} [limit]
 ```
 
 **Description:**
@@ -310,13 +316,13 @@ Displays the most visited paths within a repository, showing which files, direct
 **Examples:**
 ```vim
 " Top 10 paths (default)
-:GithubStatsPaths username/repo
+:GithubStats paths username/repo
 
 " Top 20 paths
-:GithubStatsPaths username/repo 20
+:GithubStats paths username/repo 20
 
 " Using autocomplete
-:GithubStatsPaths <Tab>  " Lists repositories
+:GithubStats paths <Tab>  " Lists repositories
 ```
 
 **Output Example:**
@@ -352,15 +358,15 @@ Top Paths: username/repo
 - Prioritize content improvements
 
 **Related:**
-- `:GithubStatsReferrers` for traffic source analysis
+- `:GithubStats referrers` for traffic source analysis
 
 ---
 
-## GithubStatsChart
+## GithubStats chart
 
 **Usage:**
 ```vim
-:GithubStatsChart {repo} {metric} [start_date] [end_date]
+:GithubStats chart {repo} {metric} [start_date] [end_date]
 ```
 
 **Description:**
@@ -385,20 +391,20 @@ Renders GitHub traffic data as ASCII sparklines or comparison charts. Provides v
 **Examples:**
 ```vim
 " Single metric sparkline (all data)
-:GithubStatsChart username/repo clones
+:GithubStats chart username/repo clones
 
 " Comparison chart
-:GithubStatsChart username/repo both
+:GithubStats chart username/repo both
 
 " With date range
-:GithubStatsChart username/repo views 2025-01-01 2025-12-31
+:GithubStats chart username/repo views 2025-01-01 2025-12-31
 
 " Only start date
-:GithubStatsChart username/repo clones 2025-11-01
+:GithubStats chart username/repo clones 2025-11-01
 
 " Using autocomplete
-:GithubStatsChart <Tab>               " Lists repositories
-:GithubStatsChart username/repo <Tab> " Suggests: clones, views, both
+:GithubStats chart <Tab>               " Lists repositories
+:GithubStats chart username/repo <Tab> " Suggests: clones, views, both
 ```
 
 **Output Example (Single Metric):**
@@ -440,16 +446,16 @@ Period: 2025-11-20 to 2025-12-20 (30 days)
 - Arrow keys – Scroll (if content exceeds window size)
 
 **Related:**
-- `:GithubStatsShow` for numerical breakdown
-- `:GithubStatsExport` to save data
+- `:GithubStats show` for numerical breakdown
+- `:GithubStats export` to save data
 
 ---
 
-## GithubStatsExport
+## GithubStats export
 
 **Usage:**
 ```vim
-:GithubStatsExport {repo|all} {metric} {filepath}
+:GithubStats export {repo|all} {metric} {filepath}
 ```
 
 **Description:**
@@ -476,18 +482,18 @@ Exports GitHub traffic statistics to a file. Supported formats are CSV (single r
 **Examples:**
 ```vim
 " Export single repository to CSV
-:GithubStatsExport username/repo clones ~/data.csv
+:GithubStats export username/repo clones ~/data.csv
 
 " Export single repository to Markdown
-:GithubStatsExport username/repo views ~/reports/repo_views.md
+:GithubStats export username/repo views ~/reports/repo_views.md
 
 " Export all repositories to Markdown summary
-:GithubStatsExport all clones ~/reports/all_clones.md
+:GithubStats export all clones ~/reports/all_clones.md
 
 " Using autocomplete
-:GithubStatsExport <Tab>               " Suggests: repo names + "all"
-:GithubStatsExport username/repo <Tab> " Suggests: clones, views
-:GithubStatsExport username/repo clones <Tab>  " File path completion
+:GithubStats export <Tab>               " Suggests: repo names + "all"
+:GithubStats export username/repo <Tab> " Suggests: clones, views
+:GithubStats export username/repo clones <Tab>  " File path completion
 ```
 
 **CSV Format Example:**
@@ -555,16 +561,16 @@ username/repo,clones,2025-12-22,38,10
 ```
 
 **Related:**
-- `:GithubStatsShow` to view data before exporting
+- `:GithubStats show` to view data before exporting
 - See [Export Module](../README.md#export-data-new-in-v120) for more details
 
 ---
 
-## GithubStatsDiff
+## GithubStats diff
 
 **Usage:**
 ```vim
-:GithubStatsDiff {repo} {metric} {period1} {period2}
+:GithubStats diff {repo} {metric} {period1} {period2}
 ```
 
 **Description:**
@@ -589,18 +595,18 @@ Compares traffic metrics between two time periods, showing absolute values and p
 **Examples:**
 ```vim
 " Compare two months
-:GithubStatsDiff username/repo clones 2025-01 2025-02
+:GithubStats diff username/repo clones 2025-01 2025-02
 
 " Compare two years
-:GithubStatsDiff username/repo views 2024 2025
+:GithubStats diff username/repo views 2024 2025
 
 " Compare Q4 2024 vs Q1 2025
-:GithubStatsDiff username/repo clones 2024-10 2025-01
+:GithubStats diff username/repo clones 2024-10 2025-01
 
 " Using autocomplete
-:GithubStatsDiff <Tab>               " Lists repositories
-:GithubStatsDiff username/repo <Tab> " Suggests: clones, views
-:GithubStatsDiff username/repo clones <Tab>  " Suggests periods
+:GithubStats diff <Tab>               " Lists repositories
+:GithubStats diff username/repo <Tab> " Suggests: clones, views
+:GithubStats diff username/repo clones <Tab>  " Suggests periods
 ```
 
 **Output Example:**
@@ -651,16 +657,16 @@ Changes:
 ```
 
 **Related:**
-- `:GithubStatsShow` to check available date ranges
-- `:GithubStatsChart` for visual trend analysis
+- `:GithubStats show` to check available date ranges
+- `:GithubStats chart` for visual trend analysis
 
 ---
 
-## GithubStatsDebug
+## GithubStats debug
 
 **Usage:**
 ```vim
-:GithubStatsDebug
+:GithubStats debug
 ```
 
 **Description:**
@@ -697,7 +703,7 @@ None
 
 **Examples:**
 ```vim
-:GithubStatsDebug
+:GithubStats debug
 ```
 
 **Output Example:**
@@ -755,7 +761,7 @@ Success! Sample data:
 
 4. **"API Error: 403 Forbidden"**
    - Token lacks `repo` permission
-   - Rate limit exceeded (check via `:GithubStatsRateLimit`)
+   - Rate limit exceeded (see [Rate Limit Check](configurations/PREPARATION.md#test-4-rate-limit-check))
 
 **Related:**
 - `:checkhealth github_stats` for comprehensive health check
@@ -769,19 +775,19 @@ Success! Sample data:
 ### Quick Daily Check
 ```vim
 " Open Neovim, check all repos
-:GithubStatsSummary clones
+:GithubStats summary clones
 
 " Check specific repo details
-:GithubStatsShow username/my-main-repo clones
+:GithubStats show username/my-main-repo clones
 ```
 
 ### Weekly Report Generation
 ```vim
 " Export all repos to Markdown
-:GithubStatsExport all clones ~/reports/weekly_$(date +%Y%m%d).md
+:GithubStats export all clones ~/reports/weekly_$(date +%Y%m%d).md
 
 " Compare this week vs last week
-:GithubStatsDiff username/repo clones $(date -d "1 week ago" +%Y-%m) $(date +%Y-%m)
+:GithubStats diff username/repo clones $(date -d "1 week ago" +%Y-%m) $(date +%Y-%m)
 ```
 
 ### Troubleshooting Workflow
@@ -790,43 +796,43 @@ Success! Sample data:
 :checkhealth github_stats
 
 " 2. View detailed diagnostics
-:GithubStatsDebug
+:GithubStats debug
 
 " 3. Check Neovim messages
 :messages
 
 " 4. Force fetch to refresh data
-:GithubStatsFetch force
+:GithubStats fetch force
 
 " 5. Verify data exists
-:GithubStatsShow username/repo clones
+:GithubStats show username/repo clones
 ```
 
 ### Monitoring Traffic Spikes
 ```vim
 " 1. Check recent trend
-:GithubStatsChart username/repo both
+:GithubStats chart username/repo both
 
 " 2. Show recent data
-:GithubStatsShow username/repo clones 2025-12-01
+:GithubStats show username/repo clones 2025-12-01
 
 " 3. Check traffic sources
-:GithubStatsReferrers username/repo 20
+:GithubStats referrers username/repo 20
 
 " 4. Identify popular content
-:GithubStatsPaths username/repo 20
+:GithubStats paths username/repo 20
 ```
 
 ### Comparing Performance
 ```vim
 " Month-over-month
-:GithubStatsDiff username/repo clones 2025-01 2025-02
+:GithubStats diff username/repo clones 2025-01 2025-02
 
 " Year-over-year
-:GithubStatsDiff username/repo views 2024 2025
+:GithubStats diff username/repo views 2024 2025
 
 " Visual comparison
-:GithubStatsChart username/repo both
+:GithubStats chart username/repo both
 ```
 
 ---

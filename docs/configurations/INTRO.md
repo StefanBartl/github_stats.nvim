@@ -118,7 +118,7 @@ require("github_stats").setup({
 **Type:** `boolean`
 **Default:** `true`
 
-Master switch for the silent background fetch/discovery cycle (started on `VimEnter`, stays active for the whole session). When `false`, only manual `:GithubStatsFetch` ever fetches data — see [Background Fetching & Auto-Discovered Repos](../../README.md#background-fetching--auto-discovered-repos) in the README for the full behavior.
+Master switch for the silent background fetch/discovery cycle (started on `VimEnter`, stays active for the whole session). When `false`, only manual `:GithubStats fetch` ever fetches data — see [Background Fetching & Auto-Discovered Repos](../../README.md#background-fetching--auto-discovered-repos) in the README for the full behavior.
 
 #### `token_source`
 **Type:** `"env" | "file"`
@@ -176,7 +176,7 @@ fetch_interval_hours = 12   -- Twice daily
 fetch_interval_hours = 168  -- Weekly
 ```
 
-**Note:** Manual fetches with `:GithubStatsFetch force` bypass this interval.
+**Note:** Manual fetches with `:GithubStats fetch force` bypass this interval.
 
 #### `notification_level`
 **Type:** `"all" | "errors" | "silent"`
@@ -188,7 +188,7 @@ Controls notification verbosity:
 |-------|----------|----------|
 | `"all"` | Show all notifications (info, warnings, errors) | Default, full feedback |
 | `"errors"` | Only show warnings and errors | Reduce noise |
-| `"silent"` | No notifications (check `:GithubStatsDebug` manually) | Minimal distraction |
+| `"silent"` | No notifications (check `:GithubStats debug` manually) | Minimal distraction |
 
 **Example:**
 ```lua

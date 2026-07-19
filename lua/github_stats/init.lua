@@ -8,13 +8,17 @@
 --- Configuration:
 ---   Edit ~/.config/nvim/lua/plugins/github-stats/config.json
 ---
---- Available commands:
----   :GithubStatsFetch [force]              - Fetch all metrics
----   :GithubStatsShow {repo} {metric}       - Show detailed stats
----   :GithubStatsSummary {clones|views}     - Summary across all repos
----   :GithubStatsReferrers {repo} [limit]   - Top referrers
----   :GithubStatsPaths {repo} [limit]       - Top paths
----   :GithubStatsDebug                      - Debug configuration
+--- Available commands (built via lib.nvim.usercmd.composer):
+---   :GithubStats fetch [force]              - Fetch all metrics
+---   :GithubStats show {repo} {metric}       - Show detailed stats
+---   :GithubStats summary {clones|views}     - Summary across all repos
+---   :GithubStats referrers {repo} [limit]   - Top referrers
+---   :GithubStats paths {repo} [limit]       - Top paths
+---   :GithubStats chart {repo} {metric}      - Sparkline chart
+---   :GithubStats export {repo|all} ...      - Export to CSV/Markdown
+---   :GithubStats diff {repo} {metric} ...   - Compare two periods
+---   :GithubStats debug                      - Debug configuration
+---   :GithubStats[!] dashboard               - Open dashboard (! forces refresh)
 ---
 --- Healthcheck:
 ---   :checkhealth github_stats

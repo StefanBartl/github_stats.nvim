@@ -27,7 +27,7 @@ This means:
 ### Finding Error Details
 
 ```vim
-:GithubStatsDebug
+:GithubStats debug
 ```
 
 This shows:
@@ -213,7 +213,7 @@ username/repo/paths: Failed to parse JSON response
 **Solutions:**
 1. Try manual fetch:
    ```vim
-   :GithubStatsFetch force
+   :GithubStats fetch force
    ```
 
 2. Check raw API response:
@@ -515,7 +515,7 @@ Shows:
 ```json
 "notification_level": "silent"
 ```
-Shows nothing, check `:GithubStatsDebug` manually
+Shows nothing, check `:GithubStats debug` manually
 
 ---
 
@@ -539,7 +539,7 @@ Checks:
 ### Detailed Debug Info
 
 ```vim
-:GithubStatsDebug
+:GithubStats debug
 ```
 
 Shows:
@@ -563,7 +563,7 @@ Shows all Neovim messages including plugin notifications.
 ### Manual Fetch (Bypass Interval)
 
 ```vim
-:GithubStatsFetch force
+:GithubStats fetch force
 ```
 
 Forces immediate fetch, useful for testing.
@@ -589,7 +589,7 @@ If problems persist:
 1. Run diagnostics:
    ```vim
    :checkhealth github_stats
-   :GithubStatsDebug
+   :GithubStats debug
    :messages
    ```
 
@@ -605,7 +605,7 @@ If problems persist:
    ```
 
 4. Open an issue:
-   - Include output from `:GithubStatsDebug`
+   - Include output from `:GithubStats debug`
    - Include relevant error messages
    - Mention OS and Neovim version
    - GitHub: https://github.com/StefanBartl/github_stats.nvim/issues
@@ -616,7 +616,7 @@ If problems persist:
 
 | Problem | Command | Fix |
 |---------|---------|-----|
-| "4 errors" | `:GithubStatsDebug` | Check error details |
+| "4 errors" | `:GithubStats debug` | Check error details |
 | Token issue | `:checkhealth github_stats` | Verify token permissions |
 | Too many notifications | Edit config.json | Set `notification_level: "errors"` |
 | Network timeout | `curl api.github.com` | Check connectivity |

@@ -466,12 +466,12 @@ After completing preparation:
 
 3. **Perform initial fetch:**
    ```vim
-   :GithubStatsFetch force
+   :GithubStats fetch force
    ```
 
 4. **Verify data collection:**
    ```vim
-   :GithubStatsShow username/repo clones
+   :GithubStats show username/repo clones
    ```
 
 For issues, see [docs/TROUBLESHOOTING.md](../TROUBLESHOOTING.md).

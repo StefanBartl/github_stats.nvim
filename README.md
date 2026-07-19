@@ -45,8 +45,8 @@ export GITHUB_TOKEN="ghp_your_token_here"
 
 Then try it out:
 ```vim
-:GithubStatsFetch force
-:GithubStatsDashboard
+:GithubStats fetch force
+:GithubStats dashboard
 :checkhealth github_stats
 ```
 
@@ -57,7 +57,7 @@ Then try it out:
 - [Installation](docs/installation.md) — requirements, loading strategies, lazy.nvim/packer.nvim setup.
 - [Configuration Guide](docs/configurations/INTRO.md) — all configuration options, methods, and defaults.
 - [Preparation](docs/configurations/PREPARATION.md) — creating a GitHub token and verifying prerequisites.
-- [User Commands](docs/usercommands.md) — complete reference for every `:GithubStats*` command.
+- [User Commands](docs/usercommands.md) — complete reference for the `:GithubStats <subcommand>` command tree.
 - [Bindings Reference](docs/BINDINGS.md) — all commands, keymaps, and autocmds in one place.
 - [Dashboard Guide](docs/DASHBOARD.md) — the interactive TUI dashboard, its keybindings, and configuration.
 - [Custom Date Presets](docs/configurations/USER-DEFINED-DATE-PRESETS.md) — built-in and user-defined date range shortcuts.

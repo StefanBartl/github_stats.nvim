@@ -134,7 +134,7 @@ repos show up automatically. It's additive to `repos`, not a replacement.
 
 By default, the plugin runs a silent background cycle for the whole
 session (not just once at startup) that stays quiet on success and only
-notifies on real errors. To rely on manual `:GithubStatsFetch` only:
+notifies on real errors. To rely on manual `:GithubStats fetch` only:
 
 ```lua
 require("github_stats").setup({
@@ -184,7 +184,7 @@ require("github_stats").setup({
 Options:
 - `"all"` – All notifications (default)
 - `"errors"` – Only warnings and errors
-- `"silent"` – No notifications (check `:GithubStatsDebug`)
+- `"silent"` – No notifications (check `:GithubStats debug`)
 
 ### More Frequent Fetching
 
@@ -377,7 +377,7 @@ Checks:
 ### Debug Information
 
 ```vim
-:GithubStatsDebug
+:GithubStats debug
 ```
 
 Shows:
@@ -481,7 +481,7 @@ require("github_stats").setup({
 
 ```vim
 :checkhealth github_stats
-:GithubStatsDebug
+:GithubStats debug
 ```
 
 ### Step 4: Optional Cleanup
@@ -551,13 +551,13 @@ After configuration:
 
 3. **Perform initial fetch:**
    ```vim
-   :GithubStatsFetch force
+   :GithubStats fetch force
    ```
 
 4. **View statistics:**
    ```vim
-   :GithubStatsShow username/repo clones
-   :GithubStatsSummary clones
+   :GithubStats show username/repo clones
+   :GithubStats summary clones
    ```
 
 For troubleshooting, see [docs/TROUBLESHOOTING.md](../TROUBLESHOOTING.md).
