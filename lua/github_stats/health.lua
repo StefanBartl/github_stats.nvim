@@ -292,52 +292,6 @@ local function check_api_sync()
 	end
 end
 
----Check dashboard configuration
----@return boolean, string # Success flag, message
-local function check_dashboard()
-  local cfg = config.get()
-  if not cfg then
-    return false, "Configuration not loaded"
-  end
-
-  local dashboard_cfg = cfg.dashboard
-  if not dashboard_cfg then
-    return true, "Dashboard configuration not present (optional feature)"
-  end
-
-  -- Check enabled flag
-  if type(dashboard_cfg.enabled) ~= "boolean" then
-    return false, "dashboard.enabled must be boolean"
-  end
-
-  if not dashboard_cfg.enabled then
-    return true, "Dashboard disabled by configuration"
-  end
-
-  -- Check refresh interval
-  if dashboard_cfg.refresh_interval_seconds then
-    if type(dashboard_cfg.refresh_interval_seconds) ~= "number" then
-      return false, "dashboard.refresh_interval_seconds must be number"
-    end
-    if dashboard_cfg.refresh_interval_seconds < 10 then
-      return false, "dashboard.refresh_interval_seconds must be >= 10"
-    end
-  end
-
-  -- Check keybindings
-  if dashboard_cfg.keybindings then
-    if type(dashboard_cfg.keybindings) ~= "table" then
-      return false, "dashboard.keybindings must be table"
-    end
-  end
-
-  return true, string.format(
-    "Dashboard configured (enabled=%s, refresh=%ds)",
-    tostring(dashboard_cfg.enabled),
-    dashboard_cfg.refresh_interval_seconds or 60
-  )
-end
-
 ---Main health check entry point
 function M.check()
 	vim.health.start("GitHub Stats Configuration")
@@ -370,7 +324,7 @@ function M.check()
 		if background_enabled then
 			health.ok("Background fetch enabled (silent; only errors are notified)")
 		else
-			health.info("Background fetch disabled (background.enabled = false) - manual :GithubStatsFetch only")
+			health.info("Background fetch disabled (background.enabled = false) - manual :GithubStats fetch only")
 		end
 
 		if cfg and cfg.watch_users and #cfg.watch_users > 0 then
@@ -422,71 +376,65 @@ function M.check()
 				"Verify token has 'repo' permission",
 				"Confirm repository name in config.json",
 				"Check firewall/proxy settings",
-				"Try: :GithubStatsDebug for detailed diagnostics",
+				"Try: :GithubStats debug for detailed diagnostics",
 			})
 		end
 	else
 		health.warn("Skipping API test due to previous errors")
 	end
 
-	-- Füge nach API connectivity check hinzu:
+	health.start("GitHub Stats Dashboard")
 
-	vim.health.start("GitHub Stats Dashboard")
+	do
+		local cfg = config.get()
+		local dashboard_cfg = cfg and cfg.dashboard
 
-	local cfg = config.get()
-	if cfg and cfg.dashboard then
-		if cfg.dashboard.enabled then
-			vim.health.ok("Dashboard enabled")
+		if not dashboard_cfg then
+			health.warn("Dashboard configuration not found", {
+				"Add dashboard section to config.json",
+				"See documentation for default configuration",
+			})
+		elseif type(dashboard_cfg.enabled) ~= "boolean" then
+			health.error("dashboard.enabled must be boolean")
+		elseif not dashboard_cfg.enabled then
+			health.info("Dashboard disabled by configuration")
+		else
+			health.ok("Dashboard enabled")
 
-			-- Check refresh interval
-			if cfg.dashboard.refresh_interval_seconds > 0 then
-				vim.health.ok(string.format("Auto-refresh: every %d seconds", cfg.dashboard.refresh_interval_seconds))
+			local refresh = dashboard_cfg.refresh_interval_seconds
+			if refresh ~= nil and type(refresh) ~= "number" then
+				health.error("dashboard.refresh_interval_seconds must be number")
+			elseif refresh ~= nil and refresh < 10 then
+				health.error("dashboard.refresh_interval_seconds must be >= 10")
 			else
-				vim.health.info("Auto-refresh disabled")
+				health.ok(str_format("Auto-refresh: every %d seconds", refresh or 60))
 			end
 
-			-- Check keybindings
-			if cfg.dashboard.keybindings then
+			if dashboard_cfg.keybindings == nil then
+				health.error("Dashboard keybindings not configured")
+			elseif type(dashboard_cfg.keybindings) ~= "table" then
+				health.error("dashboard.keybindings must be table")
+			else
 				local essential_keys = { "navigate_down", "navigate_up", "quit" }
 				local missing_keys = {}
 
 				for _, key in ipairs(essential_keys) do
-					if not cfg.dashboard.keybindings[key] then
+					if not dashboard_cfg.keybindings[key] then
 						table.insert(missing_keys, key)
 					end
 				end
 
 				if #missing_keys > 0 then
-					vim.health.warn(
-						string.format("Missing keybindings: %s", table.concat(missing_keys, ", ")),
+					health.warn(
+						str_format("Missing keybindings: %s", tbl_concat(missing_keys, ", ")),
 						{ "Add missing keybindings to dashboard.keybindings in config" }
 					)
 				else
-					vim.health.ok("All essential keybindings configured")
+					health.ok("All essential keybindings configured")
 				end
-			else
-				vim.health.error("Dashboard keybindings not configured")
 			end
-		else
-			vim.health.info("Dashboard disabled")
 		end
-	else
-		vim.health.warn("Dashboard configuration not found", {
-			"Add dashboard section to config.json",
-			"See documentation for default configuration",
-		})
 	end
-
-  vim.health.start("GitHub Stats Dashboard")
-  local dashboard_ok, dashboard_msg = check_dashboard()
-  if dashboard_ok then
-    vim.health.ok(dashboard_msg)
-  else
-    vim.health.warn(dashboard_msg, {
-      "Check dashboard configuration in config.json",
-      "Example: { \"dashboard\": { \"enabled\": true, \"refresh_interval_seconds\": 60 } }",
-    })
-  end
 end
 
 return M
