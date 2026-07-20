@@ -15,7 +15,7 @@ local DEFAULT_CONFIG = {
 		"StefanBartl/mdview.nvim",
 		"StefanBartl/monkeypatch.nvim",
 		"StefanBartl/mygrep.nvim",
-		"StefanBartl/nvim-cmdlog",
+		"StefanBartl/cmdlog.nvim",
 		"StefanBartl/nvim-containers",
 		"StefanBartl/replacer",
 		"StefanBartl/reposcope.nvim",
