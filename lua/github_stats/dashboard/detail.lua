@@ -7,6 +7,7 @@ local M = {}
 
 local visualization = require("github_stats.visualization")
 local analytics = require("github_stats.analytics")
+local config = require("github_stats.config")
 local format_number = require("lib.lua.strings.format").format_number
 
 ---Generate sparkline section for a metric
@@ -148,10 +149,7 @@ function M.show_detail(repo)
 
   -- Handle errors
   if clones_err and views_err then
-    vim.notify(
-      string.format("[github-stats] Failed to load data: %s", clones_err),
-      vim.log.levels.ERROR
-    )
+    config.notify(string.format("[github-stats] Failed to load data: %s", clones_err), "error")
     return
   end
 

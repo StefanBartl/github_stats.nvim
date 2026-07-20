@@ -88,10 +88,7 @@ local function create_dashboard_buffer()
   local buf = vim.api.nvim_create_buf(false, true)
 
   if not buf or buf == 0 then
-    vim.notify(
-      "[github-stats] Failed to create dashboard buffer",
-      vim.log.levels.ERROR
-    )
+    config.notify("[github-stats] Failed to create dashboard buffer", "error")
     return nil
   end
 
@@ -134,10 +131,7 @@ local function create_dashboard_window(buf)
   local win = vim.api.nvim_open_win(buf, true, opts)
 
   if not win or win == 0 then
-    vim.notify(
-      "[github-stats] Failed to create dashboard window",
-      vim.log.levels.ERROR
-    )
+    config.notify("[github-stats] Failed to create dashboard window", "error")
     return nil
   end
 
@@ -189,10 +183,7 @@ function M.open(force_refresh)
   local repos = config.get_repos()
 
   if #repos == 0 then
-    vim.notify(
-      "[github-stats] No repositories configured",
-      vim.log.levels.WARN
-    )
+    config.notify("[github-stats] No repositories configured", "warn")
     return
   end
 
@@ -226,6 +217,10 @@ function M.open(force_refresh)
   keymaps.setup_keymaps(buf)
 
   -- Setup cleanup on buffer delete
+  -- NOTE: stays on the raw API deliberately -- lib.nvim.autocmd.create's opts
+  -- only forward group/pattern/desc/once/nested (no `buffer`), so routing a
+  -- buffer-scoped autocmd through it would silently turn this into a global
+  -- (all-buffers) BufWipeout listener instead of one scoped to `buf`.
   vim.api.nvim_create_autocmd("BufWipeout", {
     buffer = buf,
     once = true,

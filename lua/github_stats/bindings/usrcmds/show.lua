@@ -10,6 +10,7 @@ local analytics = require("github_stats.analytics")
 local utils = require("github_stats.bindings.usrcmds.utils")
 local config = require("github_stats.config")
 local format_number = require("lib.lua.strings.format").format_number
+local map = require("lib.nvim.map")
 
 local M = {}
 
@@ -21,10 +22,7 @@ function M.execute(args)
   local parts = vim.split(args.args, "%s+")
 
   if #parts < 2 then
-    vim.notify(
-      "[github-stats] Usage: GithubStatsShow {repo} {metric} [start_date] [end_date]",
-      vim.log.levels.ERROR
-    )
+    config.notify("[github-stats] Usage: GithubStatsShow {repo} {metric} [start_date] [end_date]", "error")
     return
   end
 
@@ -35,10 +33,7 @@ function M.execute(args)
 
   -- Validate metric
   if metric ~= "clones" and metric ~= "views" then
-    vim.notify(
-      string.format("[github-stats] Invalid metric '%s'. Use 'clones' or 'views'", metric),
-      vim.log.levels.ERROR
-    )
+    config.notify(string.format("[github-stats] Invalid metric '%s'. Use 'clones' or 'views'", metric), "error")
     return
   end
 
@@ -50,30 +45,24 @@ function M.execute(args)
   })
 
   if err then
-    vim.notify(
-      string.format("[github-stats] Error: %s", err),
-      vim.log.levels.ERROR
-    )
+    config.notify(string.format("[github-stats] Error: %s", err), "error")
     return
   end
 
   if not stats then
-    vim.notify(
-      "[github-stats] No data returned from analytics",
-      vim.log.levels.ERROR
-    )
+    config.notify("[github-stats] No data returned from analytics", "error")
     return
   end
 
   -- Check if we actually have data
   if stats.total_count == 0 and stats.total_uniques == 0 then
-    vim.notify(
+    config.notify(
       string.format(
         "[github-stats] No data found for %s/%s. Check repository name and ensure data has been fetched.",
         repo,
         metric
       ),
-      vim.log.levels.WARN
+      "warn"
     )
     return
   end
@@ -113,7 +102,7 @@ function M.execute(args)
 
   -- Add backspace keybinding to return to dashboard
   if buf then
-    vim.keymap.set("n", "<BS>", function()
+    map("n", "<BS>", function()
       -- Close current window first
       if win and vim.api.nvim_win_is_valid(win) then
         vim.api.nvim_win_close(win, true)
@@ -132,13 +121,10 @@ function M.execute(args)
         end)
 
         if not ok then
-          vim.notify(
-            string.format("[github-stats] Failed to reopen dashboard: %s", err),
-            vim.log.levels.ERROR
-          )
+          config.notify(string.format("[github-stats] Failed to reopen dashboard: %s", err), "error")
         end
       end, 100)
-    end, { buffer = buf, noremap = true, silent = true })
+    end, { buffer = buf })
   end
 end
 

@@ -20,9 +20,9 @@ function M.execute(args)
   local parts = vim.split(args.args, "%s+")
 
   if #parts < 2 then
-    vim.notify(
+    config.notify(
       "[github-stats] Usage: GithubStatsChart {repo} {metric} [start_date|time_range] [end_date]",
-      vim.log.levels.ERROR
+      "error"
     )
     return
   end
@@ -48,10 +48,7 @@ function M.execute(args)
 
   -- Validate metric
   if metric ~= "clones" and metric ~= "views" and metric ~= "both" then
-    vim.notify(
-      "[github-stats] Metric must be 'clones', 'views', or 'both'",
-      vim.log.levels.ERROR
-    )
+    config.notify("[github-stats] Metric must be 'clones', 'views', or 'both'", "error")
     return
   end
 
@@ -66,10 +63,7 @@ function M.execute(args)
     })
 
     if err or not stats then
-      vim.notify(
-        string.format("[github-stats] Error: %s", err or "No data"),
-        vim.log.levels.ERROR
-      )
+      config.notify(string.format("[github-stats] Error: %s", err or "No data"), "error")
       return
     end
 
@@ -92,10 +86,7 @@ function M.execute(args)
   })
 
   if err or not stats then
-    vim.notify(
-      string.format("[github-stats] Error: %s", err or "No data"),
-      vim.log.levels.ERROR
-    )
+    config.notify(string.format("[github-stats] Error: %s", err or "No data"), "error")
     return
   end
 

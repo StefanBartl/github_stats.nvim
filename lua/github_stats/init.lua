@@ -33,10 +33,7 @@ function M.setup(opts)
   local config = require("github_stats.config")
   local ok, err = config.init(opts)
   if not ok then
-    vim.notify(
-      string.format("[github-stats] Configuration error: %s", err),
-      vim.log.levels.ERROR
-    )
+    config.notify(string.format("[github-stats] Configuration error: %s", err), "error")
     return
   end
 
