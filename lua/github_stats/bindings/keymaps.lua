@@ -10,6 +10,7 @@
 --- Optionally registers descriptions with which-key.nvim if it is installed.
 
 local config = require("github_stats.config")
+local map = require("lib.nvim.map")
 local DEFAULT_KEYBINDINGS = require("github_stats.config.DEFAULTS").dashboard.keybindings
 local dashboard_state = require("github_stats.dashboard.state")
 local movement = require("github_stats.dashboard.movement")
@@ -40,11 +41,11 @@ local function map_key(buf, key, action, which_key_entries, desc)
 		return
 	end
 
-	vim.keymap.set("n", key, function()
+	map("n", key, function()
 		action()
 		-- Trigger debounced render
 		require("github_stats.dashboard").schedule_render(false)
-	end, { buffer = buf, noremap = true, silent = true, desc = desc })
+	end, { buffer = buf }, desc)
 
 	if desc then
 		table.insert(which_key_entries, { key, desc = desc, buffer = buf })
@@ -72,7 +73,7 @@ local function block_cursor_movement(buf)
 	for _, key in ipairs(blocked_keys) do
 		-- j, k, and arrows are handled explicitly below
 		if key ~= "j" and key ~= "k" and key ~= "<Up>" and key ~= "<Down>" then
-			vim.keymap.set("n", key, "<Nop>", { buffer = buf, noremap = true, silent = true })
+			map("n", key, "<Nop>", { buffer = buf })
 		end
 	end
 end
@@ -195,19 +196,19 @@ function M.setup_keymaps(buf)
 
 	-- Quit: configurable (default q), plus fixed Esc fallback
 	if keybindings.quit and keybindings.quit ~= "" then
-		vim.keymap.set("n", keybindings.quit, function()
+		map("n", keybindings.quit, function()
 			ui_state.close_window()
-		end, { buffer = buf, noremap = true, silent = true, desc = "GitHub Stats: quit dashboard" })
+		end, { buffer = buf }, "GitHub Stats: quit dashboard")
 		table.insert(which_key_entries, { keybindings.quit, desc = "GitHub Stats: quit dashboard", buffer = buf })
 	end
 
-	vim.keymap.set("n", "<Esc>", function()
+	map("n", "<Esc>", function()
 		ui_state.close_window()
-	end, { buffer = buf, noremap = true, silent = true, desc = "GitHub Stats: quit dashboard" })
+	end, { buffer = buf }, "GitHub Stats: quit dashboard")
 
 	-- Help: configurable (default ?)
 	map_key(buf, keybindings.show_help, function()
-		vim.notify(
+		config.notify(
 			"GitHub Stats Dashboard Keybindings:\n"
 				.. string.format("  %s/%s/↑/↓   - Navigate up/down\n", keybindings.navigate_down, keybindings.navigate_up)
 				.. "  <C-d/u>   - Scroll half page\n"
@@ -221,7 +222,7 @@ function M.setup_keymaps(buf)
 				.. string.format("  %-9s - Cycle time range\n", keybindings.cycle_time_range)
 				.. string.format("  %-9s - Quit\n", keybindings.quit)
 				.. string.format("  %-9s - Show this help", keybindings.show_help),
-			vim.log.levels.INFO
+			"info"
 		)
 	end, which_key_entries, "GitHub Stats: show help")
 
