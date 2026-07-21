@@ -11,6 +11,7 @@
 
 local config = require("github_stats.config")
 local map = require("lib.nvim.map")
+local window = require("lib.nvim.window")
 local DEFAULT_KEYBINDINGS = require("github_stats.config.DEFAULTS").dashboard.keybindings
 local dashboard_state = require("github_stats.dashboard.state")
 local movement = require("github_stats.dashboard.movement")
@@ -194,17 +195,19 @@ function M.setup_keymaps(buf)
 		actions.cycle_time_range()
 	end, which_key_entries, "GitHub Stats: cycle time range")
 
-	-- Quit: configurable (default q), plus fixed Esc fallback
+	-- Quit: configurable (default q), plus fixed Esc fallback. The dashboard
+	-- buffer is bufhidden=wipe, so closing the window here also triggers the
+	-- BufWipeout -> cleanup_dashboard() -> ui_state.cleanup_all() chain set up
+	-- in dashboard/init.lua; nice_quit's plain nvim_win_close is enough.
+	local quit_keys = { "<Esc>" }
 	if keybindings.quit and keybindings.quit ~= "" then
-		map("n", keybindings.quit, function()
-			ui_state.close_window()
-		end, { buffer = buf }, "GitHub Stats: quit dashboard")
+		quit_keys[#quit_keys + 1] = keybindings.quit
 		table.insert(which_key_entries, { keybindings.quit, desc = "GitHub Stats: quit dashboard", buffer = buf })
 	end
-
-	map("n", "<Esc>", function()
-		ui_state.close_window()
-	end, { buffer = buf }, "GitHub Stats: quit dashboard")
+	local win = ui_state.get_win()
+	if win then
+		window.nice_quit(win, { keys = quit_keys, force = true })
+	end
 
 	-- Help: configurable (default ?)
 	map_key(buf, keybindings.show_help, function()
