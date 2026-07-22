@@ -76,7 +76,7 @@ function M.start()
 	vim.defer_fn(run_cycle, 1000)
 
 	-- Recurring cycles for the rest of the session
-	timer = vim.loop.new_timer()
+	timer = vim.uv.new_timer()
 	local interval_ms = poll_interval_ms(cfg)
 	timer:start(interval_ms, interval_ms, vim.schedule_wrap(run_cycle))
 end

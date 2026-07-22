@@ -137,7 +137,7 @@ local function check_storage()
 	local storage_root = config.get_storage_root()
 
 	-- Check if path exists
-	local stat = vim.loop.fs_stat(storage_root)
+	local stat = vim.uv.fs_stat(storage_root)
 	if not stat then
 		-- Try to create
 		local ok, err = pcall(fn.mkdir, storage_root, "p")
@@ -222,13 +222,13 @@ local function check_api_sync()
 		)
 	end
 
-	local start_time = vim.loop.hrtime()
+	local start_time = vim.uv.hrtime()
 
 	-- Execute synchronously
 	fn.system(curl_cmd)
 	local exit_code = vim.v.shell_error
 
-	local duration_ms = math.floor((vim.loop.hrtime() - start_time) / 1000000)
+	local duration_ms = math.floor((vim.uv.hrtime() - start_time) / 1000000)
 
 	-- Check for timeout or network error
 	if exit_code ~= 0 then
