@@ -214,7 +214,7 @@ function M.mark_rendered()
     return
   end
 
-  state.last_render_time = vim.loop.now()
+  state.last_render_time = vim.uv.now()
 end
 
 ---Check if enough time has passed since last render
@@ -225,7 +225,7 @@ function M.should_render(threshold_ms)
     return false
   end
 
-  local now = vim.loop.now()
+  local now = vim.uv.now()
   return (now - state.last_render_time) >= threshold_ms
 end
 

@@ -41,7 +41,7 @@ function M.schedule_render(force)
   -- Check if enough time has passed
   if not dashboard_state.should_render(RENDER_DEBOUNCE_MS) then
     -- Too soon, schedule debounced render
-    render_timer = vim.loop.new_timer()
+    render_timer = vim.uv.new_timer()
     render_timer:start(RENDER_DEBOUNCE_MS, 0, vim.schedule_wrap(function()
       if render_timer then
         render_timer:stop()
