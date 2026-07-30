@@ -19,6 +19,7 @@
 ---@field token_file? string Path to token file
 ---@field fetch_interval_hours? number Fetch interval
 ---@field notification_level? "all"|"errors"|"silent" Notification level
+---@field progress_style? "auto"|"notify"|"statusline"|"fidget"|"float"|"kit" Indicator while a manual fetch is in flight; needs lib.nvim, no-op without it. Background cycles never show one.
 ---@field config_dir? string Custom config directory (default: stdpath('config')/lua/plugins/github-stats)
 ---@field data_dir? string Custom data directory (default: config_dir/data)
 ---@field date_presets? GHStats.DatePresetConfig Date range preset configuration
