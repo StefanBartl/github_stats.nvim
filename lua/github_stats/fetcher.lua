@@ -3,6 +3,12 @@
 ---@description
 --- Coordinates parallel fetching of all metrics for configured repositories.
 --- Manages fetch intervals and provides both automatic and manual fetch triggers.
+---
+--- A full fetch is four API calls per repository, so over a dozen-plus
+--- repositories on a slow link it can run for a while with nothing to show for
+--- it. `lib.nvim.progress` (optional dependency) reports it live — but only for
+--- manual fetches: a silent background cycle stays silent, matching the existing
+--- `background` convention below.
 
 local config = require("github_stats.config")
 local api = require("github_stats.api")
@@ -11,6 +17,24 @@ local storage = require("github_stats.storage")
 local M = {}
 
 local str_format = string.format
+
+local ok_progress, progress_mod = pcall(require, "lib.nvim.progress")
+
+---Starts a progress handle, or returns nil when lib.nvim isn't installed.
+---@param total integer Number of repositories being fetched
+---@return table|nil
+local function new_progress(total)
+	if not ok_progress then
+		return nil
+	end
+	local cfg = config.get()
+	local handle = progress_mod.create({
+		title = "[github-stats]",
+		style = (cfg and cfg.progress_style) or "auto",
+	})
+	handle:update({ text = str_format("fetching %d repositories", total), current = 0, total = total })
+	return handle
+end
 
 ---Store for detailed error information (accessible via debug command)
 ---@type GHStats.FetchSummary?
@@ -132,8 +156,19 @@ function M.fetch_all(force, callback, opts)
 	local all_success = {}
 	local all_errors = {}
 
+	-- Manual fetches only: a background cycle is meant to be invisible, and an
+	-- indicator that appears on a timer the user didn't trigger is noise.
+	local progress = (not background) and new_progress(#repos) or nil
+
 	local function check_all_complete()
 		completed = completed + 1
+		if progress then
+			progress:update({
+				text = str_format("%d of %d repositories", completed, #repos),
+				current = completed,
+				total = #repos,
+			})
+		end
 		if completed == #repos then
 			-- Save fetch timestamp
 			save_last_fetch(os.time())
@@ -147,6 +182,12 @@ function M.fetch_all(force, callback, opts)
 
 			-- Store for debug access
 			M.last_fetch_summary = summary
+
+			-- Closed before the notifications below, so the indicator is gone by
+			-- the time the summary appears rather than lingering behind it.
+			if progress then
+				progress:finish(str_format("fetched %d metrics", #all_success))
+			end
 
 			-- Notify user: error summary always fires (still gated by
 			-- notification_level) even in background mode, so real problems

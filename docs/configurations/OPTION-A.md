@@ -107,6 +107,7 @@ require("github_stats").setup({
   token_env_var = "GITHUB_TOKEN",
   fetch_interval_hours = 24,
   notification_level = "all",
+  progress_style = "auto",       -- indicator while a manual fetch runs (needs lib.nvim)
   background = { enabled = true },
 })
 ```
@@ -185,6 +186,40 @@ Options:
 - `"all"` – All notifications (default)
 - `"errors"` – Only warnings and errors
 - `"silent"` – No notifications (check `:GithubStats debug`)
+
+### Progress Indicator
+
+A full fetch is four API calls per repository, so over a dozen-plus repositories
+on a slow link it can run for a while with nothing to show for it.
+
+```lua
+require("github_stats").setup({
+  repos = { "username/repo" },
+  progress_style = "auto", -- "auto" | "notify" | "statusline" | "fidget" | "float" | "kit"
+})
+```
+
+Requires [`lib.nvim`](https://github.com/StefanBartl/lib.nvim), which provides
+the indicator via its
+[`lib.nvim.progress`](https://github.com/StefanBartl/lib.nvim/blob/main/lua/lib/nvim/progress/README.md)
+module. Without `lib.nvim` installed the option is silently a no-op and fetching
+behaves exactly as before.
+
+Only **manual** fetches (`:GithubStatsFetch`, the dashboard refresh keys) show an
+indicator — the silent background cycle never does, matching how it already
+suppresses its info notifications. The indicator is also delay-guarded: it only
+becomes visible after ~150ms, so a fast fetch never flashes any UI.
+
+`"statusline"` draws nothing and instead publishes the text for your own
+statusline to read:
+
+```lua
+local function progress_component()
+  local ok, sl = pcall(require, "lib.nvim.progress.styles.statusline")
+  if not ok then return "" end
+  return table.concat(sl.active(), " | ") -- "" when nothing is running
+end
+```
 
 ### More Frequent Fetching
 

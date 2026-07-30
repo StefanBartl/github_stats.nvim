@@ -112,6 +112,7 @@ Option A: Direct Setup (Recommended)~
       token_env_var = "GITHUB_TOKEN",
       fetch_interval_hours = 24,
       notification_level = "all",     -- "all", "errors", "silent"
+      progress_style = "auto",        -- indicator while a manual fetch runs
     })
 <
 
@@ -179,6 +180,32 @@ fetch_interval_hours    Hours between automatic fetches
 notification_level      Notification verbosity
                         Type: "all" | "errors" | "silent"
                         Default: "all"
+
+progress_style          Progress indicator while a fetch is in flight.
+                        Type: "auto" | "notify" | "statusline" | "fidget"
+                              | "float" | "kit"
+                        Default: "auto"
+
+                        A full fetch is four API calls per repository, so
+                        over a dozen-plus repositories it can run for a
+                        while with no output of its own.
+
+                        Requires lib.nvim, which provides the indicator
+                        via its `lib.nvim.progress` module. Without
+                        lib.nvim installed this option is silently a
+                        no-op and fetching behaves exactly as before.
+
+                        Only manual fetches (`:GithubStatsFetch`, the
+                        dashboard refresh keys) show an indicator — the
+                        silent background cycle never does, matching how
+                        it already suppresses info notifications.
+
+                        "auto" prefers fidget.nvim when installed and
+                        falls back to vim.notify. "statusline" draws
+                        nothing and instead publishes the text for your
+                        own statusline to read via
+                        `require("lib.nvim.progress.styles.statusline")
+                        .active()`.
 
 config_dir              Custom config directory (advanced)
                         Type: string

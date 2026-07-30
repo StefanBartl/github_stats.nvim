@@ -25,6 +25,8 @@ local DEFAULT_CONFIG = {
 	token_env_var = "GITHUB_TOKEN",
 	fetch_interval_hours = 24,
 	notification_level = "all",
+	progress_style = "auto", -- indicator while a manual fetch runs; needs lib.nvim, no-op without it
+
 	watch_users = {},
 	background = {
 		enabled = true,
