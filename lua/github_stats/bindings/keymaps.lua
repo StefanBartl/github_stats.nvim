@@ -79,6 +79,28 @@ local function block_cursor_movement(buf)
 	end
 end
 
+---Jump the current selection to a specific repository index, scrolling just
+---enough to keep it visible (mirrors the auto-scroll idiom used by
+---move_cursor_down/move_cursor_up). Clamped, so an out-of-range count is
+---never an error.
+---@param state GHStats.DashboardState
+---@param target_index integer Requested repository index (1-based, unclamped)
+---@return nil
+local function jump_to_repo(state, target_index)
+	local target = math.max(1, math.min(target_index, #state.repos))
+	dashboard_state.set_current_index(target)
+
+	local target_line = dashboard_state.get_repo_line(target)
+	local visible_start = state.scroll_offset + 1
+	local visible_end = state.scroll_offset + state.win_height
+
+	if target_line < visible_start then
+		dashboard_state.set_scroll_offset(math.max(0, target_line - 1))
+	elseif target_line > visible_end then
+		dashboard_state.set_scroll_offset(math.min(state.max_scroll, target_line - state.win_height))
+	end
+end
+
 ---Register collected keybindings with which-key.nvim, if installed
 ---@param which_key_entries table[] Entries in which-key's mapping-table format
 ---@return nil
@@ -112,52 +134,68 @@ function M.setup_keymaps(buf)
 	block_cursor_movement(buf)
 
 	-- Navigation: configurable keys AND arrow keys (fixed, with auto-scroll)
+	-- count1: e.g. 5j moves down 5 repositories instead of 1
 	map_key(buf, keybindings.navigate_down, function()
-		movement.move_cursor_down(state)
+		movement.move_cursor_down(state, vim.v.count1)
 	end, which_key_entries, "GitHub Stats: navigate down")
 
 	map_key(buf, "<Down>", function()
-		movement.move_cursor_down(state)
+		movement.move_cursor_down(state, vim.v.count1)
 	end, which_key_entries)
 
 	map_key(buf, keybindings.navigate_up, function()
-		movement.move_cursor_up(state)
+		movement.move_cursor_up(state, vim.v.count1)
 	end, which_key_entries, "GitHub Stats: navigate up")
 
 	map_key(buf, "<Up>", function()
-		movement.move_cursor_up(state)
+		movement.move_cursor_up(state, vim.v.count1)
 	end, which_key_entries)
 
 	-- Scroll: Ctrl-d/u (fixed)
+	-- Raw count: 0 (no prefix) keeps the fixed default of 10 lines; an
+	-- explicit prefix (e.g. 1<C-d>) scrolls by exactly that many lines.
 	map_key(buf, "<C-d>", function()
-		dashboard_state.scroll_by(10)
+		local lines = vim.v.count > 0 and vim.v.count or 10
+		dashboard_state.scroll_by(lines)
 	end, which_key_entries, "GitHub Stats: scroll half page down")
 
 	map_key(buf, "<C-u>", function()
-		dashboard_state.scroll_by(-10)
+		local lines = vim.v.count > 0 and vim.v.count or 10
+		dashboard_state.scroll_by(-lines)
 	end, which_key_entries, "GitHub Stats: scroll half page up")
 
 	-- Page navigation: Ctrl-f/b (fixed)
+	-- count1: e.g. 3<C-f> scrolls 3 pages instead of 1
 	map_key(buf, "<C-f>", function()
 		local page_size = state.win_height - render.HEADER_LINES
-		dashboard_state.scroll_by(page_size)
+		dashboard_state.scroll_by(page_size * vim.v.count1)
 	end, which_key_entries, "GitHub Stats: scroll full page down")
 
 	map_key(buf, "<C-b>", function()
 		local page_size = state.win_height - render.HEADER_LINES
-		dashboard_state.scroll_by(-page_size)
+		dashboard_state.scroll_by(-page_size * vim.v.count1)
 	end, which_key_entries, "GitHub Stats: scroll full page up")
 
 	-- Jump to top/bottom: gg/G (fixed)
+	-- Raw count: 0 (no prefix) keeps jumping to first/last; NgG or Ngg jumps
+	-- to repository N instead (clamped, matching Vim's own gg/G convention).
 	map_key(buf, "gg", function()
-		dashboard_state.set_current_index(1)
-		dashboard_state.set_scroll_offset(0)
+		if vim.v.count > 0 then
+			jump_to_repo(state, vim.v.count)
+		else
+			dashboard_state.set_current_index(1)
+			dashboard_state.set_scroll_offset(0)
+		end
 	end, which_key_entries, "GitHub Stats: jump to top")
 
 	map_key(buf, "G", function()
-		dashboard_state.set_current_index(#state.repos)
-		local max_scroll = state.max_scroll
-		dashboard_state.set_scroll_offset(max_scroll)
+		if vim.v.count > 0 then
+			jump_to_repo(state, vim.v.count)
+		else
+			dashboard_state.set_current_index(#state.repos)
+			local max_scroll = state.max_scroll
+			dashboard_state.set_scroll_offset(max_scroll)
+		end
 	end, which_key_entries, "GitHub Stats: jump to bottom")
 
 	-- View details: configurable (default <CR>)
