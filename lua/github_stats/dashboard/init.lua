@@ -56,6 +56,7 @@ function M.schedule_render(force)
   render.render_dashboard()
 end
 
+---@internal
 ---Find existing dashboard buffer by name
 ---@return integer? # Buffer handle or nil if not found
 local function find_dashboard_buffer()
@@ -70,6 +71,7 @@ local function find_dashboard_buffer()
   return nil
 end
 
+---@internal
 ---Delete existing dashboard buffer if it exists
 ---@return nil
 local function cleanup_existing_dashboard()
@@ -79,6 +81,7 @@ local function cleanup_existing_dashboard()
   end
 end
 
+---@internal
 ---Create and configure dashboard buffer
 ---@return integer? # Buffer handle or nil on failure
 local function create_dashboard_buffer()
@@ -104,6 +107,7 @@ local function create_dashboard_buffer()
   return buf
 end
 
+---@internal
 ---Create and configure dashboard window
 ---@param buf integer Buffer handle
 ---@return integer? # Window handle or nil on failure
@@ -144,6 +148,7 @@ local function create_dashboard_window(buf)
   return win
 end
 
+---@internal
 ---Cleanup dashboard resources: stop the render timer, stop/clear the
 ---auto-refresh timer (via dashboard_state.clear_state()), and close the
 ---window/buffer (via ui_state.cleanup_all()). Safe to call when nothing is

@@ -16,6 +16,7 @@ local M = {}
 ---@type uv.uv_timer_t?
 local timer = nil
 
+---@internal
 ---Run one background cycle: discover repos (if configured), then fetch
 ---@return nil
 local function run_cycle()
@@ -45,6 +46,7 @@ local function run_cycle()
 	end)
 end
 
+---@internal
 ---Derive how often to check whether a fetch is due, in milliseconds.
 ---This does not change how often a fetch actually happens - that's still
 ---governed by `fetch_interval_hours` inside fetcher.should_fetch(). It only

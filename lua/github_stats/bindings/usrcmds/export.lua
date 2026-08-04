@@ -13,6 +13,7 @@ local str_format = string.format
 
 ---Execute export command
 ---@param args table Command arguments
+---@see github_stats.export
 function M.execute(args)
   local parts = vim.split(args.args, "%s+")
 

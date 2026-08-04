@@ -14,6 +14,7 @@ local str_format = string.format
 
 ---Execute referrers command
 ---@param args table Command arguments from nvim_create_user_command
+---@see github_stats.analytics.get_top_referrers
 function M.execute(args)
   local parts = vim.split(args.args, "%s+")
 

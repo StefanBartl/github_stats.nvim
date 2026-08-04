@@ -29,6 +29,7 @@ local dashboard = require("github_stats.bindings.usrcmds.dashboard")
 
 local M = {}
 
+---@internal
 ---Rebuild a single space-joined string from bound positionals + leftover
 --- tokens, matching the raw `args.args` a flat nargs="+" command would have
 --- received -- every execute() below still does its own vim.split on it.

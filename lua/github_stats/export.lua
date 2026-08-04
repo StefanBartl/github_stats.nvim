@@ -11,6 +11,7 @@ local expand = fn.expand
 local str_format = string.format
 local tbl_insert, tbl_concat = table.insert, table.concat
 
+---@internal
 ---Escape CSV field
 ---@param field string Field value
 ---@return string # Escaped field

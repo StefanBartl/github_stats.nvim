@@ -22,6 +22,7 @@ local actions = require("github_stats.dashboard.actions")
 
 local M = {}
 
+---@internal
 ---Resolve effective dashboard keybindings (user config merged over defaults)
 ---@return table<string, string>
 local function get_keybindings()
@@ -30,6 +31,7 @@ local function get_keybindings()
 	return vim.tbl_extend("force", DEFAULT_KEYBINDINGS, user_keybindings)
 end
 
+---@internal
 ---Map a key to an action with debounced render, unless the key is disabled ("")
 ---@param buf integer Buffer handle
 ---@param key string Key sequence, empty string disables the binding
@@ -53,6 +55,7 @@ local function map_key(buf, key, action, which_key_entries, desc)
 	end
 end
 
+---@internal
 ---Block native cursor movement to prevent conflicts
 ---@param buf integer Buffer handle
 ---@return nil
@@ -79,6 +82,7 @@ local function block_cursor_movement(buf)
 	end
 end
 
+---@internal
 ---Jump the current selection to a specific repository index, scrolling just
 ---enough to keep it visible (mirrors the auto-scroll idiom used by
 ---move_cursor_down/move_cursor_up). Clamped, so an out-of-range count is
@@ -101,6 +105,7 @@ local function jump_to_repo(state, target_index)
 	end
 end
 
+---@internal
 ---Register collected keybindings with which-key.nvim, if installed
 ---@param which_key_entries table[] Entries in which-key's mapping-table format
 ---@return nil

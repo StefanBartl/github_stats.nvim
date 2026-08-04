@@ -16,6 +16,7 @@ local str_format = string.format
 ---@type table<string, fun(): string, string>
 local BUILTIN_PRESETS = {}
 
+---@internal
 ---Calculate ISO date for offset from today
 ---@param days_offset integer Number of days to offset (negative for past)
 ---@return string # ISO date string (YYYY-MM-DD)
@@ -25,6 +26,7 @@ local function offset_date(days_offset)
   return tostring(os_date("%Y-%m-%d", offset_time))
 end
 
+---@internal
 ---Get start of week (Monday) for given timestamp
 ---@param timestamp integer Unix timestamp
 ---@return integer # Unix timestamp of Monday 00:00:00
@@ -35,6 +37,7 @@ local function get_week_start(timestamp)
   return timestamp - (days_since_monday * 86400)
 end
 
+---@internal
 ---Get start of month for given timestamp
 ---@param timestamp integer Unix timestamp
 ---@return integer # Unix timestamp of first day of month 00:00:00
@@ -50,6 +53,7 @@ local function get_month_start(timestamp)
   })
 end
 
+---@internal
 ---Get start of quarter for given timestamp
 ---@param timestamp integer Unix timestamp
 ---@return integer # Unix timestamp of first day of quarter
@@ -66,6 +70,7 @@ local function get_quarter_start(timestamp)
   })
 end
 
+---@internal
 ---Get start of year for given timestamp
 ---@param timestamp integer Unix timestamp
 ---@return integer # Unix timestamp of January 1st 00:00:00

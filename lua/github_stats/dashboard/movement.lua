@@ -1,4 +1,4 @@
---@module 'github_stats.dashboard.movement'
+---@module 'github_stats.dashboard.movement'
 ---@brief Dashboard cursor movement logic with auto-scroll
 ---@description
 --- Handles cursor movement within the dashboard including entry selection,
@@ -10,6 +10,7 @@ local render = require("github_stats.dashboard.render")
 
 local M = {}
 
+---@internal
 ---Move cursor to target index with proper line calculation
 ---@param state GHStats.DashboardState
 ---@param target_index integer Target repository index (1-based)

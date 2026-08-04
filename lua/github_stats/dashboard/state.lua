@@ -63,6 +63,7 @@ function M.update_window_height(new_height)
   M.update_scroll_limits()
 end
 
+---@internal
 ---Calculate total lines needed for current state
 ---@return integer # Total lines including header and all entries
 local function calculate_total_lines()

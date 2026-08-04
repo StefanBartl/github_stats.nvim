@@ -20,6 +20,7 @@ local str_format = string.format
 
 local ok_progress, progress_mod = pcall(require, "lib.nvim.progress")
 
+---@internal
 ---Starts a progress handle, or returns nil when lib.nvim isn't installed.
 ---@param total integer Number of repositories being fetched
 ---@return table|nil
@@ -40,12 +41,14 @@ end
 ---@type GHStats.FetchSummary?
 M.last_fetch_summary = nil
 
+---@internal
 ---Get path to last_fetch tracking file
 ---@return string
 local function get_last_fetch_file()
 	return config.get_storage_root() .. "/../last_fetch.json"
 end
 
+---@internal
 ---Load last fetch timestamp. Delegates the read+decode to lib.nvim.fs.json.
 ---@return number? # Unix timestamp of last fetch, or nil
 local function load_last_fetch()
@@ -53,6 +56,7 @@ local function load_last_fetch()
 	return data and data.timestamp
 end
 
+---@internal
 ---Save current fetch timestamp. Delegates the encode+atomic-write to
 ---lib.nvim.fs.json.write (which also creates parent directories).
 ---@param timestamp number Unix timestamp
@@ -60,6 +64,7 @@ local function save_last_fetch(timestamp)
 	require("lib.nvim.fs.json").write(get_last_fetch_file(), { timestamp = timestamp })
 end
 
+---@internal
 ---Check if fetch interval has elapsed
 ---@return boolean # True if enough time has passed
 local function should_fetch()
@@ -80,6 +85,7 @@ local function should_fetch()
 	return elapsed >= interval_seconds
 end
 
+---@internal
 ---Fetch all metrics for a single repository
 ---@param repo string Repository identifier
 ---@param callback fun(success: string[], errors: table<string, string>)

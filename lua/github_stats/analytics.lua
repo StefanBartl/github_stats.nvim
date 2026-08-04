@@ -9,6 +9,7 @@ local storage = require("github_stats.storage")
 
 local M = {}
 
+---@internal
 ---Parse ISO date string to timestamp
 ---@param date_str string ISO date (YYYY-MM-DD)
 ---@return integer? # Unix timestamp or nil if invalid
@@ -42,6 +43,7 @@ local function parse_date(date_str)
   })
 end
 
+---@internal
 ---Extract date from ISO timestamp
 ---@param timestamp string ISO 8601 timestamp
 ---@return string # Date in YYYY-MM-DD format
@@ -50,12 +52,14 @@ local function extract_date(timestamp)
   return match or ""
 end
 
+---@internal
 ---Get today's date in YYYY-MM-DD format
 ---@return string
 local function get_today()
   return tostring(os.date("%Y-%m-%d"))
 end
 
+---@internal
 ---Deduplicate records - keep only latest fetch per day
 ---@param history GHStats.StoredMetricData[] Array of stored metrics
 ---@return table<string, GHStats.DailyMetricData> # Map of ISO date -> latest data
@@ -88,6 +92,7 @@ local function deduplicate_by_date(history)
 
   return by_date
 end
+---@internal
 ---Filter out today's incomplete data
 ---@param daily_data table<string, {count: integer, uniques: integer}> Daily breakdown
 ---@return table<string, {count: integer, uniques: integer}> # Filtered data
@@ -104,6 +109,7 @@ local function exclude_today(daily_data)
   return filtered
 end
 
+---@internal
 ---Aggregate daily data from deduplicated records
 ---@param history GHStats.StoredMetricData[] Stored metric files
 ---@param start_date string? Filter start (ISO date)
@@ -159,6 +165,7 @@ local function aggregate_daily(history, start_date, end_date)
   return daily, total_count, total_uniques
 end
 
+---@internal
 ---Parse time range keyword into start/end dates
 ---@param time_range string Time range keyword
 ---@return string?, string? # start_date, end_date (ISO format)

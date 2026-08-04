@@ -9,6 +9,7 @@ local M = {}
 local str_format = string.format
 local format_number = require("lib.lua.strings.format").format_number
 
+---@internal
 ---Parse period string (YYYY-MM or YYYY) into start and end timestamps
 ---@param period string Period identifier (YYYY-MM or YYYY)
 ---@return integer, integer # Start timestamp, end timestamp (inclusive)
@@ -90,6 +91,7 @@ local function parse_period(period)
   ))
 end
 
+---@internal
 ---Filter daily breakdown by period
 ---@param daily_breakdown table<string, {count: integer, uniques: integer}>
 ---@param start_ts integer Start timestamp (inclusive)
@@ -130,6 +132,7 @@ local function filter_by_period(daily_breakdown, start_ts, end_ts)
   return filtered
 end
 
+---@internal
 ---Calculate aggregate stats for period
 ---@param filtered_breakdown table<string, {count: integer, uniques: integer}>
 ---@return {total_count: integer, total_uniques: integer, days: integer}
@@ -151,6 +154,7 @@ local function calculate_period_stats(filtered_breakdown)
   }
 end
 
+---@internal
 ---Calculate percentage change
 ---@param old_val number Old value
 ---@param new_val number New value

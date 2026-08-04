@@ -1,4 +1,4 @@
----@module 'github_stats.state.ui.ui_state'
+---@module 'github_stats.state.ui_state'
 ---@brief Centralized UI state management
 ---@description
 --- Manages buffer and window handles for all UI components.

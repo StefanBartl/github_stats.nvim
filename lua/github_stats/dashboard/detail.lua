@@ -10,6 +10,7 @@ local analytics = require("github_stats.analytics")
 local config = require("github_stats.config")
 local format_number = require("lib.lua.strings.format").format_number
 
+---@internal
 ---Generate sparkline section for a metric
 ---@param metric_name string Display name (e.g., "CLONES", "VIEWS")
 ---@param icon string Emoji icon
@@ -83,6 +84,7 @@ local function generate_metric_section(metric_name, icon, daily_breakdown)
   return lines
 end
 
+---@internal
 ---Generate daily breakdown section
 ---@param clones_breakdown table<string, {count: integer, uniques: integer}>
 ---@param views_breakdown table<string, {count: integer, uniques: integer}>

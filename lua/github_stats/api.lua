@@ -23,6 +23,7 @@ local ENDPOINTS = {
   paths = "/repos/%s/traffic/popular/paths",
 }
 
+---@internal
 ---Build request URL for metric
 ---@param repo string Repository in "owner/repo" format
 ---@param metric string Metric type
@@ -38,6 +39,7 @@ end
 
 local curl = require("lib.nvim.net.curl")
 
+---@internal
 ---Fetch `url` via lib.nvim.net.curl and decode it into this module's own
 ---(data, err) contract: GitHub returns HTTP 200 with a `{"message": "..."}`
 ---body for many auth/API-level errors, which curl itself sees as success —
@@ -142,6 +144,7 @@ end
 ---100 repos/page, so 30 pages covers up to 3000 repos before giving up)
 local MAX_USER_REPO_PAGES = 30
 
+---@internal
 ---Fetch a single page of a user's public repositories
 ---@param username string GitHub username
 ---@param page integer Page number (1-based)

@@ -7,6 +7,7 @@ local M = {}
 
 ---Execute dashboard command
 ---@param args table Command arguments from nvim_create_user_command
+---@see github_stats.dashboard
 function M.execute(args)
   local dashboard = require("github_stats.dashboard")
 
