@@ -18,6 +18,7 @@ local tbl_filter, startswith = vim.tbl_filter, vim.startswith
 
 ---Execute show command with backspace support
 ---@param args table Command arguments from nvim_create_user_command
+---@see github_stats.analytics.query_metric
 function M.execute(args)
   local parts = vim.split(args.args, "%s+")
 

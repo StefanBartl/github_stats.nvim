@@ -28,6 +28,7 @@ local PATHS = {
 	data_dir = nil,
 }
 
+---@internal
 ---Get config directory path
 ---@param custom_path? string Custom config directory
 ---@return string
@@ -40,6 +41,7 @@ local function resolve_config_dir(custom_path)
 	return config_path .. "/lua/plugins/github-stats"
 end
 
+---@internal
 ---Get data directory path
 ---@param custom_path? string Custom data directory
 ---@param config_dir string Config directory
@@ -52,6 +54,7 @@ local function resolve_data_dir(custom_path, config_dir)
 	return config_dir .. "/data"
 end
 
+---@internal
 ---Create default config file if it doesn't exist
 ---@return boolean, string? # Success flag, error message
 local function ensure_config_exists()
@@ -79,6 +82,7 @@ local function ensure_config_exists()
 	return true, nil
 end
 
+---@internal
 ---Read config.json and merge it over DEFAULT_CONFIG into module-level `config`.
 ---@return boolean, string? # Success flag, error message
 local function load_config_file()

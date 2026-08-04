@@ -14,6 +14,7 @@ local M = {}
 ---Number of lines used by header
 M.HEADER_LINES = 4
 
+---@internal
 ---Format number with thousands separator
 ---@param num number|nil Number to format
 ---@return string # Formatted string with commas
@@ -27,6 +28,7 @@ end
 ---Fixed-width content area between the header box's left/right borders
 local HEADER_CONTENT_WIDTH = 72
 
+---@internal
 ---Pad or truncate a string to an exact display width
 ---@param str string
 ---@param width integer
@@ -38,6 +40,7 @@ local function fit_width(str, width)
   return str .. string.rep(" ", width - #str)
 end
 
+---@internal
 ---Build header lines, including a status line reflecting live sort/range state
 ---@param state GHStats.DashboardState Current dashboard state
 ---@return string[] # Header lines
@@ -62,6 +65,7 @@ local function build_header(state)
   }
 end
 
+---@internal
 ---Compute a simple trend percentage: growth of the second half of the period
 ---versus the first half, based on daily clone counts
 ---@param daily_breakdown table<string, {count: integer, uniques: integer}>
@@ -90,6 +94,7 @@ local function compute_trend(daily_breakdown)
   return ((recent_total - older_total) / older_total) * 100
 end
 
+---@internal
 ---Format a trend value as a visual indicator with percentage
 ---@param trend number
 ---@return string
@@ -107,6 +112,7 @@ end
 ---@field views GHStats.AggregatedStats|nil
 ---@field trend number
 
+---@internal
 ---Query clones/views for a repository, respecting the dashboard's time range
 ---@param repo string Repository identifier
 ---@param time_range string Dashboard time range ("7d"|"30d"|"90d"|"all")
@@ -129,6 +135,7 @@ local function fetch_repo_stats(repo, time_range)
   return { clones = stats_clones, views = stats_views, trend = trend }
 end
 
+---@internal
 ---Sort state.repos in place according to state.sort_by, then restore the
 ---previously selected repository's position (by name) so the selection
 ---doesn't jump around when the underlying data hasn't actually changed.
@@ -178,6 +185,7 @@ local function sort_repos(state, stats_by_repo)
   end
 end
 
+---@internal
 ---Build entry lines for a single repository
 ---@param repo string Repository identifier
 ---@param index integer Repository index for numbering
@@ -226,6 +234,7 @@ local function build_entry(repo, index, is_selected, stats)
   return lines
 end
 
+---@internal
 ---Build complete dashboard content
 ---@param state GHStats.DashboardState Current dashboard state
 ---@return string[] # All lines for the buffer

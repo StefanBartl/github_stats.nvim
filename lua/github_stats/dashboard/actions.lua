@@ -14,6 +14,7 @@ local M = {}
 local SORT_CYCLE = { "clones", "views", "name", "trend" }
 local TIME_RANGE_CYCLE = { "7d", "30d", "90d", "all" }
 
+---@internal
 ---Return the next value in a fixed cycle, wrapping around
 ---@param cycle string[]
 ---@param current string?

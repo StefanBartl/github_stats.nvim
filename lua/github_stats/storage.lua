@@ -14,6 +14,7 @@ local fs = vim.fs
 local loop = vim.loop
 local str_format = string.format
 
+---@internal
 ---Sanitize repository name for filesystem
 ---@param repo string Repository in "owner/repo" format
 ---@return string # Sanitized name (owner_repo)
@@ -22,6 +23,7 @@ local function sanitize_repo_name(repo)
   return s
 end
 
+---@internal
 ---Get metric directory path
 ---@param repo string Repository identifier
 ---@param metric string Metric type
@@ -32,6 +34,7 @@ local function get_metric_dir(repo, metric)
   return fs.joinpath(root, "data", repo_safe, metric)
 end
 
+---@internal
 ---Generate timestamp-based filename
 ---@return string # ISO 8601 filename-safe format
 local function generate_filename()
@@ -98,6 +101,7 @@ function M.read_metric_history(repo, metric)
   return results, nil
 end
 
+---@internal
 ---Get path to last fetch tracking file
 ---@return string
 local function get_last_fetch_path()

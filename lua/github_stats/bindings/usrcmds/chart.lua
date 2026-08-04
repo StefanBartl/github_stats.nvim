@@ -16,6 +16,7 @@ local tbl_filter, startswith = vim.tbl_filter, vim.startswith
 
 ---Execute chart command
 ---@param args table Command arguments
+---@see github_stats.analytics.query_metric, github_stats.visualization
 function M.execute(args)
   local parts = vim.split(args.args, "%s+")
 

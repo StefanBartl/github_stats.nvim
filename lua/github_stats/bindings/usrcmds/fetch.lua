@@ -10,6 +10,7 @@ local M = {}
 
 ---Execute fetch command
 ---@param args table Command arguments from nvim_create_user_command
+---@see github_stats.fetcher.manual_fetch
 function M.execute(args)
   local force = args.args == "force"
   fetcher.manual_fetch(force)

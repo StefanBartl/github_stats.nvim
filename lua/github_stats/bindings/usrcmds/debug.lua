@@ -17,6 +17,7 @@ local notify = vim.notify
 
 ---Execute debug command
 ---@param _args table Command arguments (unused)
+---@see github_stats.config, github_stats.api, github_stats.fetcher
 ---@diagnostic disable-next-line : unused-local
 function M.execute(_args)
 	-- Test config

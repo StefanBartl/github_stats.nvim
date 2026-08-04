@@ -15,6 +15,7 @@ local tbl_insert = table.insert
 
 ---Execute summary command
 ---@param args table Command arguments from nvim_create_user_command
+---@see github_stats.analytics.query_all_repos
 function M.execute(args)
   local metric = args.args
 

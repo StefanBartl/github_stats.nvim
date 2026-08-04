@@ -15,6 +15,7 @@ local str_format = string.format
 
 ---Execute paths command
 ---@param args table Command arguments from nvim_create_user_command
+---@see github_stats.analytics.get_top_paths
 function M.execute(args)
   local parts = vim.split(args.args, "%s+")
 

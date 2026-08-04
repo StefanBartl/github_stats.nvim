@@ -15,6 +15,7 @@ local health = vim.health
 local str_format = string.format
 local tbl_concat = table.concat
 
+---@internal
 ---Check if command exists (cross-platform)
 ---@param cmd string Command name
 ---@return boolean # True if command is available
@@ -59,6 +60,7 @@ local function command_exists(cmd)
 	return result and result ~= ""
 end
 
+---@internal
 ---Validate repository name format
 ---@param repo string Repository identifier
 ---@return boolean, string? # Valid flag, error message
@@ -74,6 +76,7 @@ local function validate_repo_format(repo)
 	return true, nil
 end
 
+---@internal
 ---Check configuration file
 ---@return boolean, string # Success flag, message
 local function check_config()
@@ -116,6 +119,7 @@ local function check_config()
 	return true, str_format("Configuration valid (%d repos)", #(cfg.repos or {}))
 end
 
+---@internal
 ---Check token availability
 ---@return boolean, string # Success flag, message
 local function check_token()
@@ -131,6 +135,7 @@ local function check_token()
 	return true, str_format("Token available (%d chars, source: %s)", #token, config.get().token_source)
 end
 
+---@internal
 ---Check storage paths
 ---@return boolean, string # Success flag, message
 local function check_storage()
@@ -154,6 +159,7 @@ local function check_storage()
 	return true, str_format("Storage directory accessible: %s", storage_root)
 end
 
+---@internal
 ---Check curl availability (cross-platform)
 ---@return boolean, string # Success flag, message
 local function check_curl()
@@ -179,6 +185,7 @@ local function check_curl()
 	return true, "curl available (version unknown)"
 end
 
+---@internal
 ---Test API connectivity synchronously with timeout
 ---@return boolean, string, number # Success flag, message, duration_ms
 local function check_api_sync()
