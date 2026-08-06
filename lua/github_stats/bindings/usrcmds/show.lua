@@ -87,15 +87,7 @@ function M.execute(args)
 
   for _, date in ipairs(dates) do
     local day = stats.daily_breakdown[date]
-    table.insert(
-      lines,
-      string.format(
-        "  %s: %6s count, %6s uniques",
-        date,
-        format_number(day.count),
-        format_number(day.uniques)
-      )
-    )
+    table.insert(lines, string.format("  %s: %6s count, %6s uniques", date, format_number(day.count), format_number(day.uniques)))
   end
 
   -- Show in floating window
@@ -136,7 +128,6 @@ end
 ---@return string[] # Completion candidates
 ---@diagnostic disable-next-line: unused-local
 function M.complete(arg_lead, cmd_line, _cursor_pos)
-
   local parts = vim.split(vim.trim(cmd_line), "%s+")
   local arg_index = #parts
 

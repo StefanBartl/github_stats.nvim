@@ -20,23 +20,23 @@ local TIME_RANGE_CYCLE = { "7d", "30d", "90d", "all" }
 ---@param current string?
 ---@return string
 local function next_in_cycle(cycle, current)
-	for i, value in ipairs(cycle) do
-		if value == current then
-			return cycle[(i % #cycle) + 1]
-		end
-	end
-	return cycle[1]
+  for i, value in ipairs(cycle) do
+    if value == current then
+      return cycle[(i % #cycle) + 1]
+    end
+  end
+  return cycle[1]
 end
 
 ---Cycle to the next sort criteria (clones -> views -> name -> trend -> ...)
 ---@return nil
 function M.cycle_sort()
-	local state = dashboard_state.get_state()
-	if not state then
-		return
-	end
+  local state = dashboard_state.get_state()
+  if not state then
+    return
+  end
 
-	dashboard_state.set_sort_by(next_in_cycle(SORT_CYCLE, state.sort_by))
+  dashboard_state.set_sort_by(next_in_cycle(SORT_CYCLE, state.sort_by))
 end
 
 ---Cycle to the next time range (7d -> 30d -> 90d -> all -> ...)
@@ -46,12 +46,12 @@ end
 --- stored data for whatever range is selected.
 ---@return nil
 function M.cycle_time_range()
-	local state = dashboard_state.get_state()
-	if not state then
-		return
-	end
+  local state = dashboard_state.get_state()
+  if not state then
+    return
+  end
 
-	dashboard_state.set_time_range(next_in_cycle(TIME_RANGE_CYCLE, state.time_range))
+  dashboard_state.set_time_range(next_in_cycle(TIME_RANGE_CYCLE, state.time_range))
 end
 
 ---Force-refresh the currently selected repository from the GitHub API,
@@ -59,21 +59,21 @@ end
 ---@param on_done? fun() Called once the fetch completes
 ---@return nil
 function M.force_refresh_selected(on_done)
-	local state = dashboard_state.get_state()
-	if not state or state.current_index < 1 or state.current_index > #state.repos then
-		return
-	end
+  local state = dashboard_state.get_state()
+  if not state or state.current_index < 1 or state.current_index > #state.repos then
+    return
+  end
 
-	local repo = state.repos[state.current_index]
-	local fetcher = require("github_stats.fetcher")
+  local repo = state.repos[state.current_index]
+  local fetcher = require("github_stats.fetcher")
 
-	fetcher.fetch_repo(repo, function(_, _)
-		vim.schedule(function()
-			if on_done then
-				on_done()
-			end
-		end)
-	end)
+  fetcher.fetch_repo(repo, function(_, _)
+    vim.schedule(function()
+      if on_done then
+        on_done()
+      end
+    end)
+  end)
 end
 
 ---Force-refresh all configured repositories from the GitHub API, bypassing
@@ -81,15 +81,15 @@ end
 ---@param on_done? fun() Called once the fetch completes
 ---@return nil
 function M.refresh_all(on_done)
-	local fetcher = require("github_stats.fetcher")
+  local fetcher = require("github_stats.fetcher")
 
-	fetcher.fetch_all(true, function()
-		vim.schedule(function()
-			if on_done then
-				on_done()
-			end
-		end)
-	end)
+  fetcher.fetch_all(true, function()
+    vim.schedule(function()
+      if on_done then
+        on_done()
+      end
+    end)
+  end)
 end
 
 return M

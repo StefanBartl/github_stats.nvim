@@ -4,12 +4,12 @@
 --- Shows the top referring domains/sources for a repository.
 --- Supports configurable limit on number of results.
 
+local config = require("github_stats.config")
 local analytics = require("github_stats.analytics")
 local utils = require("github_stats.bindings.usrcmds.utils")
 
 local M = {}
 
-local notify, levels = vim.notify, vim.log.levels
 local str_format = string.format
 
 ---Execute referrers command
@@ -19,10 +19,7 @@ function M.execute(args)
   local parts = vim.split(args.args, "%s+")
 
   if #parts < 1 then
-    notify(
-      "[github-stats] Usage: GithubStatsReferrers {repo} [limit]",
-      levels.ERROR
-    )
+    config.notify("[github-stats] Usage: GithubStatsReferrers {repo} [limit]", "error")
     return
   end
 
@@ -32,18 +29,12 @@ function M.execute(args)
   local referrers, err = analytics.get_top_referrers(repo, limit)
 
   if err then
-    notify(
-      str_format("[github-stats] Error: %s", err),
-      levels.ERROR
-    )
+    config.notify(str_format("[github-stats] Error: %s", err), "error")
     return
   end
 
   if #referrers == 0 then
-    notify(
-      "[github-stats] No referrer data available",
-      levels.INFO
-    )
+    config.notify("[github-stats] No referrer data available", "info")
     return
   end
 
@@ -58,11 +49,7 @@ function M.execute(args)
     table.insert(lines, str_format("%2d. %s", i, ref.referrer))
     table.insert(
       lines,
-      str_format(
-        "    Count: %s, Uniques: %s",
-        utils.format_number(ref.count),
-        utils.format_number(ref.uniques)
-      )
+      str_format("    Count: %s, Uniques: %s", utils.format_number(ref.count), utils.format_number(ref.uniques))
     )
   end
 
@@ -76,8 +63,6 @@ end
 ---@return string[] # Completion candidates
 ---@diagnostic disable-next-line: unused-local
 function M.complete(arg_lead, cmd_line, _cursor_pos)
-  local config = require("github_stats.config")
-
   -- Split command line and count arguments
   local parts = vim.split(vim.trim(cmd_line), "%s+")
   local arg_index = #parts

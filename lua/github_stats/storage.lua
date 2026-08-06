@@ -160,7 +160,7 @@ end
 function M.should_fetch(repo, metric)
   local data, err = M.read_last_fetch()
   if err then
--- If we can't read, assume we should fetch
+    -- If we can't read, assume we should fetch
     return true
   end
 

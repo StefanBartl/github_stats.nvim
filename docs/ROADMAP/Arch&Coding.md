@@ -73,7 +73,10 @@ lösen dasselbe Problem einfacher. N/A bis auf Weiteres.
 Für Neovim-Config-Module gilt zusätzlich: README (deutsch) + `/doc/*.txt`
 (englisch) pro Modul. Für ein eigenständiges Plugin-Repo wie github_stats.nvim
 ist das nicht 1:1 anwendbar — hier ist README.md selbst schon englisch (Repo
-ist öffentlich auf GitHub), `doc/github_stats.nvim.txt` existiert parallel.
+ist öffentlich auf GitHub), `doc/github_stats.txt` existiert parallel (Datei
+wurde in dieser Session von `github_stats.nvim.txt` auf `github_stats.txt`
+umbenannt, damit `:h github_stats` der Namenskonvention der Schwesterplugins
+entspricht, z. B. `cascade.nvim` → `doc/cascade.txt`).
 
 ## 6. Testbarkeit & Lesbarkeit
 

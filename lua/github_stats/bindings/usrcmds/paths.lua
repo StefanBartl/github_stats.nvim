@@ -4,12 +4,12 @@
 --- Shows the most visited paths within a repository.
 --- Supports configurable limit on number of results.
 
+local config = require("github_stats.config")
 local analytics = require("github_stats.analytics")
 local utils = require("github_stats.bindings.usrcmds.utils")
 
 local M = {}
 
-local notify, levels = vim.notify, vim.log.levels
 local tbl_insert = table.insert
 local str_format = string.format
 
@@ -20,10 +20,7 @@ function M.execute(args)
   local parts = vim.split(args.args, "%s+")
 
   if #parts < 1 then
-    notify(
-      "[github-stats] Usage: GithubStatsPaths {repo} [limit]",
-      levels.ERROR
-    )
+    config.notify("[github-stats] Usage: GithubStatsPaths {repo} [limit]", "error")
     return
   end
 
@@ -33,18 +30,12 @@ function M.execute(args)
   local paths, err = analytics.get_top_paths(repo, limit)
 
   if err then
-    notify(
-      str_format("[github-stats] Error: %s", err),
-      levels.ERROR
-    )
+    config.notify(str_format("[github-stats] Error: %s", err), "error")
     return
   end
 
   if #paths == 0 then
-    notify(
-      "[github-stats] No path data available",
-      levels.INFO
-    )
+    config.notify("[github-stats] No path data available", "info")
     return
   end
 
@@ -60,11 +51,7 @@ function M.execute(args)
     tbl_insert(lines, str_format("    Title: %s", path_data.title))
     tbl_insert(
       lines,
-      str_format(
-        "    Count: %s, Uniques: %s",
-        utils.format_number(path_data.count),
-        utils.format_number(path_data.uniques)
-      )
+      str_format("    Count: %s, Uniques: %s", utils.format_number(path_data.count), utils.format_number(path_data.uniques))
     )
   end
 
@@ -78,8 +65,6 @@ end
 ---@return string[] # Completion candidates
 ---@diagnostic disable-next-line: unused-local
 function M.complete(arg_lead, cmd_line, _cursor_pos)
-  local config = require("github_stats.config")
-
   -- Split command line and count arguments
   local parts = vim.split(vim.trim(cmd_line), "%s+")
   local arg_index = #parts

@@ -89,7 +89,6 @@ function M.calculate_stats(data)
   }
 end
 
-
 ---Generate horizontal bar chart
 ---@param data table<string, number> Map of label -> value
 ---@param max_width number Maximum bar width
@@ -125,11 +124,7 @@ function M.generate_bar_chart(data, max_width)
     local bar = str_rep("█", bar_width)
     local label = item.label .. str_rep(" ", max_label_len - #item.label)
 
-    tbl_insert(lines, str_format("%s │ %s %s",
-      label,
-      bar,
-      format_number(item.value)
-    ))
+    tbl_insert(lines, str_format("%s │ %s %s", label, bar, format_number(item.value)))
   end
 
   return lines
@@ -168,12 +163,9 @@ function M.create_daily_sparkline(daily_breakdown, metric, title)
     "",
     sparkline,
     "",
-    str_format("Period: %s to %s (%d days)",
-      dates[1],
-      dates[#dates],
-      #dates
-    ),
-    str_format("Max: %s | Avg: %s | Min: %s | Total: %s",
+    str_format("Period: %s to %s (%d days)", dates[1], dates[#dates], #dates),
+    str_format(
+      "Max: %s | Avg: %s | Min: %s | Total: %s",
       format_number(stats.max),
       format_number(stats.avg),
       format_number(stats.min),
@@ -188,10 +180,7 @@ function M.create_daily_sparkline(daily_breakdown, metric, title)
   for i = #dates - recent_count + 1, #dates do
     local date = dates[i]
     local value = daily_breakdown[date][metric]
-    tbl_insert(lines, str_format("  %s: %s",
-      date,
-      format_number(value)
-    ))
+    tbl_insert(lines, str_format("  %s: %s", date, format_number(value)))
   end
 
   return lines
@@ -232,24 +221,22 @@ function M.create_comparison_chart(daily_breakdown, title)
     str_rep("═", 64),
     "",
     "Count (Total):    " .. count_sparkline,
-    str_format("                  Max: %s | Avg: %s | Total: %s",
+    str_format(
+      "                  Max: %s | Avg: %s | Total: %s",
       format_number(count_stats.max),
       format_number(count_stats.avg),
       format_number(count_stats.sum)
     ),
     "",
     "Uniques:          " .. unique_sparkline,
-    str_format("                  Max: %s | Avg: %s | Total: %s",
+    str_format(
+      "                  Max: %s | Avg: %s | Total: %s",
       format_number(unique_stats.max),
       format_number(unique_stats.avg),
       format_number(unique_stats.sum)
     ),
     "",
-    str_format("Period: %s to %s (%d days)",
-      dates[1],
-      dates[#dates],
-      #dates
-    ),
+    str_format("Period: %s to %s (%d days)", dates[1], dates[#dates], #dates),
   }
 
   return lines

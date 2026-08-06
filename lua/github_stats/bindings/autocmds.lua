@@ -16,24 +16,24 @@ local M = {}
 ---optionally auto-opens the dashboard)
 ---@return nil
 function M.setup()
-	autocmd.create("VimEnter", function()
-		-- Start the silent background fetch/discovery cycle (no-op if
-		-- background.enabled == false)
-		local background = require("github_stats.background")
-		background.start()
+  autocmd.create("VimEnter", function()
+    -- Start the silent background fetch/discovery cycle (no-op if
+    -- background.enabled == false)
+    local background = require("github_stats.background")
+    background.start()
 
-		-- Auto-open dashboard if enabled (independent of fetch completion,
-		-- same as before: it shows whatever is already cached and gets
-		-- refreshed once the background cycle's data lands)
-		vim.defer_fn(function()
-			local config = require("github_stats.config")
-			local cfg = config.get()
-			if cfg and cfg.dashboard and cfg.dashboard.enabled and cfg.dashboard.auto_open then
-				local dashboard = require("github_stats.dashboard")
-				dashboard.open(false)
-			end
-		end, 1000)
-	end, { group = autocmd.group("GithubStatsAutoFetch", true) })
+    -- Auto-open dashboard if enabled (independent of fetch completion,
+    -- same as before: it shows whatever is already cached and gets
+    -- refreshed once the background cycle's data lands)
+    vim.defer_fn(function()
+      local config = require("github_stats.config")
+      local cfg = config.get()
+      if cfg and cfg.dashboard and cfg.dashboard.enabled and cfg.dashboard.auto_open then
+        local dashboard = require("github_stats.dashboard")
+        dashboard.open(false)
+      end
+    end, 1000)
+  end, { group = autocmd.group("GithubStatsAutoFetch", true) })
 end
 
 return M

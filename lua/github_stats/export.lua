@@ -39,18 +39,12 @@ function M.export_daily_csv(repo, metric, daily_breakdown, filepath)
 
   -- Build CSV content
   local lines = {
-    "repository,metric,date,count,uniques"
+    "repository,metric,date,count,uniques",
   }
 
   for _, date in ipairs(dates) do
     local day = daily_breakdown[date]
-    tbl_insert(lines, str_format("%s,%s,%s,%d,%d",
-      escape_csv(repo),
-      escape_csv(metric),
-      date,
-      day.count,
-      day.uniques
-    ))
+    tbl_insert(lines, str_format("%s,%s,%s,%d,%d", escape_csv(repo), escape_csv(metric), date, day.count, day.uniques))
   end
 
   -- Write file
@@ -95,11 +89,7 @@ function M.export_markdown(repo, metric, stats, filepath)
 
   for _, date in ipairs(dates) do
     local day = stats.daily_breakdown[date]
-    tbl_insert(lines, str_format("| %s | %s | %s |",
-      date,
-      M.format_number(day.count),
-      M.format_number(day.uniques)
-    ))
+    tbl_insert(lines, str_format("| %s | %s | %s |", date, M.format_number(day.count), M.format_number(day.uniques)))
   end
 
   -- Write file
@@ -147,13 +137,17 @@ function M.export_summary_markdown(metric, results, filepath)
   tbl_insert(lines, "|------------|--------|-------------|---------------|")
 
   for _, item in ipairs(sorted_repos) do
-    tbl_insert(lines, str_format("| %s | %s to %s | %s | %s |",
-      item.repo,
-      item.stats.period_start,
-      item.stats.period_end,
-      M.format_number(item.stats.total_count),
-      M.format_number(item.stats.total_uniques)
-    ))
+    tbl_insert(
+      lines,
+      str_format(
+        "| %s | %s to %s | %s | %s |",
+        item.repo,
+        item.stats.period_start,
+        item.stats.period_end,
+        M.format_number(item.stats.total_count),
+        M.format_number(item.stats.total_uniques)
+      )
+    )
   end
 
   -- Add detailed sections
@@ -164,16 +158,9 @@ function M.export_summary_markdown(metric, results, filepath)
   for _, item in ipairs(sorted_repos) do
     tbl_insert(lines, str_format("### %s", item.repo))
     tbl_insert(lines, "")
-    tbl_insert(lines, str_format("- **Period:** %s to %s",
-      item.stats.period_start,
-      item.stats.period_end
-    ))
-    tbl_insert(lines, str_format("- **Total Count:** %s",
-      M.format_number(item.stats.total_count)
-    ))
-    tbl_insert(lines, str_format("- **Total Uniques:** %s",
-      M.format_number(item.stats.total_uniques)
-    ))
+    tbl_insert(lines, str_format("- **Period:** %s to %s", item.stats.period_start, item.stats.period_end))
+    tbl_insert(lines, str_format("- **Total Count:** %s", M.format_number(item.stats.total_count)))
+    tbl_insert(lines, str_format("- **Total Uniques:** %s", M.format_number(item.stats.total_uniques)))
 
     -- Add recent data
     local dates = vim.tbl_keys(item.stats.daily_breakdown)
@@ -188,11 +175,10 @@ function M.export_summary_markdown(metric, results, filepath)
       for i = #dates - recent_count + 1, #dates do
         local date = dates[i]
         local day = item.stats.daily_breakdown[date]
-        tbl_insert(lines, str_format("- %s: %s count, %s uniques",
-          date,
-          M.format_number(day.count),
-          M.format_number(day.uniques)
-        ))
+        tbl_insert(
+          lines,
+          str_format("- %s: %s count, %s uniques", date, M.format_number(day.count), M.format_number(day.uniques))
+        )
       end
     end
 

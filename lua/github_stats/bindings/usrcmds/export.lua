@@ -3,12 +3,12 @@
 ---@description
 --- Exports traffic statistics to various file formats.
 
+local config = require("github_stats.config")
 local analytics = require("github_stats.analytics")
 local export = require("github_stats.export")
 
 local M = {}
 
-local notify, levels = vim.notify, vim.log.levels
 local str_format = string.format
 
 ---Execute export command
@@ -18,10 +18,7 @@ function M.execute(args)
   local parts = vim.split(args.args, "%s+")
 
   if #parts < 3 then
-    notify(
-      "[github-stats] Usage: GithubStatsExport {repo|all} {metric} {filepath}",
-      levels.ERROR
-    )
+    config.notify("[github-stats] Usage: GithubStatsExport {repo|all} {metric} {filepath}", "error")
     return
   end
 
@@ -31,10 +28,7 @@ function M.execute(args)
 
   -- Validate metric
   if metric ~= "clones" and metric ~= "views" then
-    notify(
-      "[github-stats] Metric must be 'clones' or 'views'",
-      levels.ERROR
-    )
+    config.notify("[github-stats] Metric must be 'clones' or 'views'", "error")
     return
   end
 
@@ -45,43 +39,28 @@ function M.execute(args)
   elseif filepath:match("%.md$") then
     format = "markdown"
   else
-    notify(
-      "[github-stats] File must have .csv or .md extension",
-      levels.ERROR
-    )
+    config.notify("[github-stats] File must have .csv or .md extension", "error")
     return
   end
 
   -- Export all repos
   if target == "all" then
     if format ~= "markdown" then
-      notify(
-        "[github-stats] 'all' target only supports Markdown format",
-        levels.ERROR
-      )
+      config.notify("[github-stats] 'all' target only supports Markdown format", "error")
       return
     end
 
     local results, err = analytics.query_all_repos(metric, nil, nil)
     if err then
-      notify(
-        str_format("[github-stats] Error: %s", err),
-        levels.ERROR
-      )
+      config.notify(str_format("[github-stats] Error: %s", err), "error")
       return
     end
 
     local ok, export_err = export.export_summary_markdown(metric, results, filepath)
     if ok then
-      notify(
-        str_format("[github-stats] Exported to: %s", vim.fn.expand(filepath)),
-        levels.INFO
-      )
+      config.notify(str_format("[github-stats] Exported to: %s", vim.fn.expand(filepath)), "info")
     else
-      notify(
-        str_format("[github-stats] Export failed: %s", export_err),
-        levels.ERROR
-      )
+      config.notify(str_format("[github-stats] Export failed: %s", export_err), "error")
     end
 
     return
@@ -94,10 +73,7 @@ function M.execute(args)
   })
 
   if err or not stats then
-    notify(
-      str_format("[github-stats] Error: %s", err or "No data"),
-      levels.ERROR
-    )
+    config.notify(str_format("[github-stats] Error: %s", err or "No data"), "error")
     return
   end
 
@@ -109,15 +85,9 @@ function M.execute(args)
   end
 
   if ok then
-    notify(
-      str_format("[github-stats] Exported to: %s", vim.fn.expand(filepath)),
-      levels.INFO
-    )
+    config.notify(str_format("[github-stats] Exported to: %s", vim.fn.expand(filepath)), "info")
   else
-    notify(
-      str_format("[github-stats] Export failed: %s", export_err),
-      levels.ERROR
-    )
+    config.notify(str_format("[github-stats] Export failed: %s", export_err), "error")
   end
 end
 
@@ -128,7 +98,6 @@ end
 ---@return string[]
 ---@diagnostic disable-next-line: unused-local
 function M.complete(arg_lead, cmd_line, _cursor_pos)
-  local config = require("github_stats.config")
   local parts = vim.split(vim.trim(cmd_line), "%s+")
   local arg_index = #parts
 

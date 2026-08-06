@@ -20,6 +20,16 @@ A Neovim plugin for automatic collection and analysis of GitHub repository traff
 
 ---
 
+## Table of contents
+
+- [Quickstart](#quickstart)
+- [Documentation](#documentation)
+- [Contributing](#contributing)
+- [Disclaimer](#disclaimer)
+- [Feedback](#feedback)
+
+---
+
 ## Quickstart
 
 Requires Neovim >= 0.9.0, `curl`, and a GitHub Personal Access Token with `repo` scope. See [Installation](docs/installation.md) for prerequisites and other plugin managers.

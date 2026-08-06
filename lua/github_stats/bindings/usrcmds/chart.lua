@@ -21,10 +21,7 @@ function M.execute(args)
   local parts = vim.split(args.args, "%s+")
 
   if #parts < 2 then
-    config.notify(
-      "[github-stats] Usage: GithubStatsChart {repo} {metric} [start_date|time_range] [end_date]",
-      "error"
-    )
+    config.notify("[github-stats] Usage: GithubStatsChart {repo} {metric} [start_date|time_range] [end_date]", "error")
     return
   end
 
@@ -68,10 +65,7 @@ function M.execute(args)
       return
     end
 
-    local lines = visualization.create_comparison_chart(
-      stats.daily_breakdown,
-      string.format("GitHub Stats: %s/clones", repo)
-    )
+    local lines = visualization.create_comparison_chart(stats.daily_breakdown, string.format("GitHub Stats: %s/clones", repo))
 
     utils.show_float(lines, string.format("Chart: %s", repo))
     return
@@ -91,11 +85,8 @@ function M.execute(args)
     return
   end
 
-  local lines = visualization.create_daily_sparkline(
-    stats.daily_breakdown,
-    "count",
-    string.format("GitHub Stats: %s/%s", repo, metric)
-  )
+  local lines =
+    visualization.create_daily_sparkline(stats.daily_breakdown, "count", string.format("GitHub Stats: %s/%s", repo, metric))
 
   utils.show_float(lines, string.format("Chart: %s/%s", repo, metric))
 end

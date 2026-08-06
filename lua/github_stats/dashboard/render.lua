@@ -14,6 +14,11 @@ local M = {}
 ---Number of lines used by header
 M.HEADER_LINES = 4
 
+---Number of lines used by a single repository entry (see build_entry: title,
+---Clones, Views, Period, separator). Single source of truth for every
+---line/scroll calculation in this module and in dashboard/state.lua.
+M.ENTRY_LINES = 5
+
 ---@internal
 ---Format number with thousands separator
 ---@param num number|nil Number to format
@@ -208,22 +213,13 @@ local function build_entry(repo, index, is_selected, stats)
   local views_count = stats_views and stats_views.total_count or 0
   local views_uniques = stats_views and stats_views.total_uniques or 0
 
-  table.insert(lines, string.format("  Clones:  %s total, %s unique",
-    format_number(clones_count),
-    format_number(clones_uniques)
-  ))
+  table.insert(lines, string.format("  Clones:  %s total, %s unique", format_number(clones_count), format_number(clones_uniques)))
 
-  table.insert(lines, string.format("  Views:   %s total, %s unique",
-    format_number(views_count),
-    format_number(views_uniques)
-  ))
+  table.insert(lines, string.format("  Views:   %s total, %s unique", format_number(views_count), format_number(views_uniques)))
 
   -- Period info
   if stats_clones and stats_clones.period_start then
-    table.insert(lines, string.format("  Period:  %s to %s",
-      stats_clones.period_start,
-      stats_clones.period_end
-    ))
+    table.insert(lines, string.format("  Period:  %s to %s", stats_clones.period_start, stats_clones.period_end))
   else
     table.insert(lines, "  Period:  No data available")
   end
@@ -310,7 +306,7 @@ function M.set_cursor_to_current(state)
     return
   end
 
-  local target_line = 5 * state.current_index
+  local target_line = dashboard_state.get_repo_line(state.current_index)
 
   -- Set cursor
   local ok, _ = pcall(vim.api.nvim_win_set_cursor, state.window, { target_line, 0 })
@@ -333,8 +329,8 @@ end
 ---@param state GHStats.DashboardState Current dashboard state
 ---@return integer # Total number of lines
 function M.calculate_total_lines(state)
-  -- Header + (entries * 6 lines each)
-  return M.HEADER_LINES + (#state.repos * 6)
+  -- Header + (entries * ENTRY_LINES lines each)
+  return M.HEADER_LINES + (#state.repos * M.ENTRY_LINES)
 end
 
 return M

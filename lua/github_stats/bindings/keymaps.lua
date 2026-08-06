@@ -26,9 +26,9 @@ local M = {}
 ---Resolve effective dashboard keybindings (user config merged over defaults)
 ---@return table<string, string>
 local function get_keybindings()
-	local cfg = config.get()
-	local user_keybindings = (cfg and cfg.dashboard and cfg.dashboard.keybindings) or {}
-	return vim.tbl_extend("force", DEFAULT_KEYBINDINGS, user_keybindings)
+  local cfg = config.get()
+  local user_keybindings = (cfg and cfg.dashboard and cfg.dashboard.keybindings) or {}
+  return vim.tbl_extend("force", DEFAULT_KEYBINDINGS, user_keybindings)
 end
 
 ---@internal
@@ -40,19 +40,19 @@ end
 ---@param desc? string Human-readable description for which-key
 ---@return nil
 local function map_key(buf, key, action, which_key_entries, desc)
-	if not key or key == "" then
-		return
-	end
+  if not key or key == "" then
+    return
+  end
 
-	map("n", key, function()
-		action()
-		-- Trigger debounced render
-		require("github_stats.dashboard").schedule_render(false)
-	end, { buffer = buf }, desc)
+  map("n", key, function()
+    action()
+    -- Trigger debounced render
+    require("github_stats.dashboard").schedule_render(false)
+  end, { buffer = buf }, desc)
 
-	if desc then
-		table.insert(which_key_entries, { key, desc = desc, buffer = buf })
-	end
+  if desc then
+    table.insert(which_key_entries, { key, desc = desc, buffer = buf })
+  end
 end
 
 ---@internal
@@ -60,26 +60,26 @@ end
 ---@param buf integer Buffer handle
 ---@return nil
 local function block_cursor_movement(buf)
-	-- Block all native cursor movements that might interfere
-	local blocked_keys = {
-		"<Up>",
-		"<Down>",
-		"<Left>",
-		"<Right>",
-		"<PageUp>",
-		"<PageDown>",
-		"<Home>",
-		"<End>",
-		"h",
-		"l", -- Horizontal movement not needed in dashboard
-	}
+  -- Block all native cursor movements that might interfere
+  local blocked_keys = {
+    "<Up>",
+    "<Down>",
+    "<Left>",
+    "<Right>",
+    "<PageUp>",
+    "<PageDown>",
+    "<Home>",
+    "<End>",
+    "h",
+    "l", -- Horizontal movement not needed in dashboard
+  }
 
-	for _, key in ipairs(blocked_keys) do
-		-- j, k, and arrows are handled explicitly below
-		if key ~= "j" and key ~= "k" and key ~= "<Up>" and key ~= "<Down>" then
-			map("n", key, "<Nop>", { buffer = buf })
-		end
-	end
+  for _, key in ipairs(blocked_keys) do
+    -- j, k, and arrows are handled explicitly below
+    if key ~= "j" and key ~= "k" and key ~= "<Up>" and key ~= "<Down>" then
+      map("n", key, "<Nop>", { buffer = buf })
+    end
+  end
 end
 
 ---@internal
@@ -91,18 +91,18 @@ end
 ---@param target_index integer Requested repository index (1-based, unclamped)
 ---@return nil
 local function jump_to_repo(state, target_index)
-	local target = math.max(1, math.min(target_index, #state.repos))
-	dashboard_state.set_current_index(target)
+  local target = math.max(1, math.min(target_index, #state.repos))
+  dashboard_state.set_current_index(target)
 
-	local target_line = dashboard_state.get_repo_line(target)
-	local visible_start = state.scroll_offset + 1
-	local visible_end = state.scroll_offset + state.win_height
+  local target_line = dashboard_state.get_repo_line(target)
+  local visible_start = state.scroll_offset + 1
+  local visible_end = state.scroll_offset + state.win_height
 
-	if target_line < visible_start then
-		dashboard_state.set_scroll_offset(math.max(0, target_line - 1))
-	elseif target_line > visible_end then
-		dashboard_state.set_scroll_offset(math.min(state.max_scroll, target_line - state.win_height))
-	end
+  if target_line < visible_start then
+    dashboard_state.set_scroll_offset(math.max(0, target_line - 1))
+  elseif target_line > visible_end then
+    dashboard_state.set_scroll_offset(math.min(state.max_scroll, target_line - state.win_height))
+  end
 end
 
 ---@internal
@@ -110,169 +110,169 @@ end
 ---@param which_key_entries table[] Entries in which-key's mapping-table format
 ---@return nil
 local function register_which_key(which_key_entries)
-	if #which_key_entries == 0 then
-		return
-	end
+  if #which_key_entries == 0 then
+    return
+  end
 
-	local ok, which_key = pcall(require, "which-key")
-	if not ok then
-		return
-	end
+  local ok, which_key = pcall(require, "which-key")
+  if not ok then
+    return
+  end
 
-	pcall(which_key.add, which_key_entries)
+  pcall(which_key.add, which_key_entries)
 end
 
 ---Setup all dashboard keymaps
 ---@param buf integer Buffer handle
 ---@return nil
 function M.setup_keymaps(buf)
-	local state = dashboard_state.get_state()
-	if not state then
-		return
-	end
+  local state = dashboard_state.get_state()
+  if not state then
+    return
+  end
 
-	local keybindings = get_keybindings()
-	---@type table[]
-	local which_key_entries = {}
+  local keybindings = get_keybindings()
+  ---@type table[]
+  local which_key_entries = {}
 
-	-- Block conflicting cursor movements first
-	block_cursor_movement(buf)
+  -- Block conflicting cursor movements first
+  block_cursor_movement(buf)
 
-	-- Navigation: configurable keys AND arrow keys (fixed, with auto-scroll)
-	-- count1: e.g. 5j moves down 5 repositories instead of 1
-	map_key(buf, keybindings.navigate_down, function()
-		movement.move_cursor_down(state, vim.v.count1)
-	end, which_key_entries, "GitHub Stats: navigate down")
+  -- Navigation: configurable keys AND arrow keys (fixed, with auto-scroll)
+  -- count1: e.g. 5j moves down 5 repositories instead of 1
+  map_key(buf, keybindings.navigate_down, function()
+    movement.move_cursor_down(state, vim.v.count1)
+  end, which_key_entries, "GitHub Stats: navigate down")
 
-	map_key(buf, "<Down>", function()
-		movement.move_cursor_down(state, vim.v.count1)
-	end, which_key_entries)
+  map_key(buf, "<Down>", function()
+    movement.move_cursor_down(state, vim.v.count1)
+  end, which_key_entries)
 
-	map_key(buf, keybindings.navigate_up, function()
-		movement.move_cursor_up(state, vim.v.count1)
-	end, which_key_entries, "GitHub Stats: navigate up")
+  map_key(buf, keybindings.navigate_up, function()
+    movement.move_cursor_up(state, vim.v.count1)
+  end, which_key_entries, "GitHub Stats: navigate up")
 
-	map_key(buf, "<Up>", function()
-		movement.move_cursor_up(state, vim.v.count1)
-	end, which_key_entries)
+  map_key(buf, "<Up>", function()
+    movement.move_cursor_up(state, vim.v.count1)
+  end, which_key_entries)
 
-	-- Scroll: Ctrl-d/u (fixed)
-	-- Raw count: 0 (no prefix) keeps the fixed default of 10 lines; an
-	-- explicit prefix (e.g. 1<C-d>) scrolls by exactly that many lines.
-	map_key(buf, "<C-d>", function()
-		local lines = vim.v.count > 0 and vim.v.count or 10
-		dashboard_state.scroll_by(lines)
-	end, which_key_entries, "GitHub Stats: scroll half page down")
+  -- Scroll: Ctrl-d/u (fixed)
+  -- Raw count: 0 (no prefix) keeps the fixed default of 10 lines; an
+  -- explicit prefix (e.g. 1<C-d>) scrolls by exactly that many lines.
+  map_key(buf, "<C-d>", function()
+    local lines = vim.v.count > 0 and vim.v.count or 10
+    dashboard_state.scroll_by(lines)
+  end, which_key_entries, "GitHub Stats: scroll half page down")
 
-	map_key(buf, "<C-u>", function()
-		local lines = vim.v.count > 0 and vim.v.count or 10
-		dashboard_state.scroll_by(-lines)
-	end, which_key_entries, "GitHub Stats: scroll half page up")
+  map_key(buf, "<C-u>", function()
+    local lines = vim.v.count > 0 and vim.v.count or 10
+    dashboard_state.scroll_by(-lines)
+  end, which_key_entries, "GitHub Stats: scroll half page up")
 
-	-- Page navigation: Ctrl-f/b (fixed)
-	-- count1: e.g. 3<C-f> scrolls 3 pages instead of 1
-	map_key(buf, "<C-f>", function()
-		local page_size = state.win_height - render.HEADER_LINES
-		dashboard_state.scroll_by(page_size * vim.v.count1)
-	end, which_key_entries, "GitHub Stats: scroll full page down")
+  -- Page navigation: Ctrl-f/b (fixed)
+  -- count1: e.g. 3<C-f> scrolls 3 pages instead of 1
+  map_key(buf, "<C-f>", function()
+    local page_size = state.win_height - render.HEADER_LINES
+    dashboard_state.scroll_by(page_size * vim.v.count1)
+  end, which_key_entries, "GitHub Stats: scroll full page down")
 
-	map_key(buf, "<C-b>", function()
-		local page_size = state.win_height - render.HEADER_LINES
-		dashboard_state.scroll_by(-page_size * vim.v.count1)
-	end, which_key_entries, "GitHub Stats: scroll full page up")
+  map_key(buf, "<C-b>", function()
+    local page_size = state.win_height - render.HEADER_LINES
+    dashboard_state.scroll_by(-page_size * vim.v.count1)
+  end, which_key_entries, "GitHub Stats: scroll full page up")
 
-	-- Jump to top/bottom: gg/G (fixed)
-	-- Raw count: 0 (no prefix) keeps jumping to first/last; NgG or Ngg jumps
-	-- to repository N instead (clamped, matching Vim's own gg/G convention).
-	map_key(buf, "gg", function()
-		if vim.v.count > 0 then
-			jump_to_repo(state, vim.v.count)
-		else
-			dashboard_state.set_current_index(1)
-			dashboard_state.set_scroll_offset(0)
-		end
-	end, which_key_entries, "GitHub Stats: jump to top")
+  -- Jump to top/bottom: gg/G (fixed)
+  -- Raw count: 0 (no prefix) keeps jumping to first/last; NgG or Ngg jumps
+  -- to repository N instead (clamped, matching Vim's own gg/G convention).
+  map_key(buf, "gg", function()
+    if vim.v.count > 0 then
+      jump_to_repo(state, vim.v.count)
+    else
+      dashboard_state.set_current_index(1)
+      dashboard_state.set_scroll_offset(0)
+    end
+  end, which_key_entries, "GitHub Stats: jump to top")
 
-	map_key(buf, "G", function()
-		if vim.v.count > 0 then
-			jump_to_repo(state, vim.v.count)
-		else
-			dashboard_state.set_current_index(#state.repos)
-			local max_scroll = state.max_scroll
-			dashboard_state.set_scroll_offset(max_scroll)
-		end
-	end, which_key_entries, "GitHub Stats: jump to bottom")
+  map_key(buf, "G", function()
+    if vim.v.count > 0 then
+      jump_to_repo(state, vim.v.count)
+    else
+      dashboard_state.set_current_index(#state.repos)
+      local max_scroll = state.max_scroll
+      dashboard_state.set_scroll_offset(max_scroll)
+    end
+  end, which_key_entries, "GitHub Stats: jump to bottom")
 
-	-- View details: configurable (default <CR>)
-	map_key(buf, keybindings.show_details, function()
-		if state.current_index >= 1 and state.current_index <= #state.repos then
-			local repo = state.repos[state.current_index]
-			detail.show_detail(repo)
-		end
-	end, which_key_entries, "GitHub Stats: show repository details")
+  -- View details: configurable (default <CR>)
+  map_key(buf, keybindings.show_details, function()
+    if state.current_index >= 1 and state.current_index <= #state.repos then
+      local repo = state.repos[state.current_index]
+      detail.show_detail(repo)
+    end
+  end, which_key_entries, "GitHub Stats: show repository details")
 
-	-- Refresh: configurable (default r) -- re-renders with already-cached data
-	map_key(buf, keybindings.refresh_selected, function()
-		require("github_stats.dashboard").schedule_render(true)
-	end, which_key_entries, "GitHub Stats: refresh dashboard")
+  -- Refresh: configurable (default r) -- re-renders with already-cached data
+  map_key(buf, keybindings.refresh_selected, function()
+    require("github_stats.dashboard").schedule_render(true)
+  end, which_key_entries, "GitHub Stats: refresh dashboard")
 
-	-- Refresh all: configurable (default R) -- force-fetches every configured repo
-	map_key(buf, keybindings.refresh_all, function()
-		config.notify("[github-stats] Refreshing all repositories...", "info")
-		actions.refresh_all()
-	end, which_key_entries, "GitHub Stats: refresh all repositories")
+  -- Refresh all: configurable (default R) -- force-fetches every configured repo
+  map_key(buf, keybindings.refresh_all, function()
+    config.notify("[github-stats] Refreshing all repositories...", "info")
+    actions.refresh_all()
+  end, which_key_entries, "GitHub Stats: refresh all repositories")
 
-	-- Force refresh: configurable (default f) -- force-fetches the selected repo
-	map_key(buf, keybindings.force_refresh, function()
-		config.notify("[github-stats] Force-refreshing selected repository...", "info")
-		actions.force_refresh_selected()
-	end, which_key_entries, "GitHub Stats: force refresh selected repository")
+  -- Force refresh: configurable (default f) -- force-fetches the selected repo
+  map_key(buf, keybindings.force_refresh, function()
+    config.notify("[github-stats] Force-refreshing selected repository...", "info")
+    actions.force_refresh_selected()
+  end, which_key_entries, "GitHub Stats: force refresh selected repository")
 
-	-- Cycle sort: configurable (default s)
-	map_key(buf, keybindings.cycle_sort, function()
-		actions.cycle_sort()
-	end, which_key_entries, "GitHub Stats: cycle sort criteria")
+  -- Cycle sort: configurable (default s)
+  map_key(buf, keybindings.cycle_sort, function()
+    actions.cycle_sort()
+  end, which_key_entries, "GitHub Stats: cycle sort criteria")
 
-	-- Cycle time range: configurable (default t)
-	map_key(buf, keybindings.cycle_time_range, function()
-		actions.cycle_time_range()
-	end, which_key_entries, "GitHub Stats: cycle time range")
+  -- Cycle time range: configurable (default t)
+  map_key(buf, keybindings.cycle_time_range, function()
+    actions.cycle_time_range()
+  end, which_key_entries, "GitHub Stats: cycle time range")
 
-	-- Quit: configurable (default q), plus fixed Esc fallback. The dashboard
-	-- buffer is bufhidden=wipe, so closing the window here also triggers the
-	-- BufWipeout -> cleanup_dashboard() -> ui_state.cleanup_all() chain set up
-	-- in dashboard/init.lua; nice_quit's plain nvim_win_close is enough.
-	local quit_keys = { "<Esc>" }
-	if keybindings.quit and keybindings.quit ~= "" then
-		quit_keys[#quit_keys + 1] = keybindings.quit
-		table.insert(which_key_entries, { keybindings.quit, desc = "GitHub Stats: quit dashboard", buffer = buf })
-	end
-	local win = ui_state.get_win()
-	if win then
-		window.nice_quit(win, { keys = quit_keys, force = true })
-	end
+  -- Quit: configurable (default q), plus fixed Esc fallback. The dashboard
+  -- buffer is bufhidden=wipe, so closing the window here also triggers the
+  -- BufWipeout -> cleanup_dashboard() -> ui_state.cleanup_all() chain set up
+  -- in dashboard/init.lua; nice_quit's plain nvim_win_close is enough.
+  local quit_keys = { "<Esc>" }
+  if keybindings.quit and keybindings.quit ~= "" then
+    quit_keys[#quit_keys + 1] = keybindings.quit
+    table.insert(which_key_entries, { keybindings.quit, desc = "GitHub Stats: quit dashboard", buffer = buf })
+  end
+  local win = ui_state.get_win()
+  if win then
+    window.nice_quit(win, { keys = quit_keys, force = true })
+  end
 
-	-- Help: configurable (default ?)
-	map_key(buf, keybindings.show_help, function()
-		config.notify(
-			"GitHub Stats Dashboard Keybindings:\n"
-				.. string.format("  %s/%s/↑/↓   - Navigate up/down\n", keybindings.navigate_down, keybindings.navigate_up)
-				.. "  <C-d/u>   - Scroll half page\n"
-				.. "  <C-f/b>   - Scroll full page\n"
-				.. "  gg/G      - Jump to top/bottom\n"
-				.. string.format("  %-9s - View repository details\n", keybindings.show_details)
-				.. string.format("  %-9s - Refresh dashboard\n", keybindings.refresh_selected)
-				.. string.format("  %-9s - Refresh all repositories\n", keybindings.refresh_all)
-				.. string.format("  %-9s - Force refresh selected repository\n", keybindings.force_refresh)
-				.. string.format("  %-9s - Cycle sort criteria\n", keybindings.cycle_sort)
-				.. string.format("  %-9s - Cycle time range\n", keybindings.cycle_time_range)
-				.. string.format("  %-9s - Quit\n", keybindings.quit)
-				.. string.format("  %-9s - Show this help", keybindings.show_help),
-			"info"
-		)
-	end, which_key_entries, "GitHub Stats: show help")
+  -- Help: configurable (default ?)
+  map_key(buf, keybindings.show_help, function()
+    config.notify(
+      "GitHub Stats Dashboard Keybindings:\n"
+        .. string.format("  %s/%s/↑/↓   - Navigate up/down\n", keybindings.navigate_down, keybindings.navigate_up)
+        .. "  <C-d/u>   - Scroll half page\n"
+        .. "  <C-f/b>   - Scroll full page\n"
+        .. "  gg/G      - Jump to top/bottom\n"
+        .. string.format("  %-9s - View repository details\n", keybindings.show_details)
+        .. string.format("  %-9s - Refresh dashboard\n", keybindings.refresh_selected)
+        .. string.format("  %-9s - Refresh all repositories\n", keybindings.refresh_all)
+        .. string.format("  %-9s - Force refresh selected repository\n", keybindings.force_refresh)
+        .. string.format("  %-9s - Cycle sort criteria\n", keybindings.cycle_sort)
+        .. string.format("  %-9s - Cycle time range\n", keybindings.cycle_time_range)
+        .. string.format("  %-9s - Quit\n", keybindings.quit)
+        .. string.format("  %-9s - Show this help", keybindings.show_help),
+      "info"
+    )
+  end, which_key_entries, "GitHub Stats: show help")
 
-	register_which_key(which_key_entries)
+  register_which_key(which_key_entries)
 end
 
 return M

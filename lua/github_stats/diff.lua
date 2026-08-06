@@ -85,10 +85,7 @@ local function parse_period(period)
   end
 
   -- Invalid input: neither YYYY-MM nor YYYY
-  error(str_format(
-    "Invalid period format: %s (expected YYYY-MM or YYYY)",
-    period
-  ))
+  error(str_format("Invalid period format: %s (expected YYYY-MM or YYYY)", period))
 end
 
 ---@internal
@@ -103,8 +100,7 @@ local function filter_by_period(daily_breakdown, start_ts, end_ts)
 
   for date, stats in pairs(daily_breakdown) do
     -- Match YYYY-MM-DD format
-    local year_str, month_str, day_str =
-      date:match("^(%d%d%d%d)%-(%d%d)%-(%d%d)$")
+    local year_str, month_str, day_str = date:match("^(%d%d%d%d)%-(%d%d)%-(%d%d)$")
 
     if year_str then
       -- Explicit numeric conversion with validation
@@ -241,7 +237,8 @@ function M.compare_periods(repo, metric, period1, period2)
       unique_change = unique_change,
       unique_change_str = unique_change_str,
     },
-  }, nil
+  },
+    nil
 end
 
 ---Format comparison result for display
@@ -256,7 +253,8 @@ function M.format_comparison(comparison)
     str_format("  Total Count:   %s", format_number(comparison.period1.total_count)),
     str_format("  Total Uniques: %s", format_number(comparison.period1.total_uniques)),
     str_format("  Days:          %d", comparison.period1.days),
-    str_format("  Avg/Day:       %s count, %s uniques",
+    str_format(
+      "  Avg/Day:       %s count, %s uniques",
       format_number(comparison.period1.avg_count),
       format_number(comparison.period1.avg_uniques)
     ),
@@ -265,7 +263,8 @@ function M.format_comparison(comparison)
     str_format("  Total Count:   %s", format_number(comparison.period2.total_count)),
     str_format("  Total Uniques: %s", format_number(comparison.period2.total_uniques)),
     str_format("  Days:          %d", comparison.period2.days),
-    str_format("  Avg/Day:       %s count, %s uniques",
+    str_format(
+      "  Avg/Day:       %s count, %s uniques",
       format_number(comparison.period2.avg_count),
       format_number(comparison.period2.avg_uniques)
     ),

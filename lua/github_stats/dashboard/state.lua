@@ -20,14 +20,14 @@ function M.init_state(repos)
     win_height = 0,
     max_scroll = 0,
     last_render_time = 0,
-    selected_index = 1,              -- NEU: Initially same as current_index
-    sort_by = "name",                -- NEU: Default sort by name
-    time_range = "30d",              -- NEU: Default 30 days
-    is_open = false,                 -- NEU: Will be set to true after window opens
-    last_refresh = os.time(),        -- NEU: Current timestamp
-    auto_refresh_timer = nil,        -- NEU: No auto-refresh by default
-    buffer = nil,                    -- NEU: Will be set by layout module
-    window = nil,                    -- NEU: Will be set by layout module
+    selected_index = 1, -- NEU: Initially same as current_index
+    sort_by = "name", -- NEU: Default sort by name
+    time_range = "30d", -- NEU: Default 30 days
+    is_open = false, -- NEU: Will be set to true after window opens
+    last_refresh = os.time(), -- NEU: Current timestamp
+    auto_refresh_timer = nil, -- NEU: No auto-refresh by default
+    buffer = nil, -- NEU: Will be set by layout module
+    window = nil, -- NEU: Will be set by layout module
   }
   return state
 end
@@ -74,8 +74,8 @@ local function calculate_total_lines()
   local render = require("github_stats.dashboard.render")
   local header_lines = render.HEADER_LINES
 
-  -- Each repo entry: 1 title + 4 metrics + 1 separator = 6 lines
-  local entry_lines = #state.repos * 6
+  -- Each repo entry: title, Clones, Views, Period, separator (render.ENTRY_LINES)
+  local entry_lines = #state.repos * render.ENTRY_LINES
 
   return header_lines + entry_lines
 end
@@ -127,10 +127,6 @@ function M.set_current_index(new_index)
 
   -- CRITICAL: Keep selected_index in sync
   state.selected_index = state.current_index
-
-  -- DEBUG: Verify sync
-  -- print(string.format("[DEBUG] set_current_index: current=%d, selected=%d",
-  --   state.current_index, state.selected_index))
 end
 
 ---Get line number for a specific repository entry
@@ -143,8 +139,8 @@ function M.get_repo_line(repo_index)
 
   local render = require("github_stats.dashboard.render")
 
-  -- Header lines + (entry_index - 1) * 6 lines per entry + 1 for title line
-  return render.HEADER_LINES + (repo_index - 1) * 6 + 1
+  -- Header lines + (entry_index - 1) * ENTRY_LINES lines per entry + 1 for title line
+  return render.HEADER_LINES + (repo_index - 1) * render.ENTRY_LINES + 1
 end
 
 ---Get repository index from line number
@@ -164,7 +160,7 @@ function M.get_repo_from_line(line_number)
 
   -- Calculate which entry this line belongs to
   local offset = line_number - render.HEADER_LINES
-  local repo_index = math.floor((offset - 1) / 6) + 1
+  local repo_index = math.floor((offset - 1) / render.ENTRY_LINES) + 1
 
   -- Validate index
   if repo_index < 1 or repo_index > #state.repos then
@@ -173,7 +169,6 @@ function M.get_repo_from_line(line_number)
 
   return repo_index
 end
-
 
 ---Increment scroll offset by delta
 ---@param delta integer Number of lines to scroll (positive = down, negative = up)
