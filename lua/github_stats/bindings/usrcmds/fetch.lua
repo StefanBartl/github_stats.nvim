@@ -30,4 +30,3 @@ function M.complete(arg_lead, _cmd_line, _cursor_pos)
 end
 
 return M
-

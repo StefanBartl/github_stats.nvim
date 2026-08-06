@@ -26,11 +26,15 @@ gerechtfertigt.
 | 6 | UI-Cleanup (`cleanup_all()`) | ✅ | `ui_state.cleanup_all()` + `dashboard/init.lua`s `cleanup_dashboard()`; in dieser Session wurde `M.close()` genau darauf vereinheitlicht (vorher zwei divergierende Teardown-Pfade, einer davon crash-anfällig). |
 | 7 | Performance-Hotspots (`table.concat`, Vorreservierung) | 🟡 | `table.concat` wird genutzt (`storage.lua`, `analytics.lua`); Tabellen-Vorreservierung nirgends — bei den tatsächlichen Datenmengen (≤ einige hundert Einträge) kein messbarer Effekt zu erwarten. |
 | 8 | Annotationen vollständig | ✅ | `@module`/`@brief`/`@description` konsequent pro Datei, `@param`/`@return` an praktisch jeder Funktion. |
-| 9 | Testbarkeit | 🟡 | Tests vorhanden (`lua/github_stats/tests/**`), aber referenzieren teils nicht-existente Module (`dashboard.renderer`, `dashboard.navigator` statt `dashboard.render`) und rufen `dashboard.close()`/`dashboard.open()` teils mit falscher/inkonsistenter Signatur auf — beides in dieser und vorherigen Sessions an den *Produktionscode*-Seiten bereits gefixt, die Testdateien selbst wurden noch nicht bereinigt (kein `busted`-Runner lokal verfügbar, um sie zu verifizieren). |
+| 9 | Testbarkeit | 🟡 | Tests vorhanden (`lua/github_stats/tests/**`); die falschen `require()`-Pfade (`dashboard.renderer`/`dashboard.navigator` statt `dashboard.render`/`bindings.keymaps`) wurden in dieser Session gefixt. Weiterhin kein `busted`/`plenary`-Runner lokal verfügbar, um die Specs tatsächlich grün laufen zu lassen — nur per `require()`-Smoke-Test (alle 45 Produktionsmodule laden ohne Fehler) verifiziert. |
 | 10 | Import-Reihenfolge | 🟡 | Nicht strikt System→Debug→Utils→State→UI→Controller→Keymaps, aber konsistent und nachvollziehbar pro Datei (z. B. `bindings/keymaps.lua`: config → state → movement/render → ui_state → detail → actions). |
 
-**Bonuspunkt `lib.nvim`:** ❌ nicht genutzt — keine Abhängigkeit vorhanden, siehe
-Hinweis in [Zentral-Prinzipien.md](./Zentral-Prinzipien.md).
+**Bonuspunkt `lib.nvim`:** ✅ genutzt (`dependencies = { "StefanBartl/lib.nvim" }`;
+`lib.nvim.notify`, `lib.nvim.map`, `lib.nvim.window`, `lib.nvim.cross.executable`,
+`lib.nvim.net.curl`, `lib.nvim.fs.json`, `lib.nvim.usercmd.composer`, `lib.nvim.ui.kit.note`,
+`lib.lua.strings.format`, `lib.lua.tables` across most of the plugin — see
+[LUA_NVIM.md](E:/repos/Notes/MyNotes/Checklists/Lua/LUA_NVIM.md#libnvim-verwenden)). The
+note in [Zentral-Prinzipien.md](./Zentral-Prinzipien.md) predates this and is stale.
 
 ---
 
@@ -98,8 +102,10 @@ Hinweis in [Zentral-Prinzipien.md](./Zentral-Prinzipien.md).
 
 - ✅ `.luarc.json` vorhanden mit `diagnostics.globals = ["vim", "describe", "it", ...]`
   und `workspace.library` für `luv`/`busted`.
-- ❌ Kein Formatter/Linter (stylua/luacheck) im Repo konfiguriert oder in CI
-  eingebunden.
+- ✅ `stylua.toml` und `.luacheckrc` in dieser Session ergänzt (fehlten vorher
+  vollständig); `stylua --check .` und `luacheck .` laufen beide grün. Kein
+  CI-Workflow vorhanden, der das automatisch durchsetzt (kein `.github/workflows/`
+  im Repo) — offen.
 
 ---
 

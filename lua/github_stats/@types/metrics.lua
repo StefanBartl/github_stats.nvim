@@ -38,4 +38,3 @@
 ---@field timestamp string ISO timestamp of fetch
 
 return {}
-

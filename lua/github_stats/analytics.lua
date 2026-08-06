@@ -18,8 +18,7 @@ local function parse_date(date_str)
     return nil
   end
 
-  local year_str, month_str, day_str =
-    date_str:match("^(%d%d%d%d)-(%d%d)-(%d%d)$")
+  local year_str, month_str, day_str = date_str:match("^(%d%d%d%d)-(%d%d)-(%d%d)$")
 
   if not year_str then
     return nil
@@ -69,7 +68,6 @@ local function deduplicate_by_date(history)
 
   -- Group by date, keeping track of fetch timestamp
   for _, record in ipairs(history) do
-    local fetch_time = record.timestamp -- ISO timestamp of fetch
     local data = record.data
 
     -- Process clones/views format
@@ -226,7 +224,8 @@ function M.query_metric(query)
       total_count = 0,
       total_uniques = 0,
       daily_breakdown = {},
-    }, nil
+    },
+      nil
   end
 
   -- Aggregate with date filtering
@@ -247,7 +246,8 @@ function M.query_metric(query)
     total_count = total_count,
     total_uniques = total_uniques,
     daily_breakdown = daily,
-  }, nil
+  },
+    nil
 end
 
 ---Get summary across all configured repos

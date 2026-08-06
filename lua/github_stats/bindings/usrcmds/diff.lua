@@ -3,15 +3,14 @@
 ---@description
 --- Compares traffic metrics between two time periods.
 
+local config = require("github_stats.config")
 local diff = require("github_stats.diff")
 local utils = require("github_stats.bindings.usrcmds.utils")
 
 local M = {}
 
-local notify, levels = vim.notify, vim.log.levels
 local str_format = string.format
 local tbl_filter, startswith = vim.tbl_filter, vim.startswith
-
 
 ---Execute diff command
 ---@param args table Command arguments
@@ -20,14 +19,8 @@ function M.execute(args)
   local parts = vim.split(args.args, "%s+")
 
   if #parts < 4 then
-    notify(
-      "[github-stats] Usage: GithubStatsDiff {repo} {metric} {period1} {period2}",
-      levels.ERROR
-    )
-    notify(
-      "[github-stats] Period format: YYYY-MM or YYYY  (e.g.: 2025-01 or 2025)",
-      levels.INFO
-    )
+    config.notify("[github-stats] Usage: GithubStatsDiff {repo} {metric} {period1} {period2}", "error")
+    config.notify("[github-stats] Period format: YYYY-MM or YYYY  (e.g.: 2025-01 or 2025)", "info")
     return
   end
 
@@ -38,20 +31,14 @@ function M.execute(args)
 
   -- Validate metric
   if metric ~= "clones" and metric ~= "views" then
-    notify(
-      "[github-stats] Metric must be 'clones' or 'views'",
-      levels.ERROR
-    )
+    config.notify("[github-stats] Metric must be 'clones' or 'views'", "error")
     return
   end
 
   local comparison, err = diff.compare_periods(repo, metric, period1, period2)
 
   if err or not comparison then
-    notify(
-      str_format("[github-stats] Error: %s", err or "Comparison failed"),
-      levels.ERROR
-    )
+    config.notify(str_format("[github-stats] Error: %s", err or "Comparison failed"), "error")
     return
   end
 
@@ -66,7 +53,6 @@ end
 ---@return string[]
 ---@diagnostic disable-next-line: unused-local
 function M.complete(arg_lead, cmd_line, _cursor_pos)
-  local config = require("github_stats.config")
   local date_presets = require("github_stats.date_presets")
 
   local parts = vim.split(vim.trim(cmd_line), "%s+")

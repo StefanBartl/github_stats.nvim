@@ -4,12 +4,12 @@
 --- Displays aggregated statistics across all configured repositories
 --- for a given metric type (clones or views).
 
+local config = require("github_stats.config")
 local analytics = require("github_stats.analytics")
 local utils = require("github_stats.bindings.usrcmds.utils")
 
 local M = {}
 
-local notify, levels = vim.notify, vim.log.levels
 local str_format = string.format
 local tbl_insert = table.insert
 
@@ -20,27 +20,18 @@ function M.execute(args)
   local metric = args.args
 
   if metric ~= "clones" and metric ~= "views" then
-    notify(
-      "[github-stats] Metric must be 'clones' or 'views'",
-      levels.ERROR
-    )
+    config.notify("[github-stats] Metric must be 'clones' or 'views'", "error")
     return
   end
 
   local results, err = analytics.query_all_repos(metric, nil, nil)
 
   if err then
-    notify(
-      str_format("[github-stats] Errors occurred: %s", err),
-      levels.WARN
-    )
+    config.notify(str_format("[github-stats] Errors occurred: %s", err), "warn")
   end
 
   if not results or vim.tbl_count(results) == 0 then
-    notify(
-      "[github-stats] No data available",
-      levels.INFO
-    )
+    config.notify("[github-stats] No data available", "info")
     return
   end
 
@@ -76,5 +67,3 @@ function M.complete(arg_lead, _cmd_line, _cursor_pos)
 end
 
 return M
-
-

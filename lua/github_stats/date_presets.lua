@@ -11,7 +11,6 @@ local os_date = os.date
 local os_time = os.time
 local str_format = string.format
 
-
 ---Built-in preset resolver functions
 ---@type table<string, fun(): string, string>
 local BUILTIN_PRESETS = {}

@@ -184,18 +184,12 @@ function M.show_detail(repo)
 
   -- Clones section
   if clones_stats then
-    vim.list_extend(
-      lines,
-      generate_metric_section("CLONES", "📊", clones_stats.daily_breakdown)
-    )
+    vim.list_extend(lines, generate_metric_section("CLONES", "📊", clones_stats.daily_breakdown))
   end
 
   -- Views section
   if views_stats then
-    vim.list_extend(
-      lines,
-      generate_metric_section("VIEWS", "👁️", views_stats.daily_breakdown)
-    )
+    vim.list_extend(lines, generate_metric_section("VIEWS", "👁️", views_stats.daily_breakdown))
   end
 
   -- Daily breakdown (last 30 days)

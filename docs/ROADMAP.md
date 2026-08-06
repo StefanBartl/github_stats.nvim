@@ -28,36 +28,37 @@ Reviewed against the state of the codebase as of this pass. Ordered by
 priority: fix real bugs first, then cheap/high-value gaps, then the larger
 speculative features below, in roughly the order they're already grouped.
 
-### Priority 0 — bugs (root cause known, not yet fixed)
+### Priority 0 — bugs
 
-1. **Dashboard scrolling cuts off the last entry**
-   ([docs/devs/BUGS.md](devs/BUGS.md)). Root cause found this pass:
-   [`dashboard/state.lua`](../lua/github_stats/dashboard/state.lua)'s
-   `calculate_total_lines()`/`get_repo_line()`/`get_repo_from_line()` all
-   assume **6 lines per entry** ("1 title + 4 metrics + 1 separator"), but
-   [`dashboard/render.lua`](../lua/github_stats/dashboard/render.lua)'s
-   `build_entry()` only ever emits **5 lines** (title, Clones, Views, Period,
-   separator — there's no fourth metric line). Every scroll/cursor
-   calculation is off by one line per entry, compounding with repo count.
-   Fix: either make `build_entry` emit 6 lines (e.g. split Clones/Views onto
-   4 lines) or correct the `* 6` factor to `* 5` everywhere it's hardcoded —
-   the latter is the smaller, more honest fix since it matches what's
-   actually rendered.
-2. **`render.lua`'s `set_cursor_to_current` uses `target_line = 5 * state.current_index`**,
-   which neither matches the (buggy) `* 6` assumption in `state.lua` nor
-   accounts for `HEADER_LINES` at all — a second, independent instance of the
-   same class of bug. Should be reunified with
-   `dashboard_state.get_repo_line()` once (1) is fixed, so there's exactly
-   one formula for "which line is repo N on".
-3. **Test suite drift**: `lua/github_stats/tests/dashboard_spec.lua` and
-   `.../tests/integration/dashboard_flow_spec.lua` reference modules that
-   don't exist (`dashboard.renderer`, `dashboard.navigator` — the real names
-   are `dashboard.render`/no navigator module) and were calling
-   `dashboard.close()`/`dashboard.open()` against signatures that have since
-   been fixed to match (see "Resolved Housekeeping" below). No `busted`
-   runner is set up locally or in CI to catch this automatically — worth
-   fixing the spec files *and* wiring up a CI job (`stylua`/`luacheck`/`busted`)
-   per [Checklist.md §7](ROADMAP/Checklist.md#7-tooling).
+All three items below were fixed in the checklist-compliance pass that added
+this note; kept here (moved conceptually into "Resolved Housekeeping" below)
+so the reasoning stays discoverable.
+
+1. ~~**Dashboard scrolling cuts off the last entry**~~ — fixed. The mismatch
+   was exactly as diagnosed: `dashboard/render.lua`'s `build_entry()` emits
+   5 lines per repo (title, Clones, Views, Period, separator), but
+   `dashboard/state.lua` and `dashboard/render.lua` had several hardcoded
+   `* 6` (and one hardcoded `2 + 3*N`, in now-removed dead code) line-height
+   assumptions. `render.lua` now exports `M.ENTRY_LINES = 5` as the single
+   source of truth; `state.lua`'s `calculate_total_lines()`/`get_repo_line()`/
+   `get_repo_from_line()` and `movement.lua`'s auto-scroll all reference it
+   instead of a magic number.
+2. ~~**`render.lua`'s `set_cursor_to_current` used its own `5 * state.current_index`**~~ —
+   fixed. It now calls `dashboard_state.get_repo_line(state.current_index)`,
+   the same formula used everywhere else, so there's exactly one place that
+   answers "which line is repo N on".
+3. ~~**Test suite drift**~~ — the two broken `require()` paths in
+   `dashboard_spec.lua` (`dashboard.renderer` → `dashboard.render`) are
+   fixed, and the "dashboard navigator" block (which required a nonexistent
+   `dashboard.navigator` module and called `setup_keybindings(state)` with a
+   signature that never existed) was rewritten to test the real module
+   (`bindings.keymaps`) at the level the rest of this file already tests at
+   (module/contract, not full behavioral wiring — that needs the dashboard's
+   real `dashboard_state`, which belongs in the integration spec). No
+   `busted`/`plenary` runner is available in this environment to execute the
+   specs and confirm green — noted here rather than guessed at. Wiring up a
+   CI job (`stylua`/`luacheck`/`busted`) remains open, per
+   [Checklist.md §7](ROADMAP/Checklist.md#7-tooling).
 
 ### Priority 1 — small, already-scoped features (v1.3.x in the roadmap below)
 
@@ -97,6 +98,12 @@ own section below.
 
 ## Resolved Housekeeping
 
+- **`dashboard/movement.lua` carried a dead, independently-buggy
+  `move_to_index`/`move_down`/`move_up`/`move_first`/`move_last` code path**
+  (a third, different hardcoded line-height formula, `2 + 3*N`, never called
+  from anywhere in the plugin — `bindings/keymaps.lua` only ever used
+  `move_cursor_down`/`move_cursor_up`). Removed rather than fixed, since
+  fixing dead code just keeps a footgun around.
 - **The plugin only fetched once, at `VimEnter`, and always notified**: it
   now runs a persistent, silent background cycle for the whole session
   (`background.lua`) that periodically checks whether a fetch is due —

@@ -75,15 +75,17 @@ describe("date_presets", function()
           custom = {
             test_preset = function()
               return "2025-01-01", "2025-12-31"
-            end
-          }
-        }
+            end,
+          },
+        },
       }
 
       -- Temporarily override config.get()
       local config = require("github_stats.config")
       local original_get = config.get
-      config.get = function() return config_stub end
+      config.get = function()
+        return config_stub
+      end
 
       local start, end_date = date_presets.resolve("test_preset")
 
@@ -103,14 +105,16 @@ describe("date_presets", function()
           custom = {
             broken_preset = function()
               error("Intentional error")
-            end
-          }
-        }
+            end,
+          },
+        },
       }
 
       local config = require("github_stats.config")
       local original_get = config.get
-      config.get = function() return config_stub end
+      config.get = function()
+        return config_stub
+      end
 
       local start, end_date, err = date_presets.resolve("broken_preset")
 

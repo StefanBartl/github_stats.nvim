@@ -49,18 +49,26 @@ end
 -- Dynamic completion types: config-driven repo lists and date presets can't
 -- be static `enum`/`values` snapshots, so each is looked up fresh per call.
 composer.register_type("GH_REPO", {
-  validate = function(raw) return true, raw, nil end,
+  validate = function(raw)
+    return true, raw, nil
+  end,
   complete = function(arg_lead)
     local repos = require("github_stats.config").get_repos()
-    return vim.tbl_filter(function(r) return vim.startswith(r, arg_lead) end, repos)
+    return vim.tbl_filter(function(r)
+      return vim.startswith(r, arg_lead)
+    end, repos)
   end,
 })
 
 composer.register_type("GH_REPO_OR_ALL", {
-  validate = function(raw) return true, raw, nil end,
+  validate = function(raw)
+    return true, raw, nil
+  end,
   complete = function(arg_lead)
     local options = vim.list_extend({ "all" }, require("github_stats.config").get_repos())
-    return vim.tbl_filter(function(o) return vim.startswith(o, arg_lead) end, options)
+    return vim.tbl_filter(function(o)
+      return vim.startswith(o, arg_lead)
+    end, options)
   end,
 })
 
@@ -71,15 +79,21 @@ composer.register_type("GH_REPO_OR_ALL", {
 -- cross-slot refinement doesn't fit composer's per-slot completion model,
 -- so end_date always offers presets here. Dispatch/validation is unaffected.
 composer.register_type("GH_DATE_OR_PRESET", {
-  validate = function(raw) return true, raw, nil end,
+  validate = function(raw)
+    return true, raw, nil
+  end,
   complete = function(arg_lead)
     local presets = require("github_stats.date_presets").list()
-    return vim.tbl_filter(function(p) return vim.startswith(p, arg_lead) end, presets)
+    return vim.tbl_filter(function(p)
+      return vim.startswith(p, arg_lead)
+    end, presets)
   end,
 })
 
 composer.register_type("GH_PERIOD", {
-  validate = function(raw) return true, raw, nil end,
+  validate = function(raw)
+    return true, raw, nil
+  end,
   complete = function(arg_lead)
     local date_presets = require("github_stats.date_presets")
     local now = os.date("*t")
@@ -91,7 +105,9 @@ composer.register_type("GH_PERIOD", {
     local last_month = string.format("%04d-%02d", last_month_year, last_month_num)
     local suggestions = { current_month, last_month, tostring(now.year), tostring(now.year - 1) }
     vim.list_extend(suggestions, date_presets.list())
-    return vim.tbl_filter(function(s) return vim.startswith(s, arg_lead) end, suggestions)
+    return vim.tbl_filter(function(s)
+      return vim.startswith(s, arg_lead)
+    end, suggestions)
   end,
 })
 
@@ -103,12 +119,17 @@ function M.setup()
     desc = "GitHub traffic stats: fetch, inspect, chart, export, diff",
     bang = true,
     routes = {
-      { path = { "fetch" },
+      {
+        path = { "fetch" },
         args = { { name = "force", type = "STRING", optional = true, enum = { "force" } } },
         desc = "Fetch GitHub stats (use 'force' to bypass interval)",
-        run = function(ctx) fetch.execute({ args = reconstruct(ctx) }) end },
+        run = function(ctx)
+          fetch.execute({ args = reconstruct(ctx) })
+        end,
+      },
 
-      { path = { "show" },
+      {
+        path = { "show" },
         args = {
           { name = "repo", type = "GH_REPO" },
           { name = "metric", type = "STRING", enum = METRIC },
@@ -116,30 +137,46 @@ function M.setup()
           { name = "end_date", type = "GH_DATE_OR_PRESET", optional = true },
         },
         desc = "Show stats for repo/metric: {repo} {metric} [start] [end]",
-        run = function(ctx) show.execute({ args = reconstruct(ctx) }) end },
+        run = function(ctx)
+          show.execute({ args = reconstruct(ctx) })
+        end,
+      },
 
-      { path = { "summary" },
+      {
+        path = { "summary" },
         args = { { name = "metric", type = "STRING", enum = METRIC } },
         desc = "Show summary across all repos: {clones|views}",
-        run = function(ctx) summary.execute({ args = reconstruct(ctx) }) end },
+        run = function(ctx)
+          summary.execute({ args = reconstruct(ctx) })
+        end,
+      },
 
-      { path = { "referrers" },
+      {
+        path = { "referrers" },
         args = {
           { name = "repo", type = "GH_REPO" },
           { name = "limit", type = "STRING", optional = true },
         },
         desc = "Show top referrers: {repo} [limit]",
-        run = function(ctx) referrers.execute({ args = reconstruct(ctx) }) end },
+        run = function(ctx)
+          referrers.execute({ args = reconstruct(ctx) })
+        end,
+      },
 
-      { path = { "paths" },
+      {
+        path = { "paths" },
         args = {
           { name = "repo", type = "GH_REPO" },
           { name = "limit", type = "STRING", optional = true },
         },
         desc = "Show top paths: {repo} [limit]",
-        run = function(ctx) paths.execute({ args = reconstruct(ctx) }) end },
+        run = function(ctx)
+          paths.execute({ args = reconstruct(ctx) })
+        end,
+      },
 
-      { path = { "chart" },
+      {
+        path = { "chart" },
         args = {
           { name = "repo", type = "GH_REPO" },
           { name = "metric", type = "STRING", enum = { "clones", "views", "both" } },
@@ -147,18 +184,26 @@ function M.setup()
           { name = "arg4", type = "GH_DATE_OR_PRESET", optional = true },
         },
         desc = "Show sparkline chart: {repo} {clones|views|both} [start|range] [end]",
-        run = function(ctx) chart.execute({ args = reconstruct(ctx) }) end },
+        run = function(ctx)
+          chart.execute({ args = reconstruct(ctx) })
+        end,
+      },
 
-      { path = { "export" },
+      {
+        path = { "export" },
         args = {
           { name = "target", type = "GH_REPO_OR_ALL" },
           { name = "metric", type = "STRING", enum = METRIC },
           { name = "filepath", type = "PATH" },
         },
         desc = "Export to CSV/Markdown: {repo|all} {metric} {filepath}",
-        run = function(ctx) export.execute({ args = reconstruct(ctx) }) end },
+        run = function(ctx)
+          export.execute({ args = reconstruct(ctx) })
+        end,
+      },
 
-      { path = { "diff" },
+      {
+        path = { "diff" },
         args = {
           { name = "repo", type = "GH_REPO" },
           { name = "metric", type = "STRING", enum = METRIC },
@@ -166,15 +211,26 @@ function M.setup()
           { name = "period2", type = "GH_PERIOD" },
         },
         desc = "Compare periods: {repo} {metric} {YYYY-MM} {YYYY-MM}",
-        run = function(ctx) diff.execute({ args = reconstruct(ctx) }) end },
+        run = function(ctx)
+          diff.execute({ args = reconstruct(ctx) })
+        end,
+      },
 
-      { path = { "debug" },
+      {
+        path = { "debug" },
         desc = "Debug configuration and test API connection",
-        run = function() debug.execute({}) end },
+        run = function()
+          debug.execute({})
+        end,
+      },
 
-      { path = { "dashboard" },
+      {
+        path = { "dashboard" },
         desc = "Open GitHub Stats Dashboard (use :GithubStats! dashboard to force refresh)",
-        run = function(ctx) dashboard.execute({ bang = ctx.bang }) end },
+        run = function(ctx)
+          dashboard.execute({ bang = ctx.bang })
+        end,
+      },
     },
   })
 end
