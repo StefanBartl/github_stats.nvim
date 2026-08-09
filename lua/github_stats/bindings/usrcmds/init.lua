@@ -22,6 +22,7 @@ local summary = require("github_stats.bindings.usrcmds.summary")
 local referrers = require("github_stats.bindings.usrcmds.referrers")
 local paths = require("github_stats.bindings.usrcmds.paths")
 local debug = require("github_stats.bindings.usrcmds.debug")
+local compact = require("github_stats.bindings.usrcmds.compact")
 local chart = require("github_stats.bindings.usrcmds.chart")
 local export = require("github_stats.bindings.usrcmds.export")
 local diff = require("github_stats.bindings.usrcmds.diff")
@@ -213,6 +214,15 @@ function M.setup()
         desc = "Compare periods: {repo} {metric} {YYYY-MM} {YYYY-MM}",
         run = function(ctx)
           diff.execute({ args = reconstruct(ctx) })
+        end,
+      },
+
+      {
+        path = { "compact" },
+        args = { { name = "mode", type = "STRING", optional = true, enum = { "dry-run" } } },
+        desc = "Archive old clones/views data and prune stale referrers/paths snapshots (use 'dry-run' to preview)",
+        run = function(ctx)
+          compact.execute({ args = reconstruct(ctx) })
         end,
       },
 

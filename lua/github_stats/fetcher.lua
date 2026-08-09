@@ -175,6 +175,30 @@ function M.fetch_all(force, callback, opts)
       -- Save fetch timestamp
       save_last_fetch(os.time())
 
+      -- Opportunistically fold old clones/views days into the archive and
+      -- prune stale referrers/paths snapshots. Internally rate-limited to
+      -- once/24h (github_stats.retention.maybe_run_all), so this is cheap on
+      -- every fetch that isn't the first one of the day.
+      local retention = require("github_stats.retention")
+      local retention_summary = retention.maybe_run_all()
+      if retention_summary and not background then
+        local touched = retention_summary.compacted_deleted + retention_summary.pruned_deleted
+        if touched > 0 then
+          config.notify(
+            str_format(
+              "[github-stats] Retention: archived %d day(s), removed %d files (%s freed)",
+              retention_summary.archived,
+              touched,
+              retention.format_bytes(retention_summary.freed_bytes)
+            ),
+            "info"
+          )
+        end
+        if vim.tbl_count(retention_summary.errors) > 0 then
+          config.notify(str_format("[github-stats] Retention had %d error(s), see :GithubStats debug", vim.tbl_count(retention_summary.errors)), "warn")
+        end
+      end
+
       -- Create summary
       local summary = {
         success = all_success,

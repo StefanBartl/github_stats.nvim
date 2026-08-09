@@ -31,6 +31,18 @@ local DEFAULT_CONFIG = {
   background = {
     enabled = true,
   },
+  retention = {
+    enabled = true,
+    -- clones/views: GitHub's traffic API is a rolling 14-day window, so a
+    -- day's value can't change once it falls out of that window. 15 gives a
+    -- 1-day safety margin before a day is folded into the archive and its
+    -- raw fetch files deleted.
+    cutoff_days = 15,
+    -- referrers/paths: only ever the single latest snapshot is read
+    -- (analytics.get_top_referrers/get_top_paths), so older ones are pruned
+    -- outright past this age; the newest file is always kept.
+    prune_days = 15,
+  },
   date_presets = {
     enabled = true,
     builtins = {
