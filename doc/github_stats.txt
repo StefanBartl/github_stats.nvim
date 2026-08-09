@@ -389,19 +389,42 @@ the dashboard subcommand.
 
     Parameters:~
         {repo|all}    Repository or "all" for summary
-        {metric}      "clones" or "views"
+        {metric}      "clones", "views", or "both" (combined report)
         {filepath}    Output file (.csv or .md extension)
 
     Format Support:~
         CSV:      Single repository only
         Markdown: Single repository or all repositories
 
+    Extension Defaulting:~
+        If {filepath} has no extension at all, one is appended
+        automatically: ".md" for the "all" target (the only format it
+        supports), ".csv" otherwise. A path that already has some other
+        extension (e.g. ".txt") is left alone and still errors, since
+        silently rewriting a deliberately-named path would be more
+        surprising than helpful.
+
+    Parent Directories:~
+        Created automatically if they don't exist yet.
+
+    Combined Metric ("both"):~
+        Merges clones and views into a single report instead of two
+        separate ones -- one CSV row (or Markdown table row) per date,
+        with both metrics side by side. "all" + "both" produces one
+        combined Markdown summary across every configured repository.
+        Summary reports (target "all", or a single-repo report) also
+        include a "## Highlights" section: most cloned/viewed repository,
+        best month, and best single day.
+
     Autocompletion: Repository names, metrics, file paths
 
     Examples:~
         :GithubStats export username/repo clones ~/data.csv
         :GithubStats export username/repo views ~/report.md
+        :GithubStats export username/repo both ~/combined.csv
         :GithubStats export all clones ~/summary.md
+        :GithubStats export all both ~/summary.md
+        :GithubStats export username/repo clones ~/reports/repo   " -> ~/reports/repo.csv
 
                                                        *:GithubStats-diff*
 :GithubStats diff {repo} {metric} {period1} {period2}
@@ -489,6 +512,8 @@ Actions:~
   f               Force-fetch selected repository from GitHub (bypass interval)
   s               Cycle sort criteria (clones/views/name/trend)
   t               Cycle time range (7d/30d/90d/all)
+  T               Enter a custom time range (e.g. "14d", "3m", "1y",
+                  "since:2025-01-01", or any date_presets name)
 
 Other:~
   ?               Toggle help overlay
@@ -513,7 +538,10 @@ dashboard.sort_by               (string)
     Default: "clones"
 
 dashboard.time_range            (string)
-    Default time range: "7d", "30d", "90d", or "all".
+    Default time range: "7d", "30d", "90d", "all", or any expression
+    accepted by the 'T' custom time range prompt (e.g. "14d", "3m", "1y",
+    "since:2025-01-01", a date_presets name). See
+    |github_stats-time-range-expressions|.
     Default: "30d"
 
 dashboard.keybindings           (table)
@@ -538,6 +566,7 @@ Example Configuration:~
           force_refresh = "f",
           cycle_sort = "s",
           cycle_time_range = "t",
+          custom_time_range = "T",
           show_help = "?",
           quit = "q",
         },
@@ -573,11 +602,30 @@ Sorting:~
   • trend    - Sort by percentage change
 
 Time Ranges:~
-  Press 't' to cycle through time ranges:
+  Press 't' to cycle through the fixed quick-access ranges:
   • 7d       - Last 7 days
   • 30d      - Last 30 days
   • 90d      - Last 90 days
   • all      - All available data
+
+  Press 'T' to type an arbitrary range instead, via a prompt pre-filled
+  with the current value. See |github_stats-time-range-expressions| for
+  every accepted form.
+
+                                        *github_stats-time-range-expressions*
+Time Range Expressions:~
+  Both the 'T' dashboard prompt and any `time_range` field accept:
+  • "all"                  - no filtering, every available day
+  • "Nd" / "Nw"             - N days / N weeks back from today
+  • "Nm" / "Ny"             - ~N months (30d) / ~N years (365d) back
+  • "since:YYYY-MM-DD"      - that date through today
+  • "YYYY-MM-DD"            - same as "since:YYYY-MM-DD"
+  • any |github_stats-date-presets| name, built-in or user-custom
+    (e.g. "this_month", "this_year", "last_quarter", a custom preset)
+
+  Examples: "14d", "3m", "1y", "since:2025-01-01", "this_year".
+  An unrecognized expression is rejected with an error notification and
+  the previous range is kept.
 
 Auto-Refresh:~
   When enabled, dashboard automatically refreshes data at configured interval.

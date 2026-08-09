@@ -267,7 +267,7 @@ function M.set_sort_by(sort_by)
 end
 
 ---Set time range filter
----@param time_range "7d"|"30d"|"90d"|"all" Time range
+---@param time_range string Time range: "7d"/"30d"/"90d"/"all" or any expression accepted by `github_stats.analytics.parse_time_range`
 ---@return nil
 function M.set_time_range(time_range)
   if not state then
@@ -288,7 +288,7 @@ function M.get_sort_by()
 end
 
 ---Get time range filter
----@return "7d"|"30d"|"90d"|"all"
+---@return string
 function M.get_time_range()
   if not state then
     return "30d"

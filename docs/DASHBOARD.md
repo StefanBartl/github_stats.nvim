@@ -78,12 +78,37 @@ Press `s` to cycle through:
 
 ### Time Ranges
 
-Press `t` to cycle through:
+Press `t` to cycle through the fixed quick-access ranges:
 
 1. **7d** - Last 7 days
 2. **30d** - Last 30 days (default)
 3. **90d** - Last 90 days
 4. **all** - All available data
+
+Press `T` to type an arbitrary range instead, via a prompt pre-filled with
+the current value. Accepted forms:
+
+| Form | Meaning |
+|------|---------|
+| `Nd` | N days back (e.g. `14d`) |
+| `Nw` | N weeks back (e.g. `6w`) |
+| `Nm` | ~N months back, 30-day approximation (e.g. `3m`) |
+| `Ny` | ~N years back, 365-day approximation (e.g. `2y`) |
+| `since:YYYY-MM-DD` | That date through today |
+| `YYYY-MM-DD` | Same as `since:YYYY-MM-DD` |
+| `all` | No filtering |
+| any [date preset](configurations/USER-DEFINED-DATE-PRESETS.md) name | Built-in (`this_month`, `this_year`, `last_quarter`, ...) or user-custom |
+
+```vim
+" Press T, then type one of:
+14d
+3m
+since:2025-01-01
+this_year
+```
+
+An unrecognized expression is rejected with an error notification and the
+previous range stays in effect.
 
 ---
 
@@ -127,6 +152,7 @@ refresh_interval_seconds = 0
 | `f` | Force-fetch selected repository |
 | `s` | Cycle sort criteria (clones → views → name → trend) |
 | `t` | Cycle time range (7d → 30d → 90d → all) |
+| `T` | Enter a custom time range (e.g. `3m`, `since:2025-01-01`) |
 | `?` | Show help overlay |
 | `q` / `<Esc>` | Quit dashboard |
 
@@ -158,6 +184,7 @@ require("github_stats").setup({
       force_refresh = "f",
       cycle_sort = "s",
       cycle_time_range = "t",
+      custom_time_range = "T",
       show_help = "?",
       quit = "q",
     },

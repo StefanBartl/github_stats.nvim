@@ -194,10 +194,10 @@ function M.setup()
         path = { "export" },
         args = {
           { name = "target", type = "GH_REPO_OR_ALL" },
-          { name = "metric", type = "STRING", enum = METRIC },
+          { name = "metric", type = "STRING", enum = { "clones", "views", "both" } },
           { name = "filepath", type = "PATH" },
         },
-        desc = "Export to CSV/Markdown: {repo|all} {metric} {filepath}",
+        desc = "Export to CSV/Markdown: {repo|all} {clones|views|both} {filepath}",
         run = function(ctx)
           export.execute({ args = reconstruct(ctx) })
         end,

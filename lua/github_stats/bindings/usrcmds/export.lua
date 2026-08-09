@@ -11,6 +11,37 @@ local M = {}
 
 local str_format = string.format
 
+---@internal
+---Resolve the export format from filepath's extension. A path with no
+---extension at all gets a sensible default appended (markdown for the "all"
+---target, since it's the only format supported there; CSV otherwise) rather
+---than erroring -- previously `:GithubStats export all clones report` failed
+---outright with "File must have .csv or .md extension" for missing an
+---extension it could have just filled in. A path that DOES have some other
+---extension (e.g. `.txt`) is left alone; the caller still reports the
+---standard error for that case, since silently bolting `.csv` onto a path
+---the user clearly named on purpose would be more surprising than helpful.
+---@param filepath string Requested output path
+---@param target string Export target ("all" or a repo)
+---@return string?, string, string? # format ("csv"|"markdown", nil if unresolvable), resolved filepath, notice message if a default was applied
+local function resolve_format(filepath, target)
+  if filepath:match("%.csv$") then
+    return "csv", filepath, nil
+  end
+  if filepath:match("%.md$") then
+    return "markdown", filepath, nil
+  end
+
+  local basename = vim.fn.fnamemodify(filepath, ":t")
+  if basename:match("%.") then
+    return nil, filepath, nil
+  end
+
+  local default_ext = (target == "all") and ".md" or ".csv"
+  local default_format = (target == "all") and "markdown" or "csv"
+  return default_format, filepath .. default_ext, str_format("No extension given, defaulting to '%s'", default_ext)
+end
+
 ---Execute export command
 ---@param args table Command arguments
 ---@see github_stats.export
@@ -18,7 +49,7 @@ function M.execute(args)
   local parts = vim.split(args.args, "%s+")
 
   if #parts < 3 then
-    config.notify("[github-stats] Usage: GithubStatsExport {repo|all} {metric} {filepath}", "error")
+    config.notify("[github-stats] Usage: GithubStatsExport {repo|all} {clones|views|both} {filepath}", "error")
     return
   end
 
@@ -27,26 +58,45 @@ function M.execute(args)
   local filepath = parts[3]
 
   -- Validate metric
-  if metric ~= "clones" and metric ~= "views" then
-    config.notify("[github-stats] Metric must be 'clones' or 'views'", "error")
+  if metric ~= "clones" and metric ~= "views" and metric ~= "both" then
+    config.notify("[github-stats] Metric must be 'clones', 'views', or 'both'", "error")
     return
   end
 
-  -- Determine format from extension
-  local format
-  if filepath:match("%.csv$") then
-    format = "csv"
-  elseif filepath:match("%.md$") then
-    format = "markdown"
-  else
+  -- Determine format from extension, defaulting when none was given
+  local format, resolved_path, notice = resolve_format(filepath, target)
+  if not format then
     config.notify("[github-stats] File must have .csv or .md extension", "error")
     return
+  end
+  filepath = resolved_path
+  if notice then
+    config.notify(str_format("[github-stats] %s", notice), "info")
   end
 
   -- Export all repos
   if target == "all" then
     if format ~= "markdown" then
       config.notify("[github-stats] 'all' target only supports Markdown format", "error")
+      return
+    end
+
+    if metric == "both" then
+      local clones_results, clones_err = analytics.query_all_repos("clones", nil, nil)
+      local views_results, views_err = analytics.query_all_repos("views", nil, nil)
+
+      if clones_err and views_err then
+        config.notify(str_format("[github-stats] Error: %s", clones_err), "error")
+        return
+      end
+
+      local ok, export_err = export.export_combined_summary_markdown(clones_results, views_results, filepath)
+      if ok then
+        config.notify(str_format("[github-stats] Exported to: %s", vim.fn.expand(filepath)), "info")
+      else
+        config.notify(str_format("[github-stats] Export failed: %s", export_err), "error")
+      end
+
       return
     end
 
@@ -66,7 +116,38 @@ function M.execute(args)
     return
   end
 
-  -- Export single repo
+  -- Export single repo, combined clones+views
+  if metric == "both" then
+    local clones_stats, clones_err = analytics.query_metric({ repo = target, metric = "clones" })
+    local views_stats, views_err = analytics.query_metric({ repo = target, metric = "views" })
+
+    if clones_err and views_err then
+      config.notify(str_format("[github-stats] Error: %s", clones_err or views_err), "error")
+      return
+    end
+
+    local ok, export_err
+    if format == "csv" then
+      ok, export_err = export.export_combined_csv(
+        target,
+        clones_stats and clones_stats.daily_breakdown or {},
+        views_stats and views_stats.daily_breakdown or {},
+        filepath
+      )
+    else
+      ok, export_err = export.export_combined_markdown(target, clones_stats, views_stats, filepath)
+    end
+
+    if ok then
+      config.notify(str_format("[github-stats] Exported to: %s", vim.fn.expand(filepath)), "info")
+    else
+      config.notify(str_format("[github-stats] Export failed: %s", export_err), "error")
+    end
+
+    return
+  end
+
+  -- Export single repo, single metric
   local stats, err = analytics.query_metric({
     repo = target,
     metric = metric,
@@ -115,7 +196,7 @@ function M.complete(arg_lead, cmd_line, _cursor_pos)
 
   -- Second argument: metric
   if arg_index == 3 then
-    local metrics = { "clones", "views" }
+    local metrics = { "clones", "views", "both" }
     return vim.tbl_filter(function(metric)
       return vim.startswith(metric, arg_lead)
     end, metrics)

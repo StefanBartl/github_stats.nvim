@@ -164,27 +164,74 @@ local function aggregate_daily(history, start_date, end_date)
 end
 
 ---@internal
----Parse time range keyword into start/end dates
----@param time_range string Time range keyword
----@return string?, string? # start_date, end_date (ISO format)
+---Parse a flexible time range expression into start/end ISO dates.
+---Recognized forms:
+---  - "all" -- no filtering
+---  - "Nd" / "Nw" / "Nm" / "Ny" -- N days/weeks/~months(30d)/~years(365d) back from today
+---  - "since:YYYY-MM-DD" or a bare "YYYY-MM-DD" -- that date through today
+---  - "last week" / "last month" / "last quarter" -- legacy phrase aliases
+---  - any name known to github_stats.date_presets (built-in or user-custom,
+---    e.g. "this_month", "this_year", "last_quarter")
+---Anything else is unrecognized: returns (nil, nil, false).
+---@param time_range string Time range expression
+---@return string?, string?, boolean # start_date, end_date, whether the expression was recognized
 local function parse_time_range(time_range)
   local now = os.time()
   local today = tostring(os.date("!%Y-%m-%d", now))
 
-  if time_range == "7d" or time_range == "last week" then
-    local start = tostring(os.date("!%Y-%m-%d", now - 7 * 86400))
-    return start, today
-  elseif time_range == "30d" or time_range == "last month" then
-    local start = tostring(os.date("!%Y-%m-%d", now - 30 * 86400))
-    return start, today
-  elseif time_range == "90d" or time_range == "last quarter" then
-    local start = tostring(os.date("!%Y-%m-%d", now - 90 * 86400))
-    return start, today
-  elseif time_range == "all" then
-    return nil, nil -- No filtering
+  if time_range == "all" then
+    return nil, nil, true
   end
 
-  return nil, nil
+  local days = time_range:match("^(%d+)d$")
+  if days then
+    return tostring(os.date("!%Y-%m-%d", now - tonumber(days) * 86400)), today, true
+  end
+
+  local weeks = time_range:match("^(%d+)w$")
+  if weeks then
+    return tostring(os.date("!%Y-%m-%d", now - tonumber(weeks) * 7 * 86400)), today, true
+  end
+
+  local months = time_range:match("^(%d+)m$")
+  if months then
+    return tostring(os.date("!%Y-%m-%d", now - tonumber(months) * 30 * 86400)), today, true
+  end
+
+  local years = time_range:match("^(%d+)y$")
+  if years then
+    return tostring(os.date("!%Y-%m-%d", now - tonumber(years) * 365 * 86400)), today, true
+  end
+
+  local since = time_range:match("^since:(%d%d%d%d%-%d%d%-%d%d)$") or time_range:match("^(%d%d%d%d%-%d%d%-%d%d)$")
+  if since then
+    return since, today, true
+  end
+
+  if time_range == "last week" then
+    return tostring(os.date("!%Y-%m-%d", now - 7 * 86400)), today, true
+  elseif time_range == "last month" then
+    return tostring(os.date("!%Y-%m-%d", now - 30 * 86400)), today, true
+  elseif time_range == "last quarter" then
+    return tostring(os.date("!%Y-%m-%d", now - 90 * 86400)), today, true
+  end
+
+  -- Fall back to named date presets (built-in or user-custom)
+  local date_presets = require("github_stats.date_presets")
+  local start_date, end_date, err = date_presets.resolve(time_range)
+  if not err then
+    return start_date, end_date, true
+  end
+
+  return nil, nil, false
+end
+
+---Parse a flexible time range expression into start/end ISO dates. See the
+---internal implementation above for the full list of recognized forms.
+---@param time_range string Time range expression
+---@return string?, string?, boolean # start_date, end_date, whether the expression was recognized
+function M.parse_time_range(time_range)
+  return parse_time_range(time_range)
 end
 
 ---Query clones or views with time range
@@ -419,6 +466,103 @@ function M.rollup_monthly(daily_breakdown)
   end
 
   return monthly
+end
+
+---@internal
+---Find the repo with the highest total_count in a results map
+---@param results table<string, GHStats.AggregatedStats>
+---@return string?, integer, integer # repo, total_count, total_uniques (0/0 if results is empty)
+local function find_top_repo(results)
+  local best_repo, best_count, best_uniques = nil, -1, 0
+  for repo, stats in pairs(results) do
+    if stats.total_count > best_count then
+      best_repo, best_count, best_uniques = repo, stats.total_count, stats.total_uniques
+    end
+  end
+  return best_repo, math.max(best_count, 0), best_uniques
+end
+
+---@internal
+---Find the single highest-count day across all repos in a results map
+---@param results table<string, GHStats.AggregatedStats>
+---@return string?, string?, integer # repo, date, count (nil/nil/0 if no data)
+local function find_best_day(results)
+  local best_repo, best_date, best_count = nil, nil, -1
+  for repo, stats in pairs(results) do
+    for date, day in pairs(stats.daily_breakdown) do
+      if day.count > best_count then
+        best_repo, best_date, best_count = repo, date, day.count
+      end
+    end
+  end
+  return best_repo, best_date, math.max(best_count, 0)
+end
+
+---@internal
+---Find the highest-total calendar month across all repos in a results map
+---@param results table<string, GHStats.AggregatedStats>
+---@return string?, integer # month (YYYY-MM), count (0 if no data)
+local function find_best_month(results)
+  ---@type table<string, {count: integer, uniques: integer}>
+  local monthly_totals = {}
+
+  for _, stats in pairs(results) do
+    local monthly = M.rollup_monthly(stats.daily_breakdown)
+    for month, totals in pairs(monthly) do
+      if not monthly_totals[month] then
+        monthly_totals[month] = { count = 0, uniques = 0 }
+      end
+      monthly_totals[month].count = monthly_totals[month].count + totals.count
+      monthly_totals[month].uniques = monthly_totals[month].uniques + totals.uniques
+    end
+  end
+
+  local best_month, best_count = nil, -1
+  for month, totals in pairs(monthly_totals) do
+    if totals.count > best_count then
+      best_month, best_count = month, totals.count
+    end
+  end
+
+  return best_month, math.max(best_count, 0)
+end
+
+---Compute cross-repository highlights ("most successful repo", "best month",
+---"best single day") from clones and/or views result sets, for narrative
+---summaries in exports and reports. Either argument may be nil/empty if that
+---metric wasn't queried.
+---@param clones_results? table<string, GHStats.AggregatedStats> Per-repo clones stats
+---@param views_results? table<string, GHStats.AggregatedStats> Per-repo views stats
+---@return GHStats.Highlights
+function M.compute_highlights(clones_results, views_results)
+  clones_results = clones_results or {}
+  views_results = views_results or {}
+
+  local top_clones_repo, top_clones_count = find_top_repo(clones_results)
+  local top_views_repo, top_views_count = find_top_repo(views_results)
+
+  local best_clones_month, best_clones_month_count = find_best_month(clones_results)
+  local best_views_month, best_views_month_count = find_best_month(views_results)
+
+  local best_clones_day_repo, best_clones_day, best_clones_day_count = find_best_day(clones_results)
+  local best_views_day_repo, best_views_day, best_views_day_count = find_best_day(views_results)
+
+  return {
+    top_clones_repo = top_clones_repo,
+    top_clones_repo_count = top_clones_count,
+    top_views_repo = top_views_repo,
+    top_views_repo_count = top_views_count,
+    best_clones_month = best_clones_month,
+    best_clones_month_count = best_clones_month_count,
+    best_views_month = best_views_month,
+    best_views_month_count = best_views_month_count,
+    best_clones_day = best_clones_day,
+    best_clones_day_repo = best_clones_day_repo,
+    best_clones_day_count = best_clones_day_count,
+    best_views_day = best_views_day,
+    best_views_day_repo = best_views_day_repo,
+    best_views_day_count = best_views_day_count,
+  }
 end
 
 return M

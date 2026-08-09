@@ -75,6 +75,7 @@ local DEFAULT_CONFIG = {
       force_refresh = "f",
       cycle_sort = "s",
       cycle_time_range = "t",
+      custom_time_range = "T",
       show_help = "?",
       quit = "q",
     },
