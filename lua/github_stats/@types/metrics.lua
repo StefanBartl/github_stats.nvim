@@ -37,4 +37,25 @@
 ---@field uniques integer Unique count
 ---@field timestamp string ISO timestamp of fetch
 
+---Raw metric file info from a directory listing (no JSON parsing)
+---@class GHStats.MetricFileInfo
+---@field path string Absolute file path
+---@field name string File name
+---@field date string Fetch date in YYYY-MM-DD format, parsed from the filename
+---@field size integer File size in bytes
+
+---Result of compacting or pruning a single repo/metric pair
+---@class GHStats.RetentionResult
+---@field archived integer Days newly folded into the archive (0 for prune_metric)
+---@field deleted integer Raw files deleted
+---@field freed_bytes integer Bytes freed by deletion
+
+---Aggregate result of a full retention run across all repos/metrics
+---@class GHStats.RetentionSummary
+---@field archived integer Total days newly archived (clones/views)
+---@field compacted_deleted integer Raw files deleted during clones/views compaction
+---@field pruned_deleted integer Raw files deleted during referrers/paths pruning
+---@field freed_bytes integer Total bytes freed
+---@field errors table<string, string> Map of "repo/metric" to error message
+
 return {}

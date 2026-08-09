@@ -34,6 +34,15 @@ local function get_metric_dir(repo, metric)
   return fs.joinpath(root, "data", repo_safe, metric)
 end
 
+---Get metric directory path (public wrapper, used by github_stats.retention
+---to place its per-repo/metric archive file next to the raw fetch files)
+---@param repo string Repository identifier
+---@param metric string Metric type
+---@return string
+function M.get_metric_dir(repo, metric)
+  return get_metric_dir(repo, metric)
+end
+
 ---@internal
 ---Generate timestamp-based filename
 ---@return string # ISO 8601 filename-safe format
@@ -99,6 +108,61 @@ function M.read_metric_history(repo, metric)
   end)
 
   return results, nil
+end
+
+---List raw metric files for a repository without parsing their JSON content
+---(the filename already encodes the fetch date via generate_filename's ISO
+---format, so github_stats.retention can decide what's old enough to
+---archive/delete from a directory listing alone -- reading and decoding
+---every file would be needlessly slow across thousands of them).
+---@param repo string Repository identifier
+---@param metric string Metric type
+---@return GHStats.MetricFileInfo[], string? # Array of file info, error message
+function M.list_metric_files(repo, metric)
+  local dir = get_metric_dir(repo, metric)
+
+  local stat = loop.fs_stat(dir)
+  if not stat or stat.type ~= "directory" then
+    return {}, nil
+  end
+
+  local scan_ok, files = pcall(fn.readdir, dir)
+  if not scan_ok then
+    return {}, str_format("Failed to read directory: %s", files)
+  end
+
+  local results = {}
+  for _, file in ipairs(files) do
+    local date = file:match("^(%d%d%d%d%-%d%d%-%d%d)T.*%.json$")
+    if date then
+      local filepath = fs.joinpath(dir, file)
+      local fstat = loop.fs_stat(filepath)
+      table.insert(results, {
+        path = filepath,
+        name = file,
+        date = date,
+        size = fstat and fstat.size or 0,
+      })
+    end
+  end
+
+  return results, nil
+end
+
+---Permanently delete a raw metric file. Not a `lib.nvim.fs.trash` call on
+---purpose: retention can touch thousands of files in one pass, and a
+---per-file OS-trash round trip (a subprocess on Windows/macOS) would be far
+---too slow at that scale -- by the time this runs, the file's data has
+---already been folded into the archive (clones/views) or was never read by
+---anything (referrers/paths), so there is nothing left to lose.
+---@param filepath string Absolute path to the file
+---@return boolean, string? # Success flag, error message
+function M.delete_metric_file(filepath)
+  local ok, err = os.remove(filepath)
+  if not ok then
+    return false, tostring(err)
+  end
+  return true, nil
 end
 
 ---@internal

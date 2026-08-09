@@ -220,6 +220,17 @@ function M.get_token()
   end
 end
 
+---Get retention settings (clones/views archive cutoff, referrers/paths
+---prune window). Falls back to DEFAULT_CONFIG.retention before init() or if
+---the loaded config omits the section entirely.
+---@return GHStats.RetentionConfig
+function M.get_retention()
+  if not config or not config.retention then
+    return DEFAULT_CONFIG.retention
+  end
+  return config.retention
+end
+
 ---Get notification level setting
 ---@return "all"|"errors"|"silent"
 function M.get_notification_level()
