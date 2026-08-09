@@ -22,6 +22,132 @@ local function escape_csv(field)
   return field
 end
 
+---@internal
+---Ensure the parent directory of an (already expanded) filepath exists,
+---creating it recursively if necessary. `:GithubStats export` used to fail
+---with a raw `E482: Can't open file ... for writing: no such file or
+---directory` whenever the target directory didn't exist yet -- callers now
+---get it created for them, matching how the rest of the plugin (e.g.
+---`config` writing config.json) already treats output directories as
+---create-on-demand.
+---@param filepath string Already-expanded output file path
+---@return nil
+local function ensure_parent_dir(filepath)
+  local dir = fn.fnamemodify(filepath, ":h")
+  if dir ~= "" and fn.isdirectory(dir) == 0 then
+    fn.mkdir(dir, "p")
+  end
+end
+
+---@internal
+---Write lines to filepath, creating the parent directory first
+---@param filepath string Output file path (not yet expanded)
+---@param lines string[] Lines to write
+---@return boolean, string? # Success flag, error message
+local function write_lines(filepath, lines)
+  local resolved = expand(filepath)
+  ensure_parent_dir(resolved)
+
+  local content = tbl_concat(lines, "\n") .. "\n"
+  local ok, err = pcall(fn.writefile, vim.split(content, "\n"), resolved)
+
+  if not ok then
+    return false, str_format("Failed to write file: %s", err)
+  end
+
+  return true, nil
+end
+
+---@internal
+---Build a "## Highlights" section from computed cross-repo derived stats
+---@param highlights GHStats.Highlights
+---@return string[] # Section lines
+local function build_highlights_section(highlights)
+  local lines = { "## Highlights", "" }
+  local any = false
+
+  if highlights.top_clones_repo then
+    any = true
+    tbl_insert(
+      lines,
+      str_format(
+        "- **Most cloned repository:** %s (%s clones)",
+        highlights.top_clones_repo,
+        M.format_number(highlights.top_clones_repo_count)
+      )
+    )
+  end
+
+  if highlights.top_views_repo then
+    any = true
+    tbl_insert(
+      lines,
+      str_format(
+        "- **Most viewed repository:** %s (%s views)",
+        highlights.top_views_repo,
+        M.format_number(highlights.top_views_repo_count)
+      )
+    )
+  end
+
+  if highlights.best_clones_month then
+    any = true
+    tbl_insert(
+      lines,
+      str_format(
+        "- **Best month for clones:** %s (%s clones)",
+        highlights.best_clones_month,
+        M.format_number(highlights.best_clones_month_count)
+      )
+    )
+  end
+
+  if highlights.best_views_month then
+    any = true
+    tbl_insert(
+      lines,
+      str_format(
+        "- **Best month for views:** %s (%s views)",
+        highlights.best_views_month,
+        M.format_number(highlights.best_views_month_count)
+      )
+    )
+  end
+
+  if highlights.best_clones_day then
+    any = true
+    tbl_insert(
+      lines,
+      str_format(
+        "- **Best single day for clones:** %s on %s (%s clones)",
+        highlights.best_clones_day_repo,
+        highlights.best_clones_day,
+        M.format_number(highlights.best_clones_day_count)
+      )
+    )
+  end
+
+  if highlights.best_views_day then
+    any = true
+    tbl_insert(
+      lines,
+      str_format(
+        "- **Best single day for views:** %s on %s (%s views)",
+        highlights.best_views_day_repo,
+        highlights.best_views_day,
+        M.format_number(highlights.best_views_day_count)
+      )
+    )
+  end
+
+  if not any then
+    tbl_insert(lines, "_Not enough data yet._")
+  end
+
+  tbl_insert(lines, "")
+  return lines
+end
+
 ---Export daily breakdown to CSV
 ---@param repo string Repository identifier
 ---@param metric string Metric type
@@ -47,15 +173,44 @@ function M.export_daily_csv(repo, metric, daily_breakdown, filepath)
     tbl_insert(lines, str_format("%s,%s,%s,%d,%d", escape_csv(repo), escape_csv(metric), date, day.count, day.uniques))
   end
 
-  -- Write file
-  local content = tbl_concat(lines, "\n") .. "\n"
-  local ok, err = pcall(fn.writefile, vim.split(content, "\n"), expand(filepath))
+  return write_lines(filepath, lines)
+end
 
-  if not ok then
-    return false, str_format("Failed to write file: %s", err)
+---Export combined clones+views daily breakdown to CSV, one row per date with
+---both metrics side by side (rather than the metric-per-row shape of
+---`export_daily_csv`), so clones and views can be evaluated together
+---@param repo string Repository identifier
+---@param clones_daily table<string, {count: integer, uniques: integer}>
+---@param views_daily table<string, {count: integer, uniques: integer}>
+---@param filepath string Output file path
+---@return boolean, string? # Success flag, error message
+function M.export_combined_csv(repo, clones_daily, views_daily, filepath)
+  local all_dates = {}
+  for date in pairs(clones_daily) do
+    all_dates[date] = true
+  end
+  for date in pairs(views_daily) do
+    all_dates[date] = true
   end
 
-  return true, nil
+  local dates = vim.tbl_keys(all_dates)
+  table.sort(dates)
+
+  if #dates == 0 then
+    return false, "No data to export"
+  end
+
+  local lines = {
+    "repository,date,clones_count,clones_uniques,views_count,views_uniques",
+  }
+
+  for _, date in ipairs(dates) do
+    local c = clones_daily[date] or { count = 0, uniques = 0 }
+    local v = views_daily[date] or { count = 0, uniques = 0 }
+    tbl_insert(lines, str_format("%s,%s,%d,%d,%d,%d", escape_csv(repo), date, c.count, c.uniques, v.count, v.uniques))
+  end
+
+  return write_lines(filepath, lines)
 end
 
 ---Export aggregated stats to Markdown
@@ -92,15 +247,76 @@ function M.export_markdown(repo, metric, stats, filepath)
     tbl_insert(lines, str_format("| %s | %s | %s |", date, M.format_number(day.count), M.format_number(day.uniques)))
   end
 
-  -- Write file
-  local content = tbl_concat(lines, "\n") .. "\n"
-  local ok, err = pcall(fn.writefile, vim.split(content, "\n"), expand(filepath))
+  return write_lines(filepath, lines)
+end
 
-  if not ok then
-    return false, str_format("Failed to write file: %s", err)
+---Export combined clones+views stats for a single repository to Markdown
+---@param repo string Repository identifier
+---@param clones_stats GHStats.AggregatedStats? Clones stats (nil if unavailable)
+---@param views_stats GHStats.AggregatedStats? Views stats (nil if unavailable)
+---@param filepath string Output file path
+---@return boolean, string? # Success flag, error message
+function M.export_combined_markdown(repo, clones_stats, views_stats, filepath)
+  local clones_daily = clones_stats and clones_stats.daily_breakdown or {}
+  local views_daily = views_stats and views_stats.daily_breakdown or {}
+
+  local all_dates = {}
+  for date in pairs(clones_daily) do
+    all_dates[date] = true
+  end
+  for date in pairs(views_daily) do
+    all_dates[date] = true
   end
 
-  return true, nil
+  local dates = vim.tbl_keys(all_dates)
+  table.sort(dates)
+
+  local period_start = dates[1] or "N/A"
+  local period_end = dates[#dates] or "N/A"
+
+  local lines = {
+    str_format("# GitHub Stats Report: %s", repo),
+    "",
+    "**Metric:** clones + views (combined)",
+    str_format("**Period:** %s to %s", period_start, period_end),
+    str_format("**Generated:** %s", os.date("%Y-%m-%d %H:%M:%S")),
+    "",
+    "## Summary",
+    "",
+    str_format(
+      "- **Total Clones:** %s (%s unique)",
+      M.format_number(clones_stats and clones_stats.total_count or 0),
+      M.format_number(clones_stats and clones_stats.total_uniques or 0)
+    ),
+    str_format(
+      "- **Total Views:** %s (%s unique)",
+      M.format_number(views_stats and views_stats.total_count or 0),
+      M.format_number(views_stats and views_stats.total_uniques or 0)
+    ),
+    "",
+    "## Daily Breakdown",
+    "",
+    "| Date | Clones | Clones Uniques | Views | Views Uniques |",
+    "|------|--------|-----------------|-------|----------------|",
+  }
+
+  for _, date in ipairs(dates) do
+    local c = clones_daily[date] or { count = 0, uniques = 0 }
+    local v = views_daily[date] or { count = 0, uniques = 0 }
+    tbl_insert(
+      lines,
+      str_format(
+        "| %s | %s | %s | %s | %s |",
+        date,
+        M.format_number(c.count),
+        M.format_number(c.uniques),
+        M.format_number(v.count),
+        M.format_number(v.uniques)
+      )
+    )
+  end
+
+  return write_lines(filepath, lines)
 end
 
 ---Export summary of all repos to Markdown
@@ -115,9 +331,14 @@ function M.export_summary_markdown(metric, results, filepath)
     str_format("**Generated:** %s", os.date("%Y-%m-%d %H:%M:%S")),
     str_format("**Repositories:** %d", vim.tbl_count(results)),
     "",
-    "## Repositories",
-    "",
   }
+
+  local analytics = require("github_stats.analytics")
+  local highlights = analytics.compute_highlights(metric == "clones" and results or nil, metric == "views" and results or nil)
+  vim.list_extend(lines, build_highlights_section(highlights))
+
+  tbl_insert(lines, "## Repositories")
+  tbl_insert(lines, "")
 
   -- Sort repos by total count
   local sorted_repos = {}
@@ -185,15 +406,76 @@ function M.export_summary_markdown(metric, results, filepath)
     tbl_insert(lines, "")
   end
 
-  -- Write file
-  local content = tbl_concat(lines, "\n") .. "\n"
-  local ok, err = pcall(fn.writefile, vim.split(content, "\n"), expand(filepath))
+  return write_lines(filepath, lines)
+end
 
-  if not ok then
-    return false, str_format("Failed to write file: %s", err)
+---Export combined clones+views summary across all configured repos to
+---Markdown -- the "all" counterpart to `export_combined_markdown`, letting
+---clones and views be evaluated together across the whole repo set instead
+---of as two separate reports
+---@param clones_results table<string, GHStats.AggregatedStats> Map of repo -> clones stats
+---@param views_results table<string, GHStats.AggregatedStats> Map of repo -> views stats
+---@param filepath string Output file path
+---@return boolean, string? # Success flag, error message
+function M.export_combined_summary_markdown(clones_results, views_results, filepath)
+  local analytics = require("github_stats.analytics")
+  local highlights = analytics.compute_highlights(clones_results, views_results)
+
+  local all_repos = {}
+  for repo in pairs(clones_results) do
+    all_repos[repo] = true
+  end
+  for repo in pairs(views_results) do
+    all_repos[repo] = true
+  end
+  local repos = vim.tbl_keys(all_repos)
+
+  local lines = {
+    "# GitHub Stats Summary: clones + views (combined)",
+    "",
+    str_format("**Generated:** %s", os.date("%Y-%m-%d %H:%M:%S")),
+    str_format("**Repositories:** %d", #repos),
+    "",
+  }
+
+  vim.list_extend(lines, build_highlights_section(highlights))
+
+  tbl_insert(lines, "## Repositories")
+  tbl_insert(lines, "")
+  tbl_insert(lines, "| Repository | Period | Clones (Total) | Clones (Unique) | Views (Total) | Views (Unique) |")
+  tbl_insert(lines, "|------------|--------|-----------------|-------------------|----------------|------------------|")
+
+  table.sort(repos, function(a, b)
+    local ca = (clones_results[a] and clones_results[a].total_count) or 0
+    local cb = (clones_results[b] and clones_results[b].total_count) or 0
+    if ca == cb then
+      return a < b
+    end
+    return ca > cb
+  end)
+
+  for _, repo in ipairs(repos) do
+    local c = clones_results[repo]
+    local v = views_results[repo]
+    local period_start = (c and c.period_start) or (v and v.period_start) or "N/A"
+    local period_end = (c and c.period_end) or (v and v.period_end) or "N/A"
+
+    tbl_insert(
+      lines,
+      str_format(
+        "| %s | %s to %s | %s | %s | %s | %s |",
+        repo,
+        period_start,
+        period_end,
+        M.format_number(c and c.total_count or 0),
+        M.format_number(c and c.total_uniques or 0),
+        M.format_number(v and v.total_count or 0),
+        M.format_number(v and v.total_uniques or 0)
+      )
+    )
   end
 
-  return true, nil
+  return write_lines(filepath, lines)
 end
 
 ---Format number with thousands separator

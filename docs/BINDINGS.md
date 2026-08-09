@@ -36,7 +36,7 @@ commands into one verb moves it there).
 | `:GithubStats referrers` | `{repo} [limit]` | Top referrers for a repository |
 | `:GithubStats paths` | `{repo} [limit]` | Top paths for a repository |
 | `:GithubStats chart` | `{repo} {clones\|views\|both} [start] [end]` | ASCII sparkline/comparison chart |
-| `:GithubStats export` | `{repo\|all} {metric} {filepath}` | Export to CSV or Markdown |
+| `:GithubStats export` | `{repo\|all} {clones\|views\|both} {filepath}` | Export to CSV or Markdown |
 | `:GithubStats diff` | `{repo} {metric} {period1} {period2}` | Compare two periods |
 | `:GithubStats debug` | – | Print configuration/token/last-fetch diagnostics |
 | `:GithubStats[!] dashboard` | – | Open the dashboard (`!` requests a forced refresh) |
@@ -65,13 +65,18 @@ Defaults come from [`lua/github_stats/config/DEFAULTS.lua`](../lua/github_stats/
 | `force_refresh` | `f` | Force-fetch the selected repository from GitHub, then re-render |
 | `cycle_sort` | `s` | Cycle sort criteria: `clones` → `views` → `name` → `trend` |
 | `cycle_time_range` | `t` | Cycle time range: `7d` → `30d` → `90d` → `all` |
+| `custom_time_range` | `T` | Prompt for a free-form time range expression (e.g. `3m`, `since:2025-01-01`, a date preset name) |
 | `quit` | `q` | Close the dashboard |
 | `show_help` | `?` | Show the keybinding help overlay |
 
 Sorting and time-range filtering are applied on every render based on
 `state.sort_by`/`state.time_range` (see
 [`lua/github_stats/dashboard/render.lua`](../lua/github_stats/dashboard/render.lua)); the
-cycle keys just advance that state. `refresh_all`/`force_refresh` are
+cycle keys just advance that state. `custom_time_range` instead prompts via
+`vim.fn.input()` for a free-form expression, validated against
+[`analytics.parse_time_range`](../lua/github_stats/analytics.lua) before being
+applied -- an unrecognized expression is rejected with an error notification
+and the previous range is kept. `refresh_all`/`force_refresh` are
 implemented in
 [`lua/github_stats/dashboard/actions.lua`](../lua/github_stats/dashboard/actions.lua)
 and go through [`lua/github_stats/fetcher.lua`](../lua/github_stats/fetcher.lua)

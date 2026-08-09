@@ -34,7 +34,7 @@ configuration.
 | `:GithubStats referrers` | Top referrer sources | Repos |
 | `:GithubStats paths` | Most visited paths | Repos |
 | `:GithubStats chart` | Visual charts and sparklines | Repos, metrics |
-| `:GithubStats export` | Export to CSV/Markdown | Repos, metrics, paths |
+| `:GithubStats export` | Export to CSV/Markdown (clones/views/both) | Repos, metrics, paths |
 | `:GithubStats diff` | Period-over-period comparison | Repos, metrics, periods |
 | `:GithubStats debug` | Diagnostic information | None |
 
@@ -464,12 +464,12 @@ Exports GitHub traffic statistics to a file. Supported formats are CSV (single r
 
 **Arguments:**
 - `{repo|all}` – Repository identifier or `all` for multi-repository export
-- `{metric}` – Either `clones` or `views`
+- `{metric}` – `clones`, `views`, or `both` (combined clones+views report)
 - `{filepath}` – Output file path (extension determines format: `.csv` or `.md`)
 
 **Autocompletion:**
 - Repository names (including `all` option)
-- Metric types: `clones`, `views`
+- Metric types: `clones`, `views`, `both`
 - File paths (uses Neovim's built-in file completion)
 
 **Supported Formats:**
@@ -478,6 +478,19 @@ Exports GitHub traffic statistics to a file. Supported formats are CSV (single r
 |--------|-----------|-------------|-----------|
 | CSV | `.csv` | ✅ | ❌ |
 | Markdown | `.md` | ✅ | ✅ |
+
+**Extension Defaulting:**
+
+If `{filepath}` has no extension at all, one is appended automatically —
+`.md` for the `all` target (the only format it supports), `.csv`
+otherwise. A path that already has a *different* extension (e.g. `.txt`)
+is left alone and still errors, since silently rewriting a deliberately-named
+path would be more surprising than helpful.
+
+**Parent Directories:**
+
+Created automatically if they don't exist yet (previously this failed with a
+raw `E482: Can't open file ... for writing: no such file or directory`).
 
 **Examples:**
 ```vim
@@ -490,9 +503,18 @@ Exports GitHub traffic statistics to a file. Supported formats are CSV (single r
 " Export all repositories to Markdown summary
 :GithubStats export all clones ~/reports/all_clones.md
 
+" No extension given -> defaults to ~/reports/repo.csv
+:GithubStats export username/repo clones ~/reports/repo
+
+" Combined clones+views, single repo (CSV or Markdown)
+:GithubStats export username/repo both ~/reports/combined.csv
+
+" Combined clones+views summary across all repos (Markdown only)
+:GithubStats export all both ~/reports/combined_summary.md
+
 " Using autocomplete
 :GithubStats export <Tab>               " Suggests: repo names + "all"
-:GithubStats export username/repo <Tab> " Suggests: clones, views
+:GithubStats export username/repo <Tab> " Suggests: clones, views, both
 :GithubStats export username/repo clones <Tab>  " File path completion
 ```
 
@@ -502,6 +524,13 @@ repository,metric,date,count,uniques
 username/repo,clones,2025-12-20,45,12
 username/repo,clones,2025-12-21,52,15
 username/repo,clones,2025-12-22,38,10
+```
+
+**Combined CSV Format Example (`both`):**
+```csv
+repository,date,clones_count,clones_uniques,views_count,views_uniques
+username/repo,2025-12-20,45,12,8,3
+username/repo,2025-12-21,52,15,11,5
 ```
 
 **Markdown Format Example:**
@@ -534,6 +563,12 @@ username/repo,clones,2025-12-22,38,10
 **Generated:** 2025-12-22 10:30:00
 **Repositories:** 5
 
+## Highlights
+
+- **Most cloned repository:** username/repo1 (12,340 clones)
+- **Best month for clones:** 2025-11 (4,102 clones)
+- **Best single day for clones:** username/repo1 on 2025-11-28 (890 clones)
+
 ## Repositories
 
 | Repository | Period | Total Count | Total Uniques |
@@ -548,10 +583,15 @@ username/repo,clones,2025-12-22,38,10
 ...
 ```
 
+Every summary export (single-repo or `all`, either metric) includes a
+**Highlights** section: the most cloned/viewed repository, the best calendar
+month, and the best single day. `all` + `both` produces one combined summary
+with both clones and views highlights, instead of two separate reports.
+
 **Notes:**
 - Files are overwritten if they exist
 - Tilde (`~`) expansion is supported
-- Parent directories must exist
+- Parent directories are created automatically if missing
 
 **Error Messages:**
 ```

@@ -58,4 +58,24 @@
 ---@field freed_bytes integer Total bytes freed
 ---@field errors table<string, string> Map of "repo/metric" to error message
 
+---Cross-repository derived stats ("most successful repo", "best month",
+---"best single day"), computed by analytics.compute_highlights for narrative
+---summaries in exports/reports. Repo/month/day fields are nil when the
+---corresponding metric result set had no data.
+---@class GHStats.Highlights
+---@field top_clones_repo? string Repository with the highest total clone count
+---@field top_clones_repo_count integer That repository's total clone count (0 if none)
+---@field top_views_repo? string Repository with the highest total view count
+---@field top_views_repo_count integer That repository's total view count (0 if none)
+---@field best_clones_month? string Calendar month (YYYY-MM) with the highest combined clone count
+---@field best_clones_month_count integer That month's combined clone count (0 if none)
+---@field best_views_month? string Calendar month (YYYY-MM) with the highest combined view count
+---@field best_views_month_count integer That month's combined view count (0 if none)
+---@field best_clones_day? string Date (YYYY-MM-DD) of the single highest clone count
+---@field best_clones_day_repo? string Repository that day's clone count belongs to
+---@field best_clones_day_count integer That day's clone count (0 if none)
+---@field best_views_day? string Date (YYYY-MM-DD) of the single highest view count
+---@field best_views_day_repo? string Repository that day's view count belongs to
+---@field best_views_day_count integer That day's view count (0 if none)
+
 return {}

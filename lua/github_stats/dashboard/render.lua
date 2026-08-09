@@ -50,12 +50,14 @@ end
 ---@param state GHStats.DashboardState Current dashboard state
 ---@return string[] # Header lines
 local function build_header(state)
+  -- Range can now be an arbitrary user-typed expression (see
+  -- dashboard/actions.lua's prompt_custom_time_range), not just one of the
+  -- fixed 7d/30d/90d/all cycle values, so it's no longer safe to assume a
+  -- short fixed width here -- fit_width() below truncates the whole hint
+  -- (safely) if a long custom range pushes it past HEADER_CONTENT_WIDTH.
   local hint = fit_width(
-    -- NOTE: this format string is exactly 72 chars wide once %-6s/%-4s are
-    -- filled with their widest values ("clones"/"trend" and "all"). Keep it
-    -- at that width -- fit_width() below silently truncates anything longer.
     string.format(
-      "  Sort:%-6s Range:%-4s s:sort  t:range  R:refresh-all  f:force  q:quit",
+      "  Sort:%-6s Range:%-10s s:sort  t:range  T:custom  R:refresh-all  f:force  q:quit",
       state.sort_by or "name",
       state.time_range or "30d"
     ),

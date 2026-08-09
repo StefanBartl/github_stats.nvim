@@ -238,6 +238,12 @@ function M.setup_keymaps(buf)
     actions.cycle_time_range()
   end, which_key_entries, "GitHub Stats: cycle time range")
 
+  -- Custom time range: configurable (default T) -- prompts for a free-form
+  -- expression instead of stepping through the fixed 7d/30d/90d/all cycle
+  map_key(buf, keybindings.custom_time_range, function()
+    actions.prompt_custom_time_range()
+  end, which_key_entries, "GitHub Stats: enter custom time range")
+
   -- Quit: configurable (default q), plus fixed Esc fallback. The dashboard
   -- buffer is bufhidden=wipe, so closing the window here also triggers the
   -- BufWipeout -> cleanup_dashboard() -> ui_state.cleanup_all() chain set up
@@ -266,6 +272,7 @@ function M.setup_keymaps(buf)
         .. string.format("  %-9s - Force refresh selected repository\n", keybindings.force_refresh)
         .. string.format("  %-9s - Cycle sort criteria\n", keybindings.cycle_sort)
         .. string.format("  %-9s - Cycle time range\n", keybindings.cycle_time_range)
+        .. string.format("  %-9s - Enter custom time range (e.g. 3m, since:2025-01-01)\n", keybindings.custom_time_range)
         .. string.format("  %-9s - Quit\n", keybindings.quit)
         .. string.format("  %-9s - Show this help", keybindings.show_help),
       "info"

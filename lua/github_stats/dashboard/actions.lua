@@ -54,6 +54,39 @@ function M.cycle_time_range()
   dashboard_state.set_time_range(next_in_cycle(TIME_RANGE_CYCLE, state.time_range))
 end
 
+---Prompt the user for a free-form time range expression (e.g. "14d", "3m",
+---"since:2025-01-01", "this_year") and apply it if recognized by
+---`analytics.parse_time_range`. Unlike `cycle_time_range`, this isn't
+---restricted to the fixed 7d/30d/90d/all cycle -- it's the entry point for
+---an arbitrary user-typed range.
+---@return nil
+function M.prompt_custom_time_range()
+  local state = dashboard_state.get_state()
+  if not state then
+    return
+  end
+
+  local ok, input = pcall(vim.fn.input, {
+    prompt = "Time range (7d, 3m, 1y, since:YYYY-MM-DD, this_year, all, ...): ",
+    default = state.time_range or "",
+  })
+  vim.cmd("redraw") -- clear the command-line prompt
+
+  if not ok or input == "" then
+    return
+  end
+
+  local analytics = require("github_stats.analytics")
+  local _, _, recognized = analytics.parse_time_range(input)
+
+  if not recognized then
+    require("github_stats.config").notify(string.format("[github-stats] Unrecognized time range: '%s'", input), "error")
+    return
+  end
+
+  dashboard_state.set_time_range(input)
+end
+
 ---Force-refresh the currently selected repository from the GitHub API,
 ---bypassing the fetch interval, then invoke on_done (main-loop safe)
 ---@param on_done? fun() Called once the fetch completes
