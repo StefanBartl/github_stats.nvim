@@ -385,24 +385,37 @@ the dashboard subcommand.
 
                                                      *:GithubStats-export*
 :GithubStats export {repo|all} {metric} {filepath}
-    Exports data to CSV or Markdown format.
+    Exports data to CSV, Markdown, or PDF format.
 
     Parameters:~
         {repo|all}    Repository or "all" for summary
         {metric}      "clones", "views", or "both" (combined report)
-        {filepath}    Output file (.csv or .md extension)
+        {filepath}    Output file (.csv, .md, or .pdf extension)
 
     Format Support:~
         CSV:      Single repository only
         Markdown: Single repository or all repositories
+        PDF:      Single repository or all repositories (same content as
+                  Markdown; requires pdfport.nvim, see below)
+
+    PDF export (optional dependency):~
+        Routes through pdfport.nvim (github.com/StefanBartl/pdfport.nvim,
+        soft dependency, pcall-guarded): the exact same report
+        export_markdown()/export_summary_markdown()/etc. would write to a
+        .md file is instead handed to `pdfport.create()` as text (no
+        intermediate .md file). Needs pdfport.nvim installed and a
+        markdown producer available (pandoc + a PDF engine) --
+        `pdfport.can_create("markdown")`. Without pdfport.nvim installed,
+        or without an available producer, the export fails with a clear
+        error instead of silently falling back to another format.
 
     Extension Defaulting:~
         If {filepath} has no extension at all, one is appended
         automatically: ".md" for the "all" target (the only format it
-        supports), ".csv" otherwise. A path that already has some other
-        extension (e.g. ".txt") is left alone and still errors, since
-        silently rewriting a deliberately-named path would be more
-        surprising than helpful.
+        supports by default), ".csv" otherwise. A path that already has
+        some other extension (e.g. ".txt") is left alone and still
+        errors, since silently rewriting a deliberately-named path would
+        be more surprising than helpful.
 
     Parent Directories:~
         Created automatically if they don't exist yet.
@@ -411,7 +424,7 @@ the dashboard subcommand.
         Merges clones and views into a single report instead of two
         separate ones -- one CSV row (or Markdown table row) per date,
         with both metrics side by side. "all" + "both" produces one
-        combined Markdown summary across every configured repository.
+        combined Markdown/PDF summary across every configured repository.
         Summary reports (target "all", or a single-repo report) also
         include a "## Highlights" section: most cloned/viewed repository,
         best month, and best single day.
@@ -421,8 +434,10 @@ the dashboard subcommand.
     Examples:~
         :GithubStats export username/repo clones ~/data.csv
         :GithubStats export username/repo views ~/report.md
+        :GithubStats export username/repo clones ~/report.pdf
         :GithubStats export username/repo both ~/combined.csv
         :GithubStats export all clones ~/summary.md
+        :GithubStats export all clones ~/summary.pdf
         :GithubStats export all both ~/summary.md
         :GithubStats export username/repo clones ~/reports/repo   " -> ~/reports/repo.csv
 

@@ -134,4 +134,87 @@ describe("export", function()
       assert.is_not_nil(content:find("b/high"))
     end)
   end)
+
+  describe("PDF export via pdfport.nvim (optional dependency)", function()
+    local function reset_pdfport()
+      package.loaded["pdfport"] = nil
+    end
+
+    after_each(reset_pdfport)
+
+    it("reports an error when pdfport.nvim is not installed", function()
+      reset_pdfport()
+      local got
+      export.export_markdown_pdf(
+        "test/repo",
+        "clones",
+        stats(5, 2, { ["2025-01-01"] = { count = 5, uniques = 2 } }),
+        tmp_dir .. "/report.pdf",
+        function(ok, err)
+          got = { ok = ok, err = err }
+        end
+      )
+      ---@diagnostic disable-next-line: undefined-field
+      assert.is_false(got.ok)
+      ---@diagnostic disable-next-line: undefined-field
+      assert.is_not_nil(got.err:find("not installed"))
+    end)
+
+    it("reports an error when pdfport has no available markdown producer", function()
+      package.loaded["pdfport"] = {
+        create = function() end,
+        can_create = function()
+          return false
+        end,
+      }
+      local got
+      export.export_markdown_pdf(
+        "test/repo",
+        "clones",
+        stats(5, 2, { ["2025-01-01"] = { count = 5, uniques = 2 } }),
+        tmp_dir .. "/report.pdf",
+        function(ok, err)
+          got = { ok = ok, err = err }
+        end
+      )
+      ---@diagnostic disable-next-line: undefined-field
+      assert.is_false(got.ok)
+      ---@diagnostic disable-next-line: undefined-field
+      assert.is_not_nil(got.err:find("markdown producer"))
+    end)
+
+    it("passes the built Markdown report to pdfport.create() as text", function()
+      local create_opts
+      package.loaded["pdfport"] = {
+        can_create = function(kind)
+          return kind == "markdown"
+        end,
+        create = function(opts)
+          create_opts = opts
+          opts.__callback({ status = "ok", path = opts.output })
+        end,
+      }
+
+      local target = tmp_dir .. "/report.pdf"
+      local got
+      export.export_markdown_pdf(
+        "test/repo",
+        "clones",
+        stats(5, 2, { ["2025-01-01"] = { count = 5, uniques = 2 } }),
+        target,
+        function(ok, err)
+          got = { ok = ok, err = err }
+        end
+      )
+
+      ---@diagnostic disable-next-line: undefined-field
+      assert.is_true(got.ok, got.err)
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals("markdown", create_opts.from)
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals(vim.fn.expand(target), create_opts.output)
+      ---@diagnostic disable-next-line: undefined-field
+      assert.is_not_nil(create_opts.text:find("GitHub Stats Report: test/repo"))
+    end)
+  end)
 end)

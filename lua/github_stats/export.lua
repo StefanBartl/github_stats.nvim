@@ -1,8 +1,11 @@
 ---@module 'github_stats.export'
----@brief Data export to CSV and Markdown formats
+---@brief Data export to CSV, Markdown and PDF formats
 ---@description
 --- Exports traffic statistics to various file formats.
---- Supports CSV for data analysis and Markdown for documentation.
+--- Supports CSV for data analysis, Markdown for documentation, and PDF
+--- (via pdfport.nvim, optional dependency) for offline/printable sharing --
+--- the PDF variants build the exact same lines as their Markdown siblings
+--- and hand them to pdfport.create() as text instead of writing a .md file.
 
 local M = {}
 
@@ -56,6 +59,50 @@ local function write_lines(filepath, lines)
   end
 
   return true, nil
+end
+
+---True when pdfport.nvim is installed and can create a PDF from Markdown.
+---@return boolean
+function M.has_pdfport()
+  local ok, pdfport = pcall(require, "pdfport")
+  return ok and type(pdfport.can_create) == "function" and pdfport.can_create("markdown") == true
+end
+
+---@internal Shared by every `_pdf` export sibling: joins `lines` into a
+---Markdown document and hands it to pdfport.create() as text -- pdfport
+---materializes/cleans up its own tmpfile, so this never touches disk itself
+---beyond the final PDF.
+---@param lines string[]
+---@param filepath string Output PDF path (not yet expanded)
+---@param callback fun(ok: boolean, err: string?)
+---@return nil
+function M.create_pdf(lines, filepath, callback)
+  local ok, pdfport = pcall(require, "pdfport")
+  if not ok or type(pdfport.create) ~= "function" then
+    callback(false, "pdfport.nvim not installed -- PDF export unavailable")
+    return
+  end
+  if type(pdfport.can_create) ~= "function" or not pdfport.can_create("markdown") then
+    callback(false, "pdfport.nvim has no available markdown producer (needs pandoc + a PDF engine)")
+    return
+  end
+
+  local resolved = expand(filepath)
+  ensure_parent_dir(resolved)
+
+  pdfport.create({
+    text = tbl_concat(lines, "\n") .. "\n",
+    from = "markdown",
+    output = resolved,
+    on_conflict = "overwrite",
+    __callback = function(result)
+      if result.status == "ok" then
+        callback(true, nil)
+      else
+        callback(false, result.error or "pdfport export failed")
+      end
+    end,
+  })
 end
 
 ---@internal
@@ -213,13 +260,14 @@ function M.export_combined_csv(repo, clones_daily, views_daily, filepath)
   return write_lines(filepath, lines)
 end
 
----Export aggregated stats to Markdown
----@param repo string Repository identifier
----@param metric string Metric type
----@param stats GHStats.AggregatedStats Aggregated statistics
----@param filepath string Output file path
----@return boolean, string? # Success flag, error message
-function M.export_markdown(repo, metric, stats, filepath)
+---@internal Builds the same lines export_markdown() writes to disk --
+---factored out so export_markdown_pdf() can hand them to pdfport as text
+---without a round-trip through a written .md file.
+---@param repo string
+---@param metric string
+---@param stats GHStats.AggregatedStats
+---@return string[]
+local function build_markdown_lines(repo, metric, stats)
   local lines = {
     str_format("# GitHub Stats Report: %s", repo),
     "",
@@ -247,16 +295,38 @@ function M.export_markdown(repo, metric, stats, filepath)
     tbl_insert(lines, str_format("| %s | %s | %s |", date, M.format_number(day.count), M.format_number(day.uniques)))
   end
 
-  return write_lines(filepath, lines)
+  return lines
 end
 
----Export combined clones+views stats for a single repository to Markdown
+---Export aggregated stats to Markdown
 ---@param repo string Repository identifier
----@param clones_stats GHStats.AggregatedStats? Clones stats (nil if unavailable)
----@param views_stats GHStats.AggregatedStats? Views stats (nil if unavailable)
+---@param metric string Metric type
+---@param stats GHStats.AggregatedStats Aggregated statistics
 ---@param filepath string Output file path
 ---@return boolean, string? # Success flag, error message
-function M.export_combined_markdown(repo, clones_stats, views_stats, filepath)
+function M.export_markdown(repo, metric, stats, filepath)
+  return write_lines(filepath, build_markdown_lines(repo, metric, stats))
+end
+
+---Export aggregated stats to PDF via pdfport.nvim (optional dependency).
+---Builds the identical report build_markdown_lines() would write to a .md
+---file and hands it to pdfport as text -- no intermediate file.
+---@param repo string Repository identifier
+---@param metric string Metric type
+---@param stats GHStats.AggregatedStats Aggregated statistics
+---@param filepath string Output PDF path
+---@param callback fun(ok: boolean, err: string?)
+---@return nil
+function M.export_markdown_pdf(repo, metric, stats, filepath, callback)
+  M.create_pdf(build_markdown_lines(repo, metric, stats), filepath, callback)
+end
+
+---@internal Builds the same lines export_combined_markdown() writes to disk.
+---@param repo string
+---@param clones_stats GHStats.AggregatedStats?
+---@param views_stats GHStats.AggregatedStats?
+---@return string[]
+local function build_combined_markdown_lines(repo, clones_stats, views_stats)
   local clones_daily = clones_stats and clones_stats.daily_breakdown or {}
   local views_daily = views_stats and views_stats.daily_breakdown or {}
 
@@ -316,15 +386,36 @@ function M.export_combined_markdown(repo, clones_stats, views_stats, filepath)
     )
   end
 
-  return write_lines(filepath, lines)
+  return lines
 end
 
----Export summary of all repos to Markdown
----@param metric string Metric type
----@param results table<string, GHStats.AggregatedStats> Map of repo -> stats
+---Export combined clones+views stats for a single repository to Markdown
+---@param repo string Repository identifier
+---@param clones_stats GHStats.AggregatedStats? Clones stats (nil if unavailable)
+---@param views_stats GHStats.AggregatedStats? Views stats (nil if unavailable)
 ---@param filepath string Output file path
 ---@return boolean, string? # Success flag, error message
-function M.export_summary_markdown(metric, results, filepath)
+function M.export_combined_markdown(repo, clones_stats, views_stats, filepath)
+  return write_lines(filepath, build_combined_markdown_lines(repo, clones_stats, views_stats))
+end
+
+---Export combined clones+views stats for a single repository to PDF via
+---pdfport.nvim (optional dependency).
+---@param repo string Repository identifier
+---@param clones_stats GHStats.AggregatedStats? Clones stats (nil if unavailable)
+---@param views_stats GHStats.AggregatedStats? Views stats (nil if unavailable)
+---@param filepath string Output PDF path
+---@param callback fun(ok: boolean, err: string?)
+---@return nil
+function M.export_combined_markdown_pdf(repo, clones_stats, views_stats, filepath, callback)
+  M.create_pdf(build_combined_markdown_lines(repo, clones_stats, views_stats), filepath, callback)
+end
+
+---@internal Builds the same lines export_summary_markdown() writes to disk.
+---@param metric string
+---@param results table<string, GHStats.AggregatedStats>
+---@return string[]
+local function build_summary_markdown_lines(metric, results)
   local lines = {
     str_format("# GitHub Stats Summary: %s", metric),
     "",
@@ -406,18 +497,33 @@ function M.export_summary_markdown(metric, results, filepath)
     tbl_insert(lines, "")
   end
 
-  return write_lines(filepath, lines)
+  return lines
 end
 
----Export combined clones+views summary across all configured repos to
----Markdown -- the "all" counterpart to `export_combined_markdown`, letting
----clones and views be evaluated together across the whole repo set instead
----of as two separate reports
----@param clones_results table<string, GHStats.AggregatedStats> Map of repo -> clones stats
----@param views_results table<string, GHStats.AggregatedStats> Map of repo -> views stats
+---Export summary of all repos to Markdown
+---@param metric string Metric type
+---@param results table<string, GHStats.AggregatedStats> Map of repo -> stats
 ---@param filepath string Output file path
 ---@return boolean, string? # Success flag, error message
-function M.export_combined_summary_markdown(clones_results, views_results, filepath)
+function M.export_summary_markdown(metric, results, filepath)
+  return write_lines(filepath, build_summary_markdown_lines(metric, results))
+end
+
+---Export summary of all repos to PDF via pdfport.nvim (optional dependency).
+---@param metric string Metric type
+---@param results table<string, GHStats.AggregatedStats> Map of repo -> stats
+---@param filepath string Output PDF path
+---@param callback fun(ok: boolean, err: string?)
+---@return nil
+function M.export_summary_markdown_pdf(metric, results, filepath, callback)
+  M.create_pdf(build_summary_markdown_lines(metric, results), filepath, callback)
+end
+
+---@internal Builds the same lines export_combined_summary_markdown() writes to disk.
+---@param clones_results table<string, GHStats.AggregatedStats>
+---@param views_results table<string, GHStats.AggregatedStats>
+---@return string[]
+local function build_combined_summary_markdown_lines(clones_results, views_results)
   local analytics = require("github_stats.analytics")
   local highlights = analytics.compute_highlights(clones_results, views_results)
 
@@ -475,7 +581,30 @@ function M.export_combined_summary_markdown(clones_results, views_results, filep
     )
   end
 
-  return write_lines(filepath, lines)
+  return lines
+end
+
+---Export combined clones+views summary across all configured repos to
+---Markdown -- the "all" counterpart to `export_combined_markdown`, letting
+---clones and views be evaluated together across the whole repo set instead
+---of as two separate reports
+---@param clones_results table<string, GHStats.AggregatedStats> Map of repo -> clones stats
+---@param views_results table<string, GHStats.AggregatedStats> Map of repo -> views stats
+---@param filepath string Output file path
+---@return boolean, string? # Success flag, error message
+function M.export_combined_summary_markdown(clones_results, views_results, filepath)
+  return write_lines(filepath, build_combined_summary_markdown_lines(clones_results, views_results))
+end
+
+---Export combined clones+views summary across all configured repos to PDF
+---via pdfport.nvim (optional dependency).
+---@param clones_results table<string, GHStats.AggregatedStats> Map of repo -> clones stats
+---@param views_results table<string, GHStats.AggregatedStats> Map of repo -> views stats
+---@param filepath string Output PDF path
+---@param callback fun(ok: boolean, err: string?)
+---@return nil
+function M.export_combined_summary_markdown_pdf(clones_results, views_results, filepath, callback)
+  M.create_pdf(build_combined_summary_markdown_lines(clones_results, views_results), filepath, callback)
 end
 
 ---Format number with thousands separator
