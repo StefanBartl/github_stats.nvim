@@ -1,7 +1,10 @@
 ---@module 'github_stats.bindings.usrcmds.export'
----@brief Export data to CSV or Markdown
+---@brief Export data to CSV, Markdown or PDF
 ---@description
---- Exports traffic statistics to various file formats.
+--- Exports traffic statistics to various file formats. PDF export goes
+--- through pdfport.nvim (optional dependency, soft-required); the report
+--- content is identical to the Markdown export, just handed to pdfport as
+--- text instead of written to a .md file first.
 
 local config = require("github_stats.config")
 local analytics = require("github_stats.analytics")
@@ -23,13 +26,16 @@ local str_format = string.format
 ---the user clearly named on purpose would be more surprising than helpful.
 ---@param filepath string Requested output path
 ---@param target string Export target ("all" or a repo)
----@return string?, string, string? # format ("csv"|"markdown", nil if unresolvable), resolved filepath, notice message if a default was applied
+---@return string?, string, string? # format ("csv"|"markdown"|"pdf", nil if unresolvable), resolved filepath, notice message if a default was applied
 local function resolve_format(filepath, target)
   if filepath:match("%.csv$") then
     return "csv", filepath, nil
   end
   if filepath:match("%.md$") then
     return "markdown", filepath, nil
+  end
+  if filepath:match("%.pdf$") then
+    return "pdf", filepath, nil
   end
 
   local basename = vim.fn.fnamemodify(filepath, ":t")
@@ -66,7 +72,7 @@ function M.execute(args)
   -- Determine format from extension, defaulting when none was given
   local format, resolved_path, notice = resolve_format(filepath, target)
   if not format then
-    config.notify("[github-stats] File must have .csv or .md extension", "error")
+    config.notify("[github-stats] File must have .csv, .md or .pdf extension", "error")
     return
   end
   filepath = resolved_path
@@ -74,10 +80,23 @@ function M.execute(args)
     config.notify(str_format("[github-stats] %s", notice), "info")
   end
 
+  -- PDF goes through pdfport.nvim (optional dependency) and is async, unlike
+  -- the synchronous csv/markdown writers below -- reported via the same
+  -- ok/err shape through a callback instead of a direct return value.
+  ---@param ok boolean
+  ---@param export_err string?
+  local function report(ok, export_err)
+    if ok then
+      config.notify(str_format("[github-stats] Exported to: %s", vim.fn.expand(filepath)), "info")
+    else
+      config.notify(str_format("[github-stats] Export failed: %s", export_err), "error")
+    end
+  end
+
   -- Export all repos
   if target == "all" then
-    if format ~= "markdown" then
-      config.notify("[github-stats] 'all' target only supports Markdown format", "error")
+    if format == "csv" then
+      config.notify("[github-stats] 'all' target only supports Markdown/PDF format", "error")
       return
     end
 
@@ -90,11 +109,10 @@ function M.execute(args)
         return
       end
 
-      local ok, export_err = export.export_combined_summary_markdown(clones_results, views_results, filepath)
-      if ok then
-        config.notify(str_format("[github-stats] Exported to: %s", vim.fn.expand(filepath)), "info")
+      if format == "pdf" then
+        export.export_combined_summary_markdown_pdf(clones_results, views_results, filepath, report)
       else
-        config.notify(str_format("[github-stats] Export failed: %s", export_err), "error")
+        report(export.export_combined_summary_markdown(clones_results, views_results, filepath))
       end
 
       return
@@ -106,11 +124,10 @@ function M.execute(args)
       return
     end
 
-    local ok, export_err = export.export_summary_markdown(metric, results, filepath)
-    if ok then
-      config.notify(str_format("[github-stats] Exported to: %s", vim.fn.expand(filepath)), "info")
+    if format == "pdf" then
+      export.export_summary_markdown_pdf(metric, results, filepath, report)
     else
-      config.notify(str_format("[github-stats] Export failed: %s", export_err), "error")
+      report(export.export_summary_markdown(metric, results, filepath))
     end
 
     return
@@ -126,22 +143,19 @@ function M.execute(args)
       return
     end
 
-    local ok, export_err
     if format == "csv" then
-      ok, export_err = export.export_combined_csv(
-        target,
-        clones_stats and clones_stats.daily_breakdown or {},
-        views_stats and views_stats.daily_breakdown or {},
-        filepath
+      report(
+        export.export_combined_csv(
+          target,
+          clones_stats and clones_stats.daily_breakdown or {},
+          views_stats and views_stats.daily_breakdown or {},
+          filepath
+        )
       )
+    elseif format == "pdf" then
+      export.export_combined_markdown_pdf(target, clones_stats, views_stats, filepath, report)
     else
-      ok, export_err = export.export_combined_markdown(target, clones_stats, views_stats, filepath)
-    end
-
-    if ok then
-      config.notify(str_format("[github-stats] Exported to: %s", vim.fn.expand(filepath)), "info")
-    else
-      config.notify(str_format("[github-stats] Export failed: %s", export_err), "error")
+      report(export.export_combined_markdown(target, clones_stats, views_stats, filepath))
     end
 
     return
@@ -158,17 +172,12 @@ function M.execute(args)
     return
   end
 
-  local ok, export_err
   if format == "csv" then
-    ok, export_err = export.export_daily_csv(target, metric, stats.daily_breakdown, filepath)
+    report(export.export_daily_csv(target, metric, stats.daily_breakdown, filepath))
+  elseif format == "pdf" then
+    export.export_markdown_pdf(target, metric, stats, filepath, report)
   else
-    ok, export_err = export.export_markdown(target, metric, stats, filepath)
-  end
-
-  if ok then
-    config.notify(str_format("[github-stats] Exported to: %s", vim.fn.expand(filepath)), "info")
-  else
-    config.notify(str_format("[github-stats] Export failed: %s", export_err), "error")
+    report(export.export_markdown(target, metric, stats, filepath))
   end
 end
 

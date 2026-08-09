@@ -36,7 +36,7 @@ commands into one verb moves it there).
 | `:GithubStats referrers` | `{repo} [limit]` | Top referrers for a repository |
 | `:GithubStats paths` | `{repo} [limit]` | Top paths for a repository |
 | `:GithubStats chart` | `{repo} {clones\|views\|both} [start] [end]` | ASCII sparkline/comparison chart |
-| `:GithubStats export` | `{repo\|all} {clones\|views\|both} {filepath}` | Export to CSV or Markdown |
+| `:GithubStats export` | `{repo\|all} {clones\|views\|both} {filepath}` | Export to CSV, Markdown, or PDF (`.pdf` needs pdfport.nvim) |
 | `:GithubStats diff` | `{repo} {metric} {period1} {period2}` | Compare two periods |
 | `:GithubStats debug` | – | Print configuration/token/last-fetch diagnostics |
 | `:GithubStats[!] dashboard` | – | Open the dashboard (`!` requests a forced refresh) |

@@ -34,7 +34,7 @@ configuration.
 | `:GithubStats referrers` | Top referrer sources | Repos |
 | `:GithubStats paths` | Most visited paths | Repos |
 | `:GithubStats chart` | Visual charts and sparklines | Repos, metrics |
-| `:GithubStats export` | Export to CSV/Markdown (clones/views/both) | Repos, metrics, paths |
+| `:GithubStats export` | Export to CSV/Markdown/PDF (clones/views/both) | Repos, metrics, paths |
 | `:GithubStats diff` | Period-over-period comparison | Repos, metrics, periods |
 | `:GithubStats debug` | Diagnostic information | None |
 
@@ -460,12 +460,12 @@ Period: 2025-11-20 to 2025-12-20 (30 days)
 
 **Description:**
 
-Exports GitHub traffic statistics to a file. Supported formats are CSV (single repository only) and Markdown (single repository or all repositories).
+Exports GitHub traffic statistics to a file. Supported formats are CSV (single repository only), Markdown (single repository or all repositories), and PDF (single repository or all repositories, via [pdfport.nvim](https://github.com/StefanBartl/pdfport.nvim), optional dependency).
 
 **Arguments:**
 - `{repo|all}` – Repository identifier or `all` for multi-repository export
 - `{metric}` – `clones`, `views`, or `both` (combined clones+views report)
-- `{filepath}` – Output file path (extension determines format: `.csv` or `.md`)
+- `{filepath}` – Output file path (extension determines format: `.csv`, `.md`, or `.pdf`)
 
 **Autocompletion:**
 - Repository names (including `all` option)
@@ -478,6 +478,11 @@ Exports GitHub traffic statistics to a file. Supported formats are CSV (single r
 |--------|-----------|-------------|-----------|
 | CSV | `.csv` | ✅ | ❌ |
 | Markdown | `.md` | ✅ | ✅ |
+| PDF | `.pdf` | ✅ | ✅ |
+
+**PDF export (optional dependency):**
+
+Routes through [pdfport.nvim](https://github.com/StefanBartl/pdfport.nvim) — soft dependency, `pcall`-guarded. The exact same report the Markdown export would write to a `.md` file is instead handed to `pdfport.create()` as text (no intermediate `.md` file). Requires pdfport.nvim installed with an available Markdown producer (`pandoc` + a PDF engine — `pdfport.can_create("markdown")`); without it the export fails with a clear error rather than silently falling back to another format.
 
 **Extension Defaulting:**
 
@@ -500,16 +505,22 @@ raw `E482: Can't open file ... for writing: no such file or directory`).
 " Export single repository to Markdown
 :GithubStats export username/repo views ~/reports/repo_views.md
 
+" Export single repository to PDF (requires pdfport.nvim)
+:GithubStats export username/repo views ~/reports/repo_views.pdf
+
 " Export all repositories to Markdown summary
 :GithubStats export all clones ~/reports/all_clones.md
+
+" Export all repositories to a PDF summary (requires pdfport.nvim)
+:GithubStats export all clones ~/reports/all_clones.pdf
 
 " No extension given -> defaults to ~/reports/repo.csv
 :GithubStats export username/repo clones ~/reports/repo
 
-" Combined clones+views, single repo (CSV or Markdown)
+" Combined clones+views, single repo (CSV, Markdown, or PDF)
 :GithubStats export username/repo both ~/reports/combined.csv
 
-" Combined clones+views summary across all repos (Markdown only)
+" Combined clones+views summary across all repos (Markdown or PDF)
 :GithubStats export all both ~/reports/combined_summary.md
 
 " Using autocomplete
