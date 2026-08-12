@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## Table of Contents
 
+- [[Unreleased]](#unreleased)
 - [[2.0.0] - 2025-12-23](#200-2025-12-23)
 - [[1.3.1] - 2025-12-23](#131-2025-12-23)
 - [[1.3.0] - 2025-12-22](#130-2025-12-22)
@@ -14,6 +15,72 @@ All notable changes to this project will be documented in this file.
 - [[0.1.0] - 2025-12-15](#010-2025-12-15)
 
 --
+
+## [Unreleased]
+
+Repo/tooling pass: CI, test runner, and internal restructuring — no
+user-facing feature changes. (User-facing fixes from the same pass —
+dashboard bang, `dashboard.close()` crash, `setup(opts)` forwarding — are
+documented as part of the features they affect in
+[`docs/FEATURES.md`](../FEATURES.md), not repeated here.)
+
+### Added
+- **CI**: `.github/workflows/ci.yml` runs `stylua --check .`, `luacheck .`,
+  and the full test suite as three independent jobs on every push/PR to
+  `main`.
+- **Working test runner**: `scripts/test.sh` + `scripts/minimal_init.lua`, a
+  real headless `busted`/`plenary` runner for `lua/github_stats/tests/`,
+  resolving `lib.nvim`/`plenary.nvim` via an env var, a `.deps/` checkout
+  (what CI uses), or a sibling checkout. Full suite: 54/54 passing.
+- **Per-subdirectory `@types/` folders**: `dashboard/@types/init.lua`
+  (`DashboardState`, `DashboardKeybindings`, `DashboardConfig`) and
+  `state/@types/init.lua` (`UIState`) — root `@types/` now holds only what's
+  genuinely cross-module (`SetupOptions`, raw GitHub API shapes, metric/
+  retention types).
+
+### Fixed
+- `stylua.toml`'s `line_endings` was `"Windows"`, but every file git
+  actually stores is LF (`git ls-files --eol`) — the previous "`stylua
+  --check .` is green" reading had only ever checked a Windows working copy
+  that `core.autocrlf` converts to CRLF on checkout, not what CI (or
+  `autocrlf=false`) sees. Fixed to `"Unix"`; two real formatting diffs that
+  mismatch had been masking (`fetcher.lua`, `retention.lua`) fixed too.
+- `date_presets.lua`'s `M.list()`/`M.resolve()` treated "`config.init()`
+  hasn't run yet" as "date presets disabled" instead of falling back to
+  `DEFAULT_CONFIG`, the way `config.get_retention()`/
+  `get_notification_level()` already do — found by finally getting the test
+  runner working.
+- `tests/dashboard_spec.lua`'s sparkline-width assertion compared byte
+  length (`#sparkline`) against a string of 3-byte-per-glyph UTF-8
+  characters; fixed to `vim.fn.strchars()`.
+- Two broken `require()` paths in `tests/dashboard_spec.lua`
+  (`dashboard.renderer`, `dashboard.navigator` — neither module exists)
+  rewritten to test the real modules (`dashboard.render`,
+  `bindings.keymaps`).
+
+### Changed
+- `config.lua` → `config/init.lua` + `config/DEFAULTS.lua`;
+  `usercommands/`/`dashboard/keymaps.lua` →
+  `bindings/{usrcmds,keymaps,autocmds}`.
+- Removed `dashboard/movement.lua`'s dead, independently-buggy
+  `move_to_index`/`move_down`/`move_up`/`move_first`/`move_last` code path
+  (a third, never-called hardcoded line-height formula) rather than fixing
+  it — nothing in the plugin called it.
+
+### Documentation
+- `docs/devs/navigator.lua.md` removed — documented a `dashboard.navigator`
+  module that was never actually built that way (superseded by
+  `bindings/keymaps.lua`); the wrong `require()` paths above are exactly the
+  kind of confusion stale documentation like this causes.
+- `docs/ROADMAP.md` trimmed to open items only (currently none). Shipped
+  behavior moved to [`docs/FEATURES.md`](../FEATURES.md); speculative,
+  undecided feature designs moved to
+  [`docs/ROADMAP/IDEAS/IDEAS.md`](../ROADMAP/IDEAS/IDEAS.md).
+- Two more real doc bugs fixed in `docs/DASHBOARD.md`: a fabricated
+  "60 second cache" claim with no matching code, and a `luarepos`
+  typo/broken code fence.
+
+---
 
 ## [2.0.0] - 2025-12-23
 
