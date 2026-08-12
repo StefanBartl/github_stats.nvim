@@ -192,8 +192,11 @@ Lücken sind inzwischen behoben:
 3. ~~**Tests referenzieren teils nicht-existente Module / kein lauffähiger
    Test-Runner**~~ — behoben: `scripts/test.sh` (`PlenaryBustedDirectory` via
    `scripts/minimal_init.lua`) läuft die volle Suite grün (54/54). Zwei
-   dadurch aufgedeckte echte Bugs sind mitbehoben —
-   [ROADMAP.md](../ROADMAP.md#resolved-housekeeping) hat die Details. Siehe
+   dadurch aufgedeckte echte Bugs sind mitbehoben: `date_presets.lua`s
+   `M.list()`/`M.resolve()` fielen bei noch nicht gelaufenem `config.init()`
+   auf "Presets deaktiviert" zurück statt (wie `get_retention()`/
+   `get_notification_level()`) auf `DEFAULT_CONFIG`; ein Sparkline-Test
+   verwechselte Byte- mit Zeichenlänge. Siehe
    [Checklist.md](./Checklist.md#schnell-check-10-punkte), Punkt 9.
 
 Alles andere (Performance-Mikro-Optimierung, Weak Tables, strukturierte
