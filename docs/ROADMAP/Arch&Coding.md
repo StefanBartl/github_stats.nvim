@@ -68,7 +68,7 @@ lösen dasselbe Problem einfacher. N/A bis auf Weiteres.
 | Explizite Typisierungen (`@alias`, `@field`) | ✅ (`@types/*.lua`) |
 | `@see`-Verlinkung | ❌ nicht genutzt |
 | `@error`/`@raises` | ❌ nicht genutzt — vertretbar, da Fehler durchgängig als zweiter Rückgabewert (`nil, err`) modelliert sind, nicht als `error()`/`raise` |
-| Subverzeichnis → eigener `/types`-Ordner pro Ebene | ❌ **Gap.** Es gibt genau einen flachen `lua/github_stats/@types/`-Ordner für das ganze Plugin, nicht pro Subverzeichnis (`dashboard/`, `bindings/`, `state/`) einen eigenen. Bei der aktuellen Modulzahl (< 30 Dateien) ist das noch überschaubar; wird `dashboard/` weiter wachsen, lohnt sich ein `dashboard/@types/init.lua` nach dem in der Quelldatei gezeigten Gruppierungs-Stil (`--- ### Xy.lua`-Kommentarblöcke pro Quelldatei). |
+| Subverzeichnis → eigener `/types`-Ordner pro Ebene | ✅ Behoben. `dashboard/@types/init.lua` (`DashboardState`, `DashboardKeybindings`, `DashboardConfig`) und `state/@types/init.lua` (`UIState`) tragen jetzt die Typen der jeweiligen Subverzeichnisse; `lua/github_stats/@types/` (`init.lua`, `gh_api.lua`, `metrics.lua`) hält nur noch das, was tatsächlich modulübergreifend ist (Setup-Optionen, rohe GitHub-API-Shapes, Metrik-/Retention-Typen — genutzt von `api.lua`, `storage.lua`, `analytics.lua`, `fetcher.lua`, `retention.lua`, `export.lua`, `diff.lua`, keiner davon in einem eigenen Subverzeichnis). `bindings/` bekam absichtlich keinen eigenen `@types`-Ordner — es hat aktuell keine eigenen Typen, nur Verweise auf `GHStats.SetupOptions` aus der Root. |
 
 Für Neovim-Config-Module gilt zusätzlich: README (deutsch) + `/doc/*.txt`
 (englisch) pro Modul. Für ein eigenständiges Plugin-Repo wie github_stats.nvim
@@ -169,10 +169,9 @@ diesem exakten Kategorienschema benannt. 🟡 gut genug, keine Umsortierung nöt
 
 ## `types-file`-Demo
 
-Siehe Gap unter Abschnitt 5 (Dokumentation) — flacher statt pro-Ebene
-`@types`-Ordner. Der in der Quelldatei gezeigte Gruppierungs-Stil
-(`--- #### Xy.lua`-Kommentarblöcke innerhalb einer `types/init.lua`) ist eine
-gute Vorlage, falls/wenn dieser Ordner pro Subverzeichnis aufgesplittet wird.
+Siehe Abschnitt 5 (Dokumentation) — der vormals flache `@types`-Ordner ist
+jetzt pro Subverzeichnis aufgesplittet (`dashboard/@types/`, `state/@types/`),
+Root-`@types/` bleibt für modulübergreifende Typen.
 
 ---
 
@@ -180,14 +179,21 @@ gute Vorlage, falls/wenn dieser Ordner pro Subverzeichnis aufgesplittet wird.
 
 github_stats.nvim erfüllt die praktisch relevanten Sicherheits-, Struktur- und
 Dokumentations-Regeln bereits weitgehend (Fehlerbehandlung, Buffer/Window-
-Management, UI-State, Annotationen). Die drei konkreten, umsetzbaren Lücken:
+Management, UI-State, Annotationen). Die drei zuvor hier geführten konkreten
+Lücken sind inzwischen behoben:
 
-1. **Kein Formatter/Linter** (stylua/luacheck) im Repo/CI — siehe
+1. ~~**Kein Formatter/Linter** (stylua/luacheck) im Repo/CI~~ — behoben:
+   `.github/workflows/ci.yml` läuft `stylua --check .`, `luacheck .` und
+   `scripts/test.sh` auf jedem Push/PR. Siehe
    [Checklist.md](./Checklist.md#7-tooling).
-2. **Flacher statt geschachtelter `@types`-Ordner** — nur relevant, falls
-   `dashboard/` oder `bindings/` deutlich weiterwachsen.
-3. **Tests referenzieren teils nicht-existente Module** und es gibt keinen
-   lauffähigen Test-Runner lokal/in CI — siehe
+2. ~~**Flacher statt geschachtelter `@types`-Ordner**~~ — behoben:
+   `dashboard/@types/` und `state/@types/` tragen jetzt ihre eigenen Typen,
+   Root-`@types/` nur noch das modulübergreifende.
+3. ~~**Tests referenzieren teils nicht-existente Module / kein lauffähiger
+   Test-Runner**~~ — behoben: `scripts/test.sh` (`PlenaryBustedDirectory` via
+   `scripts/minimal_init.lua`) läuft die volle Suite grün (54/54). Zwei
+   dadurch aufgedeckte echte Bugs sind mitbehoben —
+   [ROADMAP.md](../ROADMAP.md#resolved-housekeeping) hat die Details. Siehe
    [Checklist.md](./Checklist.md#schnell-check-10-punkte), Punkt 9.
 
 Alles andere (Performance-Mikro-Optimierung, Weak Tables, strukturierte
