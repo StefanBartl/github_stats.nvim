@@ -185,8 +185,12 @@ describe("dashboard renderer", function()
       local data = { 10, 20, 30, 40, 50 }
       local sparkline = visualization.generate_sparkline(data, 5)
 
+      -- `#sparkline` is a byte count, and each sparkline glyph
+      -- (SPARKLINE_CHARS in visualization.lua) is a 3-byte UTF-8 block
+      -- character -- 5 data points is legitimately 15 bytes but must still
+      -- be exactly 5 *characters* wide.
       ---@diagnostic disable-next-line: undefined-field
-      assert.equals(5, #sparkline)
+      assert.equals(5, vim.fn.strchars(sparkline))
     end)
   end)
 

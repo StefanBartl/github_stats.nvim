@@ -59,8 +59,7 @@ local function load_archive(dir, metric)
   return {
     timestamp = tostring(os.date("!%Y-%m-%dT%H:%M:%SZ")),
     data = { [metric] = {} },
-  },
-    path
+  }, path
 end
 
 ---Compact one repo/metric pair. Only meaningful for "clones"/"views" --

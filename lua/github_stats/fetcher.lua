@@ -195,7 +195,13 @@ function M.fetch_all(force, callback, opts)
           )
         end
         if vim.tbl_count(retention_summary.errors) > 0 then
-          config.notify(str_format("[github-stats] Retention had %d error(s), see :GithubStats debug", vim.tbl_count(retention_summary.errors)), "warn")
+          config.notify(
+            str_format(
+              "[github-stats] Retention had %d error(s), see :GithubStats debug",
+              vim.tbl_count(retention_summary.errors)
+            ),
+            "warn"
+          )
         end
       end
 

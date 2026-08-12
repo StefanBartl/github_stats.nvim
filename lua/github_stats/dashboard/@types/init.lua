@@ -1,4 +1,12 @@
----@module 'github_stats.@types.dashboard'
+---@module 'github_stats.dashboard.@types'
+---@brief Type definitions for the dashboard/ subtree
+---@description
+--- Moved out of the flat `lua/github_stats/@types/` into a per-subdirectory
+--- folder, per Arch&Coding.md's documented gap: dashboard/ is the one
+--- subdirectory big enough (state.lua, render.lua, actions.lua, movement.lua,
+--- detail.lua, layout.lua, init.lua) to justify owning its types instead of
+--- sharing the plugin-wide folder. Consumed by dashboard/state.lua,
+--- dashboard/render.lua, dashboard/actions.lua, dashboard/movement.lua.
 
 ---@class GHStats.DashboardState
 ---@field repos string[] List of repository identifiers

@@ -4,13 +4,14 @@ GitHub Stats collects GitHub traffic data (clones, views, referrers, paths)
 for a set of repositories, stores it locally as JSON, and exposes it through
 commands, an interactive dashboard, charts, exports, and diagnostics. Every
 entry below is verified against the current source under `lua/github_stats/`
-— several items that appear in [`docs/ROADMAP.md`](ROADMAP.md) (Notification
+— several items that appear in
+[`docs/ROADMAP/IDEAS/IDEAS.md`](ROADMAP/IDEAS/IDEAS.md) (Notification
 Thresholds, Comparison Baseline, Interactive Chart Navigation, Repository
 Groups/Tags, Export Templates, Autocomplete Date Suggestions, Fetch Progress
 Indicators for many-repo runs, Webhook Integration) are **planned, not
 implemented** — there is no `thresholds.lua`, no `:GithubStatsBaseline*`
 command, no `groups.lua`, and no webhook module anywhere in `lua/`. They are
-intentionally left out of this file; see the roadmap for their design notes.
+intentionally left out of this file; see that file for their design notes.
 
 ## Interactive dashboard
 
@@ -38,8 +39,8 @@ Period, separator) as the single constant every line-math consumer uses.
 replaced three independent hardcoded line-height formulas (`* 6` in two
 places, `2 + 3*N` in a dead code path since removed) that used to drift out
 of sync with each other and cut off the last dashboard entry when scrolled —
-see [ROADMAP.md — Priority 0](ROADMAP.md#priority-0--bugs) for the fix
-history.
+see [ROADMAP.md — Resolved Housekeeping](ROADMAP.md#resolved-housekeeping)
+for the fix history.
 
 ### Sorting and time range
 

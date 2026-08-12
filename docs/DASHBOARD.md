@@ -211,7 +211,11 @@ dashboard = {
 
 ### Many Repositories (50+)
 
-The dashboard caches statistics for 60 seconds to improve performance.
+The dashboard always renders from the on-disk data written by the last
+`:GithubStats fetch` — there is no separate in-memory cache layer with its
+own TTL. Rendering itself is debounced (`RENDER_DEBOUNCE_MS = 50` in
+`dashboard/init.lua`), so rapid re-renders (e.g. repeated navigation) don't
+each trigger a full redraw.
 
 **Recommendations:**
 - Use longer refresh intervals (`refresh_interval_seconds = 600` for 10 minutes)
@@ -251,7 +255,7 @@ dashboard = {
 **Solution:**
 
 ```lua
-luarepos = {
+repos = {
   "username/repo1",
   "username/repo2",
 }

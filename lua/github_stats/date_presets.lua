@@ -167,9 +167,13 @@ end
 ---@return string[] # Array of preset names
 function M.list()
   local config = require("github_stats.config")
-  local cfg = config.get()
+  -- Same fallback `config/init.lua`'s own `get_retention()`/
+  -- `get_notification_level()` already use: `config.get()` is nil until
+  -- `M.init()` has run, and date presets are enabled by default, so "not
+  -- initialized yet" must not read as "disabled".
+  local cfg = config.get() or require("github_stats.config.DEFAULTS")
 
-  if not cfg or not cfg.date_presets or not cfg.date_presets.enabled then
+  if not cfg.date_presets or not cfg.date_presets.enabled then
     return {}
   end
 
@@ -204,9 +208,11 @@ function M.resolve(preset_name)
   end
 
   local config = require("github_stats.config")
-  local cfg = config.get()
+  -- See M.list() above for why this falls back to DEFAULT_CONFIG instead of
+  -- treating "config.init() hasn't run yet" as "disabled".
+  local cfg = config.get() or require("github_stats.config.DEFAULTS")
 
-  if not cfg or not cfg.date_presets or not cfg.date_presets.enabled then
+  if not cfg.date_presets or not cfg.date_presets.enabled then
     return nil, nil, "Date presets are disabled"
   end
 

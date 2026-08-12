@@ -26,7 +26,7 @@ gerechtfertigt.
 | 6 | UI-Cleanup (`cleanup_all()`) | ✅ | `ui_state.cleanup_all()` + `dashboard/init.lua`s `cleanup_dashboard()`; in dieser Session wurde `M.close()` genau darauf vereinheitlicht (vorher zwei divergierende Teardown-Pfade, einer davon crash-anfällig). |
 | 7 | Performance-Hotspots (`table.concat`, Vorreservierung) | 🟡 | `table.concat` wird genutzt (`storage.lua`, `analytics.lua`); Tabellen-Vorreservierung nirgends — bei den tatsächlichen Datenmengen (≤ einige hundert Einträge) kein messbarer Effekt zu erwarten. |
 | 8 | Annotationen vollständig | ✅ | `@module`/`@brief`/`@description` konsequent pro Datei, `@param`/`@return` an praktisch jeder Funktion. |
-| 9 | Testbarkeit | 🟡 | Tests vorhanden (`lua/github_stats/tests/**`); die falschen `require()`-Pfade (`dashboard.renderer`/`dashboard.navigator` statt `dashboard.render`/`bindings.keymaps`) wurden in dieser Session gefixt. Weiterhin kein `busted`/`plenary`-Runner lokal verfügbar, um die Specs tatsächlich grün laufen zu lassen — nur per `require()`-Smoke-Test (alle 45 Produktionsmodule laden ohne Fehler) verifiziert. |
+| 9 | Testbarkeit | ✅ | Tests vorhanden (`lua/github_stats/tests/**`), `scripts/test.sh` läuft sie über einen echten `busted`/`plenary`-Runner (`scripts/minimal_init.lua`, `.deps/lib.nvim` + `.deps/plenary.nvim` in CI). Volle Suite grün (54/54) — dabei zwei echte Bugs aufgedeckt und gefixt: `date_presets.lua`'s `M.list()`/`M.resolve()` behandelten "config.init() noch nicht gelaufen" wie "Presets deaktiviert" statt (wie `get_retention()`/`get_notification_level()` es bereits tun) auf `DEFAULT_CONFIG` zurückzufallen; ein Sparkline-Test verwechselte Byte- mit Zeichenlänge (`#sparkline` bei 3-Byte-UTF-8-Zeichen). |
 | 10 | Import-Reihenfolge | 🟡 | Nicht strikt System→Debug→Utils→State→UI→Controller→Keymaps, aber konsistent und nachvollziehbar pro Datei (z. B. `bindings/keymaps.lua`: config → state → movement/render → ui_state → detail → actions). |
 
 **Bonuspunkt `lib.nvim`:** ✅ genutzt (`dependencies = { "StefanBartl/lib.nvim" }`;
@@ -85,9 +85,10 @@ note in [Zentral-Prinzipien.md](./Zentral-Prinzipien.md) predates this and is st
 
 - ✅ Kopf-Tags durchgängig.
 - ✅ Funktions-Tags durchgängig (`@param`, `@return`).
-- ✅ Eigene `@types/`-Ordner-Struktur — allerdings **flach** (ein Ordner für
-  das ganze Plugin), nicht "pro Subverzeichnis ein eigener `types`-Ordner"
-  wie in `Arch&Coding.md` gefordert. Siehe dortige Bewertung.
+- ✅ Eigene `@types/`-Ordner-Struktur, jetzt **pro Subverzeichnis**
+  (`dashboard/@types/`, `state/@types/`, Root-`@types/` für das
+  Modulübergreifende) statt eines einzigen flachen Ordners. Siehe
+  `Arch&Coding.md`.
 
 ### 6. Testbarkeit und Lesbarkeit
 
@@ -96,16 +97,17 @@ note in [Zentral-Prinzipien.md](./Zentral-Prinzipien.md) predates this and is st
   aber Mocking in Tests umständlicher (die vorhandenen Tests behelfen sich
   mit direktem Monkey-Patching von `config.get`/`config.get_repos`).
 - ✅ Mehrere reine Funktionen vorhanden (`analytics.lua`s Aggregationslogik).
-- ❌ Kein separater Test-Entrypoint (`tools/_test`-Äquivalent).
+- ✅ Separater Test-Entrypoint: `scripts/test.sh` (busted/plenary via
+  `scripts/minimal_init.lua`), volle Suite grün (54/54).
 
 ### 7. Tooling
 
 - ✅ `.luarc.json` vorhanden mit `diagnostics.globals = ["vim", "describe", "it", ...]`
   und `workspace.library` für `luv`/`busted`.
-- ✅ `stylua.toml` und `.luacheckrc` in dieser Session ergänzt (fehlten vorher
-  vollständig); `stylua --check .` und `luacheck .` laufen beide grün. Kein
-  CI-Workflow vorhanden, der das automatisch durchsetzt (kein `.github/workflows/`
-  im Repo) — offen.
+- ✅ `stylua.toml` und `.luacheckrc` vorhanden; `stylua --check .` und
+  `luacheck .` laufen beide grün. `.github/workflows/ci.yml` setzt beide
+  sowie `scripts/test.sh` auf jedem Push/PR durch — vorher war keiner der
+  drei automatisiert, jetzt alle drei.
 
 ---
 
@@ -125,4 +127,4 @@ note in [Zentral-Prinzipien.md](./Zentral-Prinzipien.md) predates this and is st
 |---|---|
 | Import-Reihenfolge | 🟡 nicht strikt normiert, aber konsistent |
 | Datei-Header | ✅ vorhanden |
-| Typ-Ablage (`@types`-Ordner) | 🟡 vorhanden, aber flach statt pro Ebene — siehe `Arch&Coding.md` |
+| Typ-Ablage (`@types`-Ordner) | ✅ pro Subverzeichnis (`dashboard/@types/`, `state/@types/`, Root für Modulübergreifendes) — siehe `Arch&Coding.md` |

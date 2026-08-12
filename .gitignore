@@ -42,3 +42,6 @@ luac.out
 
 
 doc/tags
+
+# scripts/minimal_init.lua's local-checkout fallback for lib.nvim/plenary.nvim
+/.deps/
