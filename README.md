@@ -75,7 +75,8 @@ Then try it out:
 - [Performance](docs/performance.md) — storage footprint, fetch timings, and rate limits.
 - [Cross-Platform Support](docs/cross-platform.md) — Windows, macOS, and Linux specifics.
 - [Architecture](docs/architecture.md) — on-disk data layout and GitHub API endpoints used.
-- [Roadmap](docs/ROADMAP.md) — planned features and housekeeping.
+- [Features](docs/FEATURES.md) — dev-facing catalog of every shipped feature, verified against current source.
+- [Roadmap](docs/ROADMAP.md) — what's actually open, nothing else.
 
 ---
 

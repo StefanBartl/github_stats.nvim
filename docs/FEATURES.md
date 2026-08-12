@@ -26,7 +26,14 @@ views, and a trend indicator, opened with `:GithubStats dashboard`. `!`
 (`:GithubStats! dashboard`) forces a refresh from the GitHub API before
 opening instead of rendering from cache — the bang binds to the verb, not the
 `dashboard` subcommand, so it's the only place in the command tree the bang
-appears.
+appears. (The bang used to be a no-op — captured but never passed through to
+`dashboard.open()` — until `open()` grew the parameter to actually act on it.)
+
+`dashboard.close()` is the one teardown path, called by `q`/`<Esc>`, the
+force-refresh callback, and the bang's own re-open cycle alike — it used to
+crash when called with no arguments (the only way anything ever called it)
+because of a second, divergent teardown path; both are now unified onto
+`cleanup_dashboard()`.
 
 ### Rendering: one source of truth for line height
 
@@ -37,10 +44,13 @@ Period, separator) as the single constant every line-math consumer uses.
 `render.lua`'s `set_cursor_to_current` (via
 `dashboard_state.get_repo_line(state.current_index)`) all read from it. This
 replaced three independent hardcoded line-height formulas (`* 6` in two
-places, `2 + 3*N` in a dead code path since removed) that used to drift out
-of sync with each other and cut off the last dashboard entry when scrolled —
-see [ROADMAP.md — Resolved Housekeeping](ROADMAP.md#resolved-housekeeping)
-for the fix history.
+places, `2 + 3*N` in a dead, never-called code path in `movement.lua` that
+was removed rather than fixed) that used to drift out of sync with each
+other and cut off the last dashboard entry when scrolled.
+`render.lua`'s `set_cursor_to_current` used to have its own fourth formula
+(`5 * state.current_index`); it now calls the same
+`dashboard_state.get_repo_line(state.current_index)` everything else does,
+so there's exactly one place that answers "which line is repo N on."
 
 ### Sorting and time range
 
@@ -230,11 +240,14 @@ value. See [USER-DEFINED-DATE-PRESETS.md](configurations/USER-DEFINED-DATE-PRESE
 Two interchangeable configuration methods with a fixed precedence:
 `setup({ repos = {...} })` opts (highest) over a `config.json` in
 `config_dir` (created with defaults on first run if neither is supplied)
-over `config/DEFAULTS.lua`'s built-in defaults. `notification_level`
-(`"all"` / `"errors"` / `"silent"`) gates every `config.notify()` call
-plugin-wide — `"errors"` shows only `warn`/`error` level notifications,
-`"silent"` shows none (diagnostics remain available via `:GithubStats
-debug`).
+over `config/DEFAULTS.lua`'s built-in defaults. (`M.init()` used to ignore
+`opts` entirely and always fall through to `config.json`/defaults, silently
+breaking the documented `setup({ repos = {...} })` usage pattern — it now
+forwards `opts` as the top of that precedence chain, as documented.)
+`notification_level` (`"all"` / `"errors"` / `"silent"`) gates every
+`config.notify()` call plugin-wide — `"errors"` shows only `warn`/`error`
+level notifications, `"silent"` shows none (diagnostics remain available via
+`:GithubStats debug`).
 
 ## Diagnostics: `:GithubStats debug` and `:checkhealth`
 
