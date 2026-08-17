@@ -14,7 +14,7 @@
 ![Neovim](https://img.shields.io/badge/Neovim-0.9+-success.svg)
 ![Lua](https://img.shields.io/badge/language-Lua-yellow.svg)
 
-A Neovim plugin for automatic collection and analysis of GitHub repository traffic statistics. It silently collects clones, views, referrers, and paths in the background, stores the history locally as JSON, and gives you commands, charts, exports, and an interactive dashboard to explore it.
+A Neovim plugin for automatic collection and analysis of GitHub repository traffic statistics. It silently collects clones, views, referrers, and paths in the background, stores the history locally as JSON with automatic archiving/pruning to keep it bounded, and gives you commands, charts, period-over-period diffs, CSV/Markdown/PDF exports, and an interactive dashboard to explore it.
 
 > Looking for a quicker way to jump between your repositories from within Neovim? Check out [reposcope.nvim](https://github.com/StefanBartl/reposcope.nvim), a Telescope-based repository browser/switcher that pairs well with the traffic insights this plugin collects.
 

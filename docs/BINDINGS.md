@@ -38,6 +38,7 @@ commands into one verb moves it there).
 | `:GithubStats chart` | `{repo} {clones\|views\|both} [start] [end]` | ASCII sparkline/comparison chart |
 | `:GithubStats export` | `{repo\|all} {clones\|views\|both} {filepath}` | Export to CSV, Markdown, or PDF (`.pdf` needs pdfport.nvim) |
 | `:GithubStats diff` | `{repo} {metric} {period1} {period2}` | Compare two periods |
+| `:GithubStats compact` | `[dry-run]` | Archive old clones/views data and prune stale referrers/paths snapshots (use `dry-run` to preview) |
 | `:GithubStats debug` | – | Print configuration/token/last-fetch diagnostics |
 | `:GithubStats[!] dashboard` | – | Open the dashboard (`!` requests a forced refresh) |
 

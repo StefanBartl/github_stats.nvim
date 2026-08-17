@@ -19,7 +19,9 @@ configuration.
 - [GithubStats chart](#githubstats-chart)
 - [GithubStats export](#githubstats-export)
 - [GithubStats diff](#githubstats-diff)
+- [GithubStats compact](#githubstats-compact)
 - [GithubStats debug](#githubstats-debug)
+- [GithubStats dashboard](#githubstats-dashboard)
 - [Common Patterns](#common-patterns)
 
 ---
@@ -36,7 +38,9 @@ configuration.
 | `:GithubStats chart` | Visual charts and sparklines | Repos, metrics |
 | `:GithubStats export` | Export to CSV/Markdown/PDF (clones/views/both) | Repos, metrics, paths |
 | `:GithubStats diff` | Period-over-period comparison | Repos, metrics, periods |
+| `:GithubStats compact` | Archive old data, prune stale snapshots | `dry-run` |
 | `:GithubStats debug` | Diagnostic information | None |
+| `:GithubStats[!] dashboard` | Open the interactive traffic dashboard | None |
 
 ---
 
@@ -713,6 +717,47 @@ Changes:
 
 ---
 
+## GithubStats compact
+
+**Usage:**
+```vim
+:GithubStats compact [dry-run]
+```
+
+**Description:**
+
+Bounds on-disk storage growth. For `clones`/`views`, once a calendar day
+falls outside the retention window (`opts.retention.cutoff_days`, default
+`15`, minimum enforced `14` to match GitHub's own rolling 14-day traffic
+window), its deduplicated `{count, uniques}` is folded into a per-repo/metric
+`_archive.json` file and the now-redundant raw fetch files are deleted. For
+`referrers`/`paths` (where only the latest snapshot is ever read), files
+older than `opts.retention.prune_days` (default `15`) are deleted outright,
+always keeping the newest. Runs automatically at most once per 24h after a
+fetch (`opts.retention.enabled`, default `true`); this command runs it
+on demand.
+
+**Arguments:**
+- `dry-run` (optional) – Reports would-be archived/deleted counts and freed bytes without touching disk
+
+**Autocompletion:**
+- `dry-run` keyword
+
+**Examples:**
+```vim
+" Preview what would be archived/pruned
+:GithubStats compact dry-run
+
+" Run archiving/pruning now
+:GithubStats compact
+```
+
+**Related:**
+- See [Configuration Guide](configurations/INTRO.md) for `opts.retention`
+- See [Features](FEATURES.md#data-retention-archive-and-prune) for the full retention model
+
+---
+
 ## GithubStats debug
 
 **Usage:**
@@ -818,6 +863,32 @@ Success! Sample data:
 - `:checkhealth github_stats` for comprehensive health check
 - `:messages` to view all Neovim messages
 - [Troubleshooting Guide](TROUBLESHOOTING.md)
+
+---
+
+## GithubStats dashboard
+
+**Usage:**
+```vim
+:GithubStats dashboard
+:GithubStats! dashboard
+```
+
+**Description:**
+
+Opens the interactive full-buffer traffic dashboard, listing every
+configured repository with per-repo clones, views, and a trend indicator.
+The bang (`:GithubStats! dashboard`) forces a refresh from the GitHub API
+before opening instead of rendering from cache — it attaches to the verb,
+not the `dashboard` subcommand, since composer only supports one bang slot
+per command.
+
+Full keybindings, sorting/time-range controls, and configuration are covered
+separately.
+
+**Related:**
+- [Dashboard Guide](DASHBOARD.md) — keybindings, sorting, time ranges, configuration
+- [Bindings Reference](BINDINGS.md#dashboard-keymaps) — dashboard keymap table
 
 ---
 
