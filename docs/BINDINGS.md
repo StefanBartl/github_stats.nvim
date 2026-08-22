@@ -65,8 +65,9 @@ Defaults come from [`lua/github_stats/config/DEFAULTS.lua`](../lua/github_stats/
 | `refresh_all` | `R` | Force-fetch all configured repositories from GitHub, then re-render |
 | `force_refresh` | `f` | Force-fetch the selected repository from GitHub, then re-render |
 | `cycle_sort` | `s` | Cycle sort criteria: `clones` → `views` → `name` → `trend` |
-| `cycle_time_range` | `t` | Cycle time range: `7d` → `30d` → `90d` → `all` |
+| `cycle_time_range` | `t` | Cycle time range: `7d` → `30d` → `90d` → `max` |
 | `custom_time_range` | `T` | Prompt for a free-form time range expression (e.g. `3m`, `since:2025-01-01`, a date preset name) |
+| `max_time_range` | `m` | Set the range to `max`: the longest duration the locally stored data covers, and notify the concrete span |
 | `quit` | `q` | Close the dashboard |
 | `show_help` | `?` | Show the keybinding help overlay |
 
@@ -77,7 +78,13 @@ cycle keys just advance that state. `custom_time_range` instead prompts via
 `vim.fn.input()` for a free-form expression, validated against
 [`analytics.parse_time_range`](../lua/github_stats/analytics.lua) before being
 applied -- an unrecognized expression is rejected with an error notification
-and the previous range is kept. `refresh_all`/`force_refresh` are
+and the previous range is kept. `max_time_range` is the one-keypress route to
+the other end of that scale: it sets the range to `max` (no filtering, i.e.
+everything left on disk after retention -- `all` remains an accepted synonym)
+and notifies the span it resolved to, e.g. `2025-03-04 to 2026-08-22, 172
+days`. The dashboard header prints that same resolved span next to whatever
+range is active, so "how much history am I actually looking at?" is always
+answered on screen. `refresh_all`/`force_refresh` are
 implemented in
 [`lua/github_stats/dashboard/actions.lua`](../lua/github_stats/dashboard/actions.lua)
 and go through [`lua/github_stats/fetcher.lua`](../lua/github_stats/fetcher.lua)

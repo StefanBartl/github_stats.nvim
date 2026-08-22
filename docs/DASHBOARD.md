@@ -83,7 +83,29 @@ Press `t` to cycle through the fixed quick-access ranges:
 1. **7d** - Last 7 days
 2. **30d** - Last 30 days (default)
 3. **90d** - Last 90 days
-4. **all** - All available data
+4. **max** - The maximum duration the stored data covers
+
+Press `m` to jump straight to **max** without stepping through the cycle. It
+also notifies the concrete window it resolved to, e.g.:
+
+```
+[github-stats] Time range: max (2025-03-04 to 2026-08-22, 172 days)
+```
+
+`max` applies no date filter at all, so it shows everything still on disk
+after [retention](architecture.md) has compacted and pruned. `all` is an
+accepted synonym (in `setup()` and at the `T` prompt); `max` is simply the
+label the cycle and the `m` key use, and the one the header annotates with
+the resolved span.
+
+Whatever range is active, the header's status line prints the window it
+actually resolved to:
+
+```
+║  Sort:clones   Range:max (2025-03-04 -> 2026-08-22, 89 days)           ║
+```
+
+With nothing fetched yet it reads `(no data)`.
 
 Press `T` to type an arbitrary range instead, via a prompt pre-filled with
 the current value. Accepted forms:
@@ -96,7 +118,7 @@ the current value. Accepted forms:
 | `Ny` | ~N years back, 365-day approximation (e.g. `2y`) |
 | `since:YYYY-MM-DD` | That date through today |
 | `YYYY-MM-DD` | Same as `since:YYYY-MM-DD` |
-| `all` | No filtering |
+| `all` / `max` | No filtering — the maximum stored duration |
 | any [date preset](configurations/USER-DEFINED-DATE-PRESETS.md) name | Built-in (`this_month`, `this_year`, `last_quarter`, ...) or user-custom |
 
 ```vim
@@ -151,8 +173,9 @@ refresh_interval_seconds = 0
 | `R` | Force-fetch all repositories |
 | `f` | Force-fetch selected repository |
 | `s` | Cycle sort criteria (clones → views → name → trend) |
-| `t` | Cycle time range (7d → 30d → 90d → all) |
+| `t` | Cycle time range (7d → 30d → 90d → max) |
 | `T` | Enter a custom time range (e.g. `3m`, `since:2025-01-01`) |
+| `m` | Set the maximum time range (full stored history) |
 | `?` | Show help overlay |
 | `q` / `<Esc>` | Quit dashboard |
 
@@ -172,8 +195,8 @@ require("github_stats").setup({
     enabled = true,
     auto_open = false,
     refresh_interval_seconds = 300,
-    sort_by = "clones",
-    time_range = "30d",
+    sort_by = "clones",   -- applied when the dashboard opens
+    time_range = "30d",   -- "7d"/"30d"/"90d"/"max"/"all" or any T-prompt expression
     theme = "default", -- Reserved for future use
     keybindings = {
       navigate_down = "j",
@@ -185,6 +208,7 @@ require("github_stats").setup({
       cycle_sort = "s",
       cycle_time_range = "t",
       custom_time_range = "T",
+      max_time_range = "m",
       show_help = "?",
       quit = "q",
     },

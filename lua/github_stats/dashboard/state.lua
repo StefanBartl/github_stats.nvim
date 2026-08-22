@@ -10,9 +10,19 @@ local M = {}
 local state = nil
 
 ---Initialize dashboard state
+---@description
+--- `sort_by`/`time_range` start from the user's `dashboard.*` configuration
+--- (falling back to config/DEFAULTS.lua), not from hardcoded literals -- both
+--- options were documented and merged into the config but never actually read
+--- here, so configuring them had no effect until the dashboard was opened and
+--- cycled by hand.
 ---@param repos string[] List of repositories
 ---@return GHStats.DashboardState
 function M.init_state(repos)
+  local DEFAULTS = require("github_stats.config.DEFAULTS")
+  local cfg = require("github_stats.config").get() or DEFAULTS
+  local dashboard_cfg = cfg.dashboard or DEFAULTS.dashboard
+
   state = {
     repos = repos,
     current_index = 1,
@@ -21,8 +31,8 @@ function M.init_state(repos)
     max_scroll = 0,
     last_render_time = 0,
     selected_index = 1, -- NEU: Initially same as current_index
-    sort_by = "name", -- NEU: Default sort by name
-    time_range = "30d", -- NEU: Default 30 days
+    sort_by = dashboard_cfg.sort_by or DEFAULTS.dashboard.sort_by,
+    time_range = dashboard_cfg.time_range or DEFAULTS.dashboard.time_range,
     is_open = false, -- NEU: Will be set to true after window opens
     last_refresh = os.time(), -- NEU: Current timestamp
     auto_refresh_timer = nil, -- NEU: No auto-refresh by default

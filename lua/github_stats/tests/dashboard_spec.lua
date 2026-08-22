@@ -45,6 +45,51 @@ describe("dashboard", function()
     end)
   end)
 
+  describe("state defaults", function()
+    local tmp_dir
+
+    before_each(function()
+      for _, name in ipairs({ "github_stats.config", "github_stats.dashboard.state" }) do
+        package.loaded[name] = nil
+      end
+      tmp_dir = vim.fn.tempname()
+      vim.fn.delete(tmp_dir, "rf")
+    end)
+
+    after_each(function()
+      vim.fn.delete(tmp_dir, "rf")
+      package.loaded["github_stats.config"] = nil
+      package.loaded["github_stats.dashboard.state"] = nil
+    end)
+
+    it("takes sort_by and time_range from the configuration, not hardcoded literals", function()
+      require("github_stats.config").init({
+        config_dir = tmp_dir,
+        repos = { "user/repo1" },
+        dashboard = { sort_by = "trend", time_range = "max" },
+      })
+
+      local state = require("github_stats.dashboard.state").init_state({ "user/repo1" })
+
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals("trend", state.sort_by)
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals("max", state.time_range)
+    end)
+
+    it("falls back to the shipped defaults when nothing is configured", function()
+      require("github_stats.config").init({ config_dir = tmp_dir, repos = { "user/repo1" } })
+
+      local DEFAULTS = require("github_stats.config.DEFAULTS")
+      local state = require("github_stats.dashboard.state").init_state({ "user/repo1" })
+
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals(DEFAULTS.dashboard.sort_by, state.sort_by)
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals(DEFAULTS.dashboard.time_range, state.time_range)
+    end)
+  end)
+
   describe("sorting", function()
     it("sorts repositories by name", function()
       -- local repos = { "user/zebra", "user/alpha", "user/beta" }

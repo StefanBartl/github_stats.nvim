@@ -166,7 +166,7 @@ end
 ---@internal
 ---Parse a flexible time range expression into start/end ISO dates.
 ---Recognized forms:
----  - "all" -- no filtering
+---  - "all" / "max" -- no filtering, i.e. the maximum locally stored duration
 ---  - "Nd" / "Nw" / "Nm" / "Ny" -- N days/weeks/~months(30d)/~years(365d) back from today
 ---  - "since:YYYY-MM-DD" or a bare "YYYY-MM-DD" -- that date through today
 ---  - "last week" / "last month" / "last quarter" -- legacy phrase aliases
@@ -179,7 +179,11 @@ local function parse_time_range(time_range)
   local now = os.time()
   local today = tostring(os.date("!%Y-%m-%d", now))
 
-  if time_range == "all" then
+  -- "max" is an alias of "all": both mean "do not filter", i.e. everything
+  -- that is still on disk after retention. They differ only in how the
+  -- dashboard labels them -- "max" additionally reports the concrete span
+  -- it resolved to (see M.get_history_span).
+  if time_range == "all" or time_range == "max" then
     return nil, nil, true
   end
 
@@ -330,6 +334,68 @@ function M.query_all_repos(metric, start_date, end_date)
   end
 
   return results, nil
+end
+
+---Count the number of days covered by an inclusive ISO date range.
+---@param start_date string ISO date (YYYY-MM-DD)
+---@param end_date string ISO date (YYYY-MM-DD)
+---@return integer? # Day count (1 for a single day), or nil if either date is invalid
+function M.count_days(start_date, end_date)
+  local start_ts = start_date and parse_date(start_date)
+  local end_ts = end_date and parse_date(end_date)
+
+  if not start_ts or not end_ts then
+    return nil
+  end
+
+  -- Rounded, not truncated: parse_date() builds local-time midnights, so a
+  -- DST boundary inside the span makes the raw difference 23h or 25h short
+  -- of a whole number of days -- truncation would silently lose a day.
+  return math.floor(os.difftime(end_ts, start_ts) / 86400 + 0.5) + 1
+end
+
+---Determine the maximum locally available history span across repositories.
+---@description
+--- Answers "what is the longest period the stored data can actually cover?"
+--- -- the question behind the dashboard's `max` range. Aggregation itself
+--- always runs over whatever is on disk; this only reports the resulting
+--- window so the UI can label it. Days are counted inclusively, so a single
+--- stored day is a span of 1.
+---@param repos string[] Repositories to consider
+---@param metric? "clones"|"views" Metric to measure (default: "clones")
+---@return { start_date: string, end_date: string, days: integer }? # Span, or nil if no data
+function M.get_history_span(repos, metric)
+  metric = metric or "clones"
+
+  local earliest, latest = nil, nil
+
+  for _, repo in ipairs(repos or {}) do
+    local stats = M.query_metric({ repo = repo, metric = metric, time_range = "all" })
+
+    if stats and stats.period_start ~= "N/A" and stats.period_end ~= "N/A" then
+      if not earliest or stats.period_start < earliest then
+        earliest = stats.period_start
+      end
+      if not latest or stats.period_end > latest then
+        latest = stats.period_end
+      end
+    end
+  end
+
+  if not earliest or not latest then
+    return nil
+  end
+
+  local days = M.count_days(earliest, latest)
+  if not days then
+    return nil
+  end
+
+  return {
+    start_date = earliest,
+    end_date = latest,
+    days = days,
+  }
 end
 
 ---Get top referrers from latest data

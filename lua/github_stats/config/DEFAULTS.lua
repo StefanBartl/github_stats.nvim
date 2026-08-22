@@ -76,6 +76,7 @@ local DEFAULT_CONFIG = {
       cycle_sort = "s",
       cycle_time_range = "t",
       custom_time_range = "T",
+      max_time_range = "m",
       show_help = "?",
       quit = "q",
     },

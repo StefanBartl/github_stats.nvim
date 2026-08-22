@@ -19,7 +19,7 @@ intentionally left out of this file; see that file for their design notes.
 - **Module:** `dashboard/init.lua` (`open`, `close`), `dashboard/render.lua`, `dashboard/state.lua`, `dashboard/actions.lua`, `dashboard/movement.lua`, `dashboard/detail.lua`, `dashboard/layout.lua`
 - **Usercmds:** `:GithubStats[!] dashboard` — see [BINDINGS.md#user-commands](BINDINGS.md#user-commands)
 - **Keymaps:** `dashboard.keybindings` — see [BINDINGS.md#dashboard-keymaps](BINDINGS.md#dashboard-keymaps)
-- **Config:** `opts.dashboard.enabled` (default `true`), `opts.dashboard.auto_open` (default `false`), `opts.dashboard.refresh_interval_seconds` (default `300`), `opts.dashboard.sort_by` (default `"clones"`), `opts.dashboard.time_range` (default `"30d"`)
+- **Config:** `opts.dashboard.enabled` (default `true`), `opts.dashboard.auto_open` (default `false`), `opts.dashboard.refresh_interval_seconds` (default `300`), `opts.dashboard.sort_by` (default `"clones"`), `opts.dashboard.time_range` (default `"30d"`) — both are read by `dashboard/state.lua`'s `init_state()` when the dashboard opens (they were documented and merged into the config but never actually read, so configuring them had no effect until this was fixed)
 
 A full-buffer listing of every configured repository with per-repo clones,
 views, and a trend indicator, opened with `:GithubStats dashboard`. `!`
@@ -59,16 +59,34 @@ re-applied on every render in `render.lua`:
 
 - Sort criteria (`cycle_sort`, key `s`): `clones` → `views` → `name` →
   `trend`, in a fixed cycle (`SORT_CYCLE` in `actions.lua`).
-- Time range (`cycle_time_range`, key `t`): `7d` → `30d` → `90d` → `all`
+- Time range (`cycle_time_range`, key `t`): `7d` → `30d` → `90d` → `max`
   (`TIME_RANGE_CYCLE`), a re-aggregation window over already-fetched data —
   switching it never triggers a new API call.
+- Maximum range (`max_time_range`, key `m`, `actions.M.set_max_time_range`):
+  jumps straight to `max` — the longest duration the stored data can cover —
+  and notifies the concrete window it resolved to, via
+  `analytics.get_history_span(repos)`.
 
 `custom_time_range` (key `T`, `actions.M.prompt_custom_time_range`) instead
 opens a `vim.fn.input()` prompt pre-filled with the current range, accepting
 any form `analytics.parse_time_range` recognizes (`Nd`/`Nw`/`Nm`/`Ny`,
-`since:YYYY-MM-DD`, a bare ISO date, `all`, or a date-preset name). An
+`since:YYYY-MM-DD`, a bare ISO date, `all`/`max`, or a date-preset name). An
 unrecognized expression is rejected with an error notification and the
 previous range is left in place.
+
+`max` and `all` filter identically (not at all); they differ only in that
+`max` is the label the cycle and the `m` key produce. Either way the header's
+status line appends the window that was actually resolved — e.g.
+`Range:max (2025-03-04 -> 2026-08-22, 172 days)` — derived from the
+`period_start`/`period_end` of the stats already computed for that render, so
+it costs no extra queries. With nothing stored yet it reads `(no data)`.
+`analytics.count_days()` does the inclusive day count and rounds rather than
+truncates, so a DST boundary inside the span cannot silently lose a day.
+
+The header is five lines (`render.M.HEADER_LINES = 5`): border, title, the
+sort/range status line, a key-hint line, border. The hint line is built from
+the *effective* keybindings rather than hardcoded defaults, so a remapped or
+disabled (`""`) key is shown correctly or omitted.
 
 ### Refreshing
 
@@ -159,7 +177,7 @@ would-be archived/deleted counts and freed bytes without touching disk.
 
 ## Query and analytics engine
 
-- **Module:** `analytics.lua` (`query_metric`, `query_all_repos`, `get_top_referrers`, `get_top_paths`, `rollup_weekly`, `rollup_monthly`, `compute_highlights`, `parse_time_range`)
+- **Module:** `analytics.lua` (`query_metric`, `query_all_repos`, `get_top_referrers`, `get_top_paths`, `rollup_weekly`, `rollup_monthly`, `compute_highlights`, `parse_time_range`, `count_days`, `get_history_span`)
 
 Underlies `show`, `summary`, `chart`, `export`, and the dashboard. Two
 correctness rules apply everywhere: only the latest fetch per calendar day

@@ -107,6 +107,16 @@ describe("analytics", function()
       end
     end)
 
+    it("recognizes 'max' as an alias of 'all' (no date filtering)", function()
+      local start_date, end_date, ok = analytics.parse_time_range("max")
+      ---@diagnostic disable-next-line: undefined-field
+      assert.is_true(ok)
+      ---@diagnostic disable-next-line: undefined-field
+      assert.is_nil(start_date)
+      ---@diagnostic disable-next-line: undefined-field
+      assert.is_nil(end_date)
+    end)
+
     it("reports unrecognized expressions as not ok", function()
       local start_date, end_date, ok = analytics.parse_time_range("not-a-range")
       ---@diagnostic disable-next-line: undefined-field
@@ -115,6 +125,64 @@ describe("analytics", function()
       assert.is_nil(start_date)
       ---@diagnostic disable-next-line: undefined-field
       assert.is_nil(end_date)
+    end)
+  end)
+
+  describe("count_days", function()
+    it("counts an inclusive range, single day = 1", function()
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals(1, analytics.count_days("2026-03-01", "2026-03-01"))
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals(31, analytics.count_days("2026-03-01", "2026-03-31"))
+    end)
+
+    it("stays exact across a DST boundary", function()
+      -- 2026-03-29 is the European DST switch; a truncating implementation
+      -- loses a day here because the raw difference is only 23h short.
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals(4, analytics.count_days("2026-03-28", "2026-03-31"))
+    end)
+
+    it("returns nil for malformed dates", function()
+      ---@diagnostic disable-next-line: undefined-field
+      assert.is_nil(analytics.count_days("nope", "2026-03-31"))
+    end)
+  end)
+
+  describe("get_history_span", function()
+    local storage
+
+    ---Write one stored clones record covering the given ISO dates
+    ---@param repo string
+    ---@param dates string[]
+    local function seed(repo, dates)
+      storage = storage or require("github_stats.storage")
+      local clones = {}
+      for _, date in ipairs(dates) do
+        table.insert(clones, { timestamp = date .. "T00:00:00Z", count = 1, uniques = 1 })
+      end
+      storage.write_metric(repo, "clones", { clones = clones })
+    end
+
+    it("returns nil when nothing is stored", function()
+      ---@diagnostic disable-next-line: undefined-field
+      assert.is_nil(analytics.get_history_span({ "user/empty" }))
+    end)
+
+    it("spans the extremes across all repositories", function()
+      seed("user/a", { "2026-01-05", "2026-01-06" })
+      seed("user/b", { "2026-01-02", "2026-01-10" })
+
+      local span = analytics.get_history_span({ "user/a", "user/b" })
+
+      ---@diagnostic disable-next-line: undefined-field
+      assert.is_not_nil(span)
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals("2026-01-02", span.start_date)
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals("2026-01-10", span.end_date)
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals(9, span.days)
     end)
   end)
 

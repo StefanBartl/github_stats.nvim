@@ -244,6 +244,13 @@ function M.setup_keymaps(buf)
     actions.prompt_custom_time_range()
   end, which_key_entries, "GitHub Stats: enter custom time range")
 
+  -- Max time range: configurable (default m) -- one keypress to the longest
+  -- window the stored data can cover, instead of stepping the t cycle around
+  -- or typing an expression at the T prompt
+  map_key(buf, keybindings.max_time_range, function()
+    actions.set_max_time_range()
+  end, which_key_entries, "GitHub Stats: set maximum time range")
+
   -- Quit: configurable (default q), plus fixed Esc fallback. The dashboard
   -- buffer is bufhidden=wipe, so closing the window here also triggers the
   -- BufWipeout -> cleanup_dashboard() -> ui_state.cleanup_all() chain set up
@@ -273,6 +280,7 @@ function M.setup_keymaps(buf)
         .. string.format("  %-9s - Cycle sort criteria\n", keybindings.cycle_sort)
         .. string.format("  %-9s - Cycle time range\n", keybindings.cycle_time_range)
         .. string.format("  %-9s - Enter custom time range (e.g. 3m, since:2025-01-01)\n", keybindings.custom_time_range)
+        .. string.format("  %-9s - Maximum time range (full stored history)\n", keybindings.max_time_range)
         .. string.format("  %-9s - Quit\n", keybindings.quit)
         .. string.format("  %-9s - Show this help", keybindings.show_help),
       "info"

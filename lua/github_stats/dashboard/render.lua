@@ -11,8 +11,11 @@ local lib_format_number = require("lib.lua.strings.format").format_number
 
 local M = {}
 
----Number of lines used by header
-M.HEADER_LINES = 4
+---Number of lines used by header (top border, title, status, key hints,
+---bottom border -- see build_header). Single source of truth for every
+---line/scroll calculation in this module, dashboard/state.lua,
+---dashboard/movement.lua and bindings/keymaps.lua.
+M.HEADER_LINES = 5
 
 ---Number of lines used by a single repository entry (see build_entry: title,
 ---Clones, Views, Period, separator). Single source of truth for every
@@ -46,28 +49,100 @@ local function fit_width(str, width)
 end
 
 ---@internal
+---Describe the window the current range actually resolved to, e.g.
+---"2025-03-04 -> 2026-08-22, 172 days". Derived from the per-repo stats that
+---were computed for this render anyway (their period_start/period_end are the
+---observed extremes after filtering), so this costs no extra queries -- which
+---matters most for "max"/"all", where the window is only knowable from the
+---stored data.
+---@param stats_by_repo table<string, GHStats.DashboardRepoStats>
+---@return string? # Human-readable span, or nil if nothing is stored yet
+local function describe_span(stats_by_repo)
+  local earliest, latest = nil, nil
+
+  for _, stats in pairs(stats_by_repo) do
+    for _, aggregated in pairs({ stats.clones, stats.views }) do
+      local from, to = aggregated.period_start, aggregated.period_end
+      if from and from ~= "N/A" and (not earliest or from < earliest) then
+        earliest = from
+      end
+      if to and to ~= "N/A" and (not latest or to > latest) then
+        latest = to
+      end
+    end
+  end
+
+  if not earliest or not latest then
+    return nil
+  end
+
+  local days = require("github_stats.analytics").count_days(earliest, latest)
+  if not days then
+    return string.format("%s -> %s", earliest, latest)
+  end
+
+  return string.format("%s -> %s, %d days", earliest, latest, days)
+end
+
+---@internal
+---Build the header's key-hint line from the *effective* keybindings, not from
+---hardcoded defaults: a user who remapped `cycle_time_range` or disabled a key
+---(set to "") would otherwise be shown a hint that is simply wrong. Kept to
+---single-space separation so the full set still fits HEADER_CONTENT_WIDTH.
+---@return string
+local function build_key_hints()
+  local DEFAULT_KEYBINDINGS = require("github_stats.config.DEFAULTS").dashboard.keybindings
+  local cfg = require("github_stats.config").get()
+  local keybindings =
+    vim.tbl_extend("force", DEFAULT_KEYBINDINGS, (cfg and cfg.dashboard and cfg.dashboard.keybindings) or {})
+
+  local hints = {
+    { keybindings.cycle_sort, "sort" },
+    { keybindings.cycle_time_range, "range" },
+    { keybindings.custom_time_range, "custom" },
+    { keybindings.max_time_range, "max" },
+    { keybindings.refresh_all, "refresh-all" },
+    { keybindings.force_refresh, "force" },
+    { keybindings.show_help, "help" },
+    { keybindings.quit, "quit" },
+  }
+
+  local parts = {}
+  for _, hint in ipairs(hints) do
+    if hint[1] and hint[1] ~= "" then
+      table.insert(parts, hint[1] .. ":" .. hint[2])
+    end
+  end
+
+  return "  " .. table.concat(parts, " ")
+end
+
+---@internal
 ---Build header lines, including a status line reflecting live sort/range state
 ---@param state GHStats.DashboardState Current dashboard state
+---@param stats_by_repo table<string, GHStats.DashboardRepoStats> Stats computed for this render
 ---@return string[] # Header lines
-local function build_header(state)
-  -- Range can now be an arbitrary user-typed expression (see
+local function build_header(state, stats_by_repo)
+  -- Range can be an arbitrary user-typed expression (see
   -- dashboard/actions.lua's prompt_custom_time_range), not just one of the
-  -- fixed 7d/30d/90d/all cycle values, so it's no longer safe to assume a
-  -- short fixed width here -- fit_width() below truncates the whole hint
-  -- (safely) if a long custom range pushes it past HEADER_CONTENT_WIDTH.
-  local hint = fit_width(
-    string.format(
-      "  Sort:%-6s Range:%-10s s:sort  t:range  T:custom  R:refresh-all  f:force  q:quit",
-      state.sort_by or "name",
-      state.time_range or "30d"
-    ),
+  -- fixed 7d/30d/90d/max cycle values, and the resolved span appended to it
+  -- is unbounded too -- fit_width() truncates safely rather than breaking the
+  -- box border when either grows past HEADER_CONTENT_WIDTH.
+  local span = describe_span(stats_by_repo)
+  local range = state.time_range or "30d"
+
+  local status = fit_width(
+    string.format("  Sort:%-8s Range:%s%s", state.sort_by or "name", range, span and (" (" .. span .. ")") or " (no data)"),
     HEADER_CONTENT_WIDTH
   )
+
+  local keys = fit_width(build_key_hints(), HEADER_CONTENT_WIDTH)
 
   return {
     "╔════════════════════════════════════════════════════════════════════════╗",
     "║                     GitHub Stats Dashboard                             ║",
-    "║" .. hint .. "║",
+    "║" .. status .. "║",
+    "║" .. keys .. "║",
     "╚════════════════════════════════════════════════════════════════════════╝",
   }
 end
@@ -122,7 +197,7 @@ end
 ---@internal
 ---Query clones/views for a repository, respecting the dashboard's time range
 ---@param repo string Repository identifier
----@param time_range string Dashboard time range ("7d"|"30d"|"90d"|"all")
+---@param time_range string Dashboard time range ("7d"|"30d"|"90d"|"max"/"all", or any expression accepted by `analytics.parse_time_range`)
 ---@return GHStats.DashboardRepoStats
 local function fetch_repo_stats(repo, time_range)
   local stats_clones, _ = analytics.query_metric({
@@ -249,8 +324,8 @@ local function build_lines(state)
   -- Apply current sort criteria, preserving the selected repo
   sort_repos(state, stats_by_repo)
 
-  -- Header (reflects live sort_by/time_range)
-  vim.list_extend(lines, build_header(state))
+  -- Header (reflects live sort_by/time_range and the span they resolved to)
+  vim.list_extend(lines, build_header(state, stats_by_repo))
 
   -- Entries
   for i, repo in ipairs(state.repos) do

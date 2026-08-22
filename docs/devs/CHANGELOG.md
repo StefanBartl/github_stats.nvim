@@ -18,13 +18,33 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-Repo/tooling pass: CI, test runner, and internal restructuring — no
-user-facing feature changes. (User-facing fixes from the same pass —
+Dashboard time-range pass on top of the earlier repo/tooling pass (CI, test
+runner, internal restructuring). (User-facing fixes from the tooling pass —
 dashboard bang, `dashboard.close()` crash, `setup(opts)` forwarding — are
 documented as part of the features they affect in
 [`docs/FEATURES.md`](../FEATURES.md), not repeated here.)
 
 ### Added
+- **Maximum time range in the dashboard**: a `max` range covering the longest
+  duration the locally stored data spans, reachable in one keypress via the
+  new `max_time_range` binding (default `m`, `actions.set_max_time_range`) and
+  as the last step of the `t` cycle (`7d` → `30d` → `90d` → `max`, replacing
+  `all` in the cycle — `all` stays an accepted synonym in `setup()` and at the
+  `T` prompt). Pressing it notifies the window it resolved to, e.g.
+  `max (2025-03-04 to 2026-08-22, 172 days)`.
+- **Resolved span in the dashboard header**: whatever range is active, the
+  status line now appends the window it actually covers —
+  `Range:max (2025-03-04 -> 2026-08-22, 172 days)`, or `(no data)` when
+  nothing is stored. Derived from the `period_start`/`period_end` of the stats
+  already computed for that render, so it costs no extra queries.
+- **`analytics.get_history_span(repos, metric?)`** and
+  **`analytics.count_days(start, end)`**: the maximum stored window across
+  repositories, and an inclusive day count that rounds rather than truncates
+  so a DST boundary inside a span cannot silently lose a day.
+- **Concept document** [`docs/ROADMAP/KONZEPT.md`](../ROADMAP/KONZEPT.md), and
+  [`docs/ROADMAP.md`](../ROADMAP.md) filled in from it — findings from the
+  current source with effort and risk per item, feeding a prioritized list of
+  what is actually open.
 - **CI**: `.github/workflows/ci.yml` runs `stylua --check .`, `luacheck .`,
   and the full test suite as three independent jobs on every push/PR to
   `main`.
@@ -39,6 +59,12 @@ documented as part of the features they affect in
   retention types).
 
 ### Fixed
+- **`dashboard.sort_by` / `dashboard.time_range` had no effect**:
+  `dashboard/state.lua`'s `init_state()` hardcoded `"name"` / `"30d"` instead
+  of reading the configuration, so both documented options were silently
+  ignored until the dashboard was opened and cycled by hand. They are now read
+  from `config.get()` with a `config/DEFAULTS.lua` fallback.
+
 - `stylua.toml`'s `line_endings` was `"Windows"`, but every file git
   actually stores is LF (`git ls-files --eol`) — the previous "`stylua
   --check .` is green" reading had only ever checked a Windows working copy
@@ -59,6 +85,13 @@ documented as part of the features they affect in
   `bindings.keymaps`).
 
 ### Changed
+- **Dashboard header is five lines** (`render.M.HEADER_LINES = 5`, was 4):
+  border, title, sort/range status, key hints, border. Every line and scroll
+  calculation already read the constant, so nothing else changed.
+- **The header's key-hint line is built from the effective keybindings**
+  rather than a hardcoded string, so a remapped key is shown correctly and a
+  disabled one (`""`) is omitted.
+
 - `config.lua` → `config/init.lua` + `config/DEFAULTS.lua`;
   `usercommands/`/`dashboard/keymaps.lua` →
   `bindings/{usrcmds,keymaps,autocmds}`.

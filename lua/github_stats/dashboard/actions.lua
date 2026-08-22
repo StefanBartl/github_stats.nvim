@@ -12,7 +12,10 @@ local dashboard_state = require("github_stats.dashboard.state")
 local M = {}
 
 local SORT_CYCLE = { "clones", "views", "name", "trend" }
-local TIME_RANGE_CYCLE = { "7d", "30d", "90d", "all" }
+-- "max" closes the cycle instead of the older "all": identical filtering
+-- (none), but the header resolves and prints the concrete span it covers.
+-- "all" is still accepted from config and from the custom-range prompt.
+local TIME_RANGE_CYCLE = { "7d", "30d", "90d", "max" }
 
 ---@internal
 ---Return the next value in a fixed cycle, wrapping around
@@ -39,7 +42,7 @@ function M.cycle_sort()
   dashboard_state.set_sort_by(next_in_cycle(SORT_CYCLE, state.sort_by))
 end
 
----Cycle to the next time range (7d -> 30d -> 90d -> all -> ...)
+---Cycle to the next time range (7d -> 30d -> 90d -> max -> ...)
 ---@description
 --- Only changes the local aggregation window over already-fetched history;
 --- no new API request is needed since analytics.query_metric re-aggregates
@@ -67,7 +70,7 @@ function M.prompt_custom_time_range()
   end
 
   local ok, input = pcall(vim.fn.input, {
-    prompt = "Time range (7d, 3m, 1y, since:YYYY-MM-DD, this_year, all, ...): ",
+    prompt = "Time range (7d, 3m, 1y, since:YYYY-MM-DD, this_year, max, all, ...): ",
     default = state.time_range or "",
   })
   vim.cmd("redraw") -- clear the command-line prompt
@@ -85,6 +88,37 @@ function M.prompt_custom_time_range()
   end
 
   dashboard_state.set_time_range(input)
+end
+
+---Set the time range to `max`: the maximum duration the locally stored data
+---can cover, i.e. everything left on disk after retention.
+---@description
+--- Shortcut past the 7d/30d/90d steps of `cycle_time_range` and past typing
+--- an expression into `prompt_custom_time_range`. Notifies the concrete span
+--- it resolved to (or that there is no stored data yet), since "max" alone
+--- says nothing about how much history that actually is.
+---@return nil
+function M.set_max_time_range()
+  local state = dashboard_state.get_state()
+  if not state then
+    return
+  end
+
+  dashboard_state.set_time_range("max")
+
+  local analytics = require("github_stats.analytics")
+  local span = analytics.get_history_span(state.repos)
+  local config = require("github_stats.config")
+
+  if not span then
+    config.notify("[github-stats] Time range: max (no stored data yet)", "warn")
+    return
+  end
+
+  config.notify(
+    string.format("[github-stats] Time range: max (%s to %s, %d days)", span.start_date, span.end_date, span.days),
+    "info"
+  )
 end
 
 ---Force-refresh the currently selected repository from the GitHub API,
