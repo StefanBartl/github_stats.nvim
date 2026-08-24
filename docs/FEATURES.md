@@ -101,6 +101,17 @@ Three distinct refresh actions, all in `dashboard/actions.lua`:
 `refresh_interval_seconds` (default `300`) drives dashboard auto-refresh
 timing; `0` disables it.
 
+### Right-click context menu
+
+`github_stats.integrations.menu` (`M.items()`/`M.submenu()`) builds a
+`nvzone/menu`-shaped entry list one-to-one with the dashboard's own keymaps
+(`dashboard/actions.lua`), self-gated on selection state (e.g. "Show
+details"/"Export selected…" only appear with a repo selected) and on
+`dashboard.menu.enable` (default `true`). `dashboard/init.lua`'s `M.open`
+binds the trigger unconditionally via `lib.nvim.contextmenu.bind_buffer`
+(`<RightMouse>`, soft-requires `menu` at trigger time) — a disabled config
+or a missing `nvzone/menu` install both degrade to a no-op, never an error.
+
 ## GithubStats command tree
 
 - **Module:** `bindings/usrcmds/init.lua`, one `composer.verb("GithubStats", ...)` registration

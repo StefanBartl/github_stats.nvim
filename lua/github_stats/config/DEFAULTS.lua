@@ -66,6 +66,13 @@ local DEFAULT_CONFIG = {
     sort_by = "clones",
     time_range = "30d",
     theme = "default",
+    -- Right-click context menu (nvzone/menu, soft dependency; entries
+    -- provided by github_stats.integrations.menu). Off automatically when
+    -- nvzone/menu isn't installed -- this only controls whether the trigger
+    -- and entries are offered at all.
+    menu = {
+      enable = true,
+    },
     keybindings = {
       navigate_down = "j",
       navigate_up = "k",

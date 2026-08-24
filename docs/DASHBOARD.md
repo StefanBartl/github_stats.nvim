@@ -10,6 +10,7 @@ Comprehensive guide for using the interactive dashboard.
 - [Sorting and Filtering](#sorting-and-filtering)
 - [Refresh Strategies](#refresh-strategies)
 - [Keyboard Reference](#keyboard-reference)
+- [Right-Click Context Menu](#right-click-context-menu)
 - [Configuration](#configuration)
 - [Performance Considerations](#performance-considerations)
 - [Troubleshooting](#troubleshooting)
@@ -181,6 +182,38 @@ refresh_interval_seconds = 0
 
 ---
 
+## Right-Click Context Menu
+
+The dashboard buffer binds `<RightMouse>` to a context menu (via
+[nvzone/menu](https://github.com/nvzone/menu), a soft dependency) mirroring
+the keyboard reference above one-to-one: Show details, Cycle sort, Cycle
+time range, Custom time range…, Maximum time range, Refresh dashboard,
+Force-refresh all/selected, Export selected…. Right-click never offers
+anything the keyboard doesn't already provide — it's just another way to
+reach the same actions.
+
+If `nvzone/menu` isn't installed, right-clicking does nothing (one
+`:messages` notice per session, not an error). Set `dashboard.menu.enable =
+false` to disable the trigger and entries entirely:
+
+```lua
+require("github_stats").setup({
+  dashboard = {
+    menu = { enable = false },
+  },
+})
+```
+
+The entries are also available directly for scripting or for composing into
+a host's own `<RightMouse>` dispatcher:
+
+```lua
+local items = require("github_stats.integrations.menu").items()
+local sub = require("github_stats.integrations.menu").submenu() -- { name = "  GitHub Stats", items = {…} } | nil
+```
+
+---
+
 ## Configuration
 
 ### Full Configuration Example
@@ -198,6 +231,9 @@ require("github_stats").setup({
     sort_by = "clones",   -- applied when the dashboard opens
     time_range = "30d",   -- "7d"/"30d"/"90d"/"max"/"all" or any T-prompt expression
     theme = "default", -- Reserved for future use
+    menu = {
+      enable = true, -- right-click context menu (nvzone/menu, soft dependency)
+    },
     keybindings = {
       navigate_down = "j",
       navigate_up = "k",

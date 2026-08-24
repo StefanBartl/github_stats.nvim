@@ -102,6 +102,7 @@ tied to the customizable action set above):
 | `<C-f>` / `<C-b>` | Scroll full page down/up |
 | `gg` / `G` | Jump to top/bottom |
 | `<Esc>` | Quit dashboard (fixed fallback alongside `quit`) |
+| `<RightMouse>` | Open a context menu mirroring the keymaps above (`nvzone/menu`, soft dependency; `dashboard.menu.enable` to disable) — see [Right-Click Context Menu](DASHBOARD.md#right-click-context-menu) |
 
 ---
 

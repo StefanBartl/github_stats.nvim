@@ -9,6 +9,7 @@ local ui_state = require("github_stats.state.ui_state")
 local dashboard_state = require("github_stats.dashboard.state")
 local render = require("github_stats.dashboard.render")
 local keymaps = require("github_stats.bindings.keymaps")
+local contextmenu = require("lib.nvim.contextmenu")
 
 local M = {}
 
@@ -224,6 +225,14 @@ function M.open(force_refresh)
 
   -- Setup keymaps
   keymaps.setup_keymaps(buf)
+
+  -- Setup right-click context menu (nvzone/menu, soft dependency). Trigger is
+  -- bound unconditionally; github_stats.integrations.menu.items() self-gates
+  -- on dashboard.menu.enable, so a disabled config just yields an empty list
+  -- and the bound keymap becomes a no-op.
+  contextmenu.bind_buffer(buf, require("github_stats.integrations.menu").items, {
+    desc = "GitHub Stats: right-click context menu",
+  })
 
   -- Setup cleanup on buffer delete
   -- NOTE: stays on the raw API deliberately -- lib.nvim.autocmd.create's opts
