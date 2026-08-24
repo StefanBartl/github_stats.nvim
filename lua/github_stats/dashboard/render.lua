@@ -49,6 +49,21 @@ local function fit_width(str, width)
 end
 
 ---@internal
+---Resolve the trend comparison window in days from the configuration.
+---@return integer
+local function get_trend_window_days()
+  local DEFAULTS = require("github_stats.config.DEFAULTS")
+  local cfg = require("github_stats.config").get() or DEFAULTS
+  local configured = (cfg.dashboard or DEFAULTS.dashboard).trend_window_days
+
+  if type(configured) ~= "number" or configured < 1 then
+    return DEFAULTS.dashboard.trend_window_days
+  end
+
+  return math.floor(configured)
+end
+
+---@internal
 ---Whether an aggregation actually covered any day.
 ---@description
 --- `analytics.query_metric` fills period_start/period_end with the *requested*
@@ -104,7 +119,7 @@ local function describe_span(stats_by_repo)
     return string.format("%s -> %s", earliest, latest)
   end
 
-  return string.format("%s -> %s, %d days", earliest, latest, days)
+  return string.format("%s -> %s, %dd", earliest, latest, days)
 end
 
 ---@internal
@@ -152,9 +167,17 @@ local function build_header(state, stats_by_repo)
   -- box border when either grows past HEADER_CONTENT_WIDTH.
   local span = describe_span(stats_by_repo)
   local range = state.time_range or "30d"
+  local trend_window = get_trend_window_days()
 
   local status = fit_width(
-    string.format("  Sort:%-8s Range:%s%s", state.sort_by or "name", range, span and (" (" .. span .. ")") or " (no data)"),
+    string.format(
+      "  Sort:%-6s  Range:%s%s  Trend:%dd/%dd",
+      state.sort_by or "name",
+      range,
+      span and (" (" .. span .. ")") or " (no data)",
+      trend_window,
+      trend_window
+    ),
     HEADER_CONTENT_WIDTH
   )
 
@@ -170,39 +193,16 @@ local function build_header(state, stats_by_repo)
 end
 
 ---@internal
----Compute a simple trend percentage: growth of the second half of the period
----versus the first half, based on daily clone counts
----@param daily_breakdown table<string, {count: integer, uniques: integer}>
----@return number # Percentage change, 0 if not enough data to compare
-local function compute_trend(daily_breakdown)
-  local dates = vim.tbl_keys(daily_breakdown)
-  if #dates < 2 then
-    return 0
-  end
-  table.sort(dates)
-
-  local mid = math.floor(#dates / 2)
-  local older_total, recent_total = 0, 0
-
-  for i = 1, mid do
-    older_total = older_total + (daily_breakdown[dates[i]].count or 0)
-  end
-  for i = mid + 1, #dates do
-    recent_total = recent_total + (daily_breakdown[dates[i]].count or 0)
-  end
-
-  if older_total == 0 then
-    return recent_total > 0 and 100 or 0
-  end
-
-  return ((recent_total - older_total) / older_total) * 100
-end
-
----@internal
 ---Format a trend value as a visual indicator with percentage
----@param trend number
+---@param trend number?
 ---@return string
 local function trend_indicator(trend)
+  -- nil means neither comparison window held any data -- "no basis to judge",
+  -- which is not the same statement as "flat".
+  if trend == nil then
+    return "⬌ n/a"
+  end
+
   if trend > 0.5 then
     return string.format("⬆ +%.0f%%", trend)
   elseif trend < -0.5 then
@@ -214,7 +214,7 @@ end
 ---@class GHStats.DashboardRepoStats
 ---@field clones GHStats.AggregatedStats|nil
 ---@field views GHStats.AggregatedStats|nil
----@field trend number
+---@field trend number? Percentage change over the fixed trend window, nil if that window holds no data
 
 ---@internal
 ---Query clones/views for a repository, respecting the dashboard's time range
@@ -234,7 +234,19 @@ local function fetch_repo_stats(repo, time_range)
     time_range = time_range,
   })
 
-  local trend = compute_trend(stats_clones and stats_clones.daily_breakdown or {})
+  -- The trend deliberately does NOT reuse stats_clones: that is filtered to
+  -- whatever range is on screen, so at Range:7d there would be no "previous 7
+  -- days" left to compare against. It gets its own fixed two-window query.
+  local trend_window = get_trend_window_days()
+  local trend_stats, _ = analytics.query_metric({
+    repo = repo,
+    metric = "clones",
+    -- 2 * window days back from today covers both windows, which end at
+    -- yesterday: with window = 7 that is today-14 .. today-1.
+    time_range = string.format("%dd", 2 * trend_window),
+  })
+
+  local trend = analytics.trend_over(trend_stats and trend_stats.daily_breakdown or {}, trend_window)
 
   return { clones = stats_clones, views = stats_views, trend = trend }
 end
@@ -270,8 +282,11 @@ local function sort_repos(state, stats_by_repo)
     end)
   elseif state.sort_by == "trend" then
     table.sort(state.repos, function(a, b)
-      local ta = (stats_by_repo[a] and stats_by_repo[a].trend) or 0
-      local tb = (stats_by_repo[b] and stats_by_repo[b].trend) or 0
+      -- A nil trend means "no data in either comparison window", which belongs
+      -- below a genuine 0% rather than tied with it -- but math.huge would
+      -- invert that, so -math.huge it is.
+      local ta = (stats_by_repo[a] and stats_by_repo[a].trend) or -math.huge
+      local tb = (stats_by_repo[b] and stats_by_repo[b].trend) or -math.huge
       if ta == tb then
         return a < b
       end

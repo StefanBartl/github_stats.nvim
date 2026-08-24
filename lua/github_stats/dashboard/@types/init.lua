@@ -44,6 +44,7 @@
 ---@field refresh_interval_seconds integer Auto-refresh interval
 ---@field sort_by? "clones"|"views"|"name"|"trend" Default sort criteria
 ---@field time_range? string Default time range filter: "7d"/"30d"/"90d"/"max"/"all" or any expression accepted by `github_stats.analytics.parse_time_range`
+---@field trend_window_days? integer Days per trend comparison window: the last N complete days versus the N before them, independent of the displayed range (default 7)
 ---@field theme? "default"|"minimal"|"compact" Display theme (reserved for future)
 ---@field keybindings? GHStats.DashboardKeybindings Customizable keybindings
 

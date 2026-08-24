@@ -68,6 +68,29 @@ require("github_stats").setup({
 
 ## Sorting and Filtering
 
+### Trend
+
+Each entry carries a trend arrow. It compares the **last 7 complete days
+against the 7 before them** — the same fixed comparison whatever range is
+displayed, so `⬆ +40%` means the same thing at `Range:7d` and at `Range:max`,
+and sorting by `trend` orders comparable numbers.
+
+The window is named in the header (`Trend:7d/7d`) and is configurable:
+
+```lua
+dashboard = {
+  trend_window_days = 14, -- last 14 days vs the 14 before
+}
+```
+
+It is measured back from **yesterday**, not today: today's data is always
+incomplete and is excluded from every aggregation, so anchoring on today
+would compare six days against seven and invent a decline.
+
+`⬌ n/a` means neither window holds any data — a different statement from
+`⬌ 0%`, which means genuinely flat. Repositories with `n/a` sort below all
+others under `sort_by = "trend"`.
+
 ### Sort Criteria
 
 Press `s` to cycle through:
@@ -246,6 +269,7 @@ require("github_stats").setup({
     auto_open = false,
     refresh_interval_seconds = 300,
     sort_by = "clones",   -- applied when the dashboard opens
+    trend_window_days = 7,  -- trend = last N days vs the N before
     time_range = "30d",   -- "7d"/"30d"/"90d"/"max"/"all" or any T-prompt expression
     theme = "default", -- Reserved for future use
     menu = {

@@ -25,6 +25,8 @@ documented as part of the features they affect in
 [`docs/FEATURES.md`](../FEATURES.md), not repeated here.)
 
 ### Added
+- **`dashboard.trend_window_days`** (default `7`): days per trend comparison
+  window, validated by `:checkhealth github_stats`.
 - **Specs for the presentation layer**: `tests/dashboard_render_spec.lua`, 13
   specs driven through `dashboard.open()` and the rendered buffer rather than
   through test-only exports — line budget against `HEADER_LINES`/`ENTRY_LINES`,
@@ -118,6 +120,19 @@ documented as part of the features they affect in
   `bindings.keymaps`).
 
 ### Changed
+- **The trend arrow now measures a fixed window**: the last
+  `dashboard.trend_window_days` complete days (default `7`) versus the same
+  number before them, independent of the displayed range. It used to halve
+  whatever range was on screen, so one `⬆ +67%` meant "last 3 days vs the 3
+  before" at `Range:7d` and "second half-year vs first half-year" at
+  `Range:max` — and `sort_by = "trend"` ordered quantities that were only
+  comparable by accident. The window is named in the header (`Trend:7d/7d`)
+  and measured back from yesterday, since today is excluded from every
+  aggregation as incomplete. New `analytics.trend_over()`; the old private
+  `compute_trend()` is gone.
+- **`⬌ n/a` instead of `⬌ 0%` when there is nothing to compare**: no data in
+  either window is not the same statement as flat traffic. Such entries sort
+  below every real trend value.
 - **Dashboard header is five lines** (`render.M.HEADER_LINES = 5`, was 4):
   border, title, sort/range status, key hints, border. Every line and scroll
   calculation already read the constant, so nothing else changed.

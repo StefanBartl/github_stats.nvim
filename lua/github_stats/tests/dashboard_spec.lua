@@ -278,21 +278,6 @@ describe("dashboard renderer", function()
       assert.equals(5, vim.fn.strchars(sparkline))
     end)
   end)
-
-  describe("trend calculation", function()
-    it("calculates positive trend correctly", function()
-      -- Test internal trend calculation
-      -- Would expose via test helper or integration test
-      ---@diagnostic disable-next-line: undefined-field
-      assert.is_not_nil(renderer)
-    end)
-
-    it("handles zero division", function()
-      -- Test edge case where old_val = 0
-      ---@diagnostic disable-next-line: undefined-field
-      assert.is_not_nil(renderer)
-    end)
-  end)
 end)
 
 describe("dashboard keymaps", function()

@@ -65,6 +65,11 @@ local DEFAULT_CONFIG = {
     refresh_interval_seconds = 300, -- 5 minutes
     sort_by = "clones",
     time_range = "30d",
+    -- Trend compares the last N complete days against the N before them, the
+    -- same N whatever range is displayed -- otherwise the arrow at Range:7d
+    -- and the arrow at Range:max would mean different things while looking
+    -- identical, and sorting by trend would order incomparable numbers.
+    trend_window_days = 7,
     theme = "default",
     -- Right-click context menu (nvzone/menu, soft dependency; entries
     -- provided by github_stats.integrations.menu). Off automatically when

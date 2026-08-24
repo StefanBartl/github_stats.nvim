@@ -336,6 +336,107 @@ function M.query_all_repos(metric, start_date, end_date)
   return results, nil
 end
 
+---Percentage change of the most recent `window_days` days versus the
+---`window_days` immediately before them.
+---@description
+--- A *fixed* comparison, deliberately independent of whatever range the
+--- dashboard happens to be displaying. The dashboard used to halve the
+--- filtered window instead, so the same `⬆ +67%` meant "last 3 days vs the 3
+--- before" at `Range:7d` and "second half-year vs first half-year" at
+--- `Range:max` -- and `sort_by = "trend"` was ordering repositories by
+--- quantities that were only comparable by accident.
+---
+--- Both windows are delimited by date, not by counting entries, so days with
+--- no stored data do not shift the boundary: with `window_days = 7` and a
+--- reference date of 2026-03-31, "recent" is 2026-03-25..2026-03-31 and
+--- "older" is 2026-03-18..2026-03-24, however many of those days exist.
+---@param daily table<string, {count: integer, uniques: integer}> Daily breakdown
+---@param window_days integer Days per window (must be >= 1)
+---@param reference_date? string ISO date the windows are measured back from (default: yesterday, the last complete day)
+---@return number? # Percentage change, or nil if neither window holds any data
+function M.trend_over(daily, window_days, reference_date)
+  if not daily or type(window_days) ~= "number" or window_days < 1 then
+    return nil
+  end
+
+  -- Measured back from *yesterday*, not today. Aggregation drops today as
+  -- incomplete (see exclude_today), so anchoring on today would compare six
+  -- days of data against seven and report a decline that is purely an
+  -- artefact of the clock -- a repository with perfectly flat traffic showed
+  -- +50% instead of +100% in exactly this situation.
+  local reference = reference_date
+  if not reference then
+    local today_ts = parse_date(get_today())
+    if not today_ts then
+      return nil
+    end
+    local today_parts = os.date("*t", today_ts)
+    reference = tostring(os.date("%Y-%m-%d", os.time({
+      year = today_parts.year,
+      month = today_parts.month,
+      day = today_parts.day,
+      hour = 12,
+      min = 0,
+      sec = 0,
+    }) - 86400))
+  end
+
+  local reference_ts = parse_date(reference)
+  if not reference_ts then
+    return nil
+  end
+
+  -- Step back from midday, not from midnight. parse_date() builds local-time
+  -- midnights, and subtracting raw seconds across a DST boundary lands at
+  -- 23:00 on the *previous* day: with a reference of 2026-03-31 (the EU switch
+  -- is 03-29), "six days back" formatted as 03-24 instead of 03-25 and shifted
+  -- both windows by a day. A midday anchor cannot be moved across a date
+  -- boundary by a one-hour shift.
+  local reference_parts = os.date("*t", reference_ts)
+  local midday = os.time({
+    year = reference_parts.year,
+    month = reference_parts.month,
+    day = reference_parts.day,
+    hour = 12,
+    min = 0,
+    sec = 0,
+  })
+
+  ---@param days_back integer
+  ---@return string
+  local function day_at(days_back)
+    return tostring(os.date("%Y-%m-%d", midday - days_back * 86400))
+  end
+
+  local recent_from = day_at(window_days - 1)
+  local older_from = day_at(2 * window_days - 1)
+  local older_to = day_at(window_days)
+
+  local recent_total, older_total = 0, 0
+  local saw_any = false
+
+  for date, stats in pairs(daily) do
+    if date >= recent_from and date <= reference then
+      recent_total = recent_total + (stats.count or 0)
+      saw_any = true
+    elseif date >= older_from and date <= older_to then
+      older_total = older_total + (stats.count or 0)
+      saw_any = true
+    end
+  end
+
+  if not saw_any then
+    return nil
+  end
+
+  -- No baseline to divide by: any activity at all is "new", nothing is flat.
+  if older_total == 0 then
+    return recent_total > 0 and 100 or 0
+  end
+
+  return ((recent_total - older_total) / older_total) * 100
+end
+
 ---Count the number of days covered by an inclusive ISO date range.
 ---@param start_date string ISO date (YYYY-MM-DD)
 ---@param end_date string ISO date (YYYY-MM-DD)

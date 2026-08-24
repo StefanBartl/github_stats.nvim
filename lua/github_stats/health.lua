@@ -376,7 +376,9 @@ function M.check()
       -- alongside "must be >= 10" -- that combination made the one value the
       -- docs tell you to use fail :checkhealth.
       local refresh = dashboard_cfg.refresh_interval_seconds
-      local default_refresh = require("github_stats.config.DEFAULTS").dashboard.refresh_interval_seconds
+      local DEFAULT_DASHBOARD = require("github_stats.config.DEFAULTS").dashboard
+      local default_refresh = DEFAULT_DASHBOARD.refresh_interval_seconds
+      local default_trend_window = DEFAULT_DASHBOARD.trend_window_days
       if refresh ~= nil and type(refresh) ~= "number" then
         health.error("dashboard.refresh_interval_seconds must be number")
       elseif refresh == 0 then
@@ -385,6 +387,19 @@ function M.check()
         health.error("dashboard.refresh_interval_seconds must be 0 (disabled) or >= 10")
       else
         health.ok(str_format("Auto-refresh: every %d seconds", refresh or default_refresh))
+      end
+
+      local trend_window = dashboard_cfg.trend_window_days
+      if trend_window ~= nil and (type(trend_window) ~= "number" or trend_window < 1) then
+        health.error("dashboard.trend_window_days must be a number >= 1")
+      else
+        health.ok(
+          str_format(
+            "Trend window: last %d day(s) vs the %d before",
+            trend_window or default_trend_window,
+            trend_window or default_trend_window
+          )
+        )
       end
 
       if dashboard_cfg.keybindings == nil then

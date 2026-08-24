@@ -177,7 +177,33 @@ describe("dashboard render", function()
       local with = table.concat(vim.api.nvim_buf_get_lines(buf, 0, render.HEADER_LINES, false), "\n")
 
       assert.is_truthy(with:find("2026-01-02 -> 2026-01-10", 1, true))
-      assert.is_truthy(with:find("9 days", 1, true))
+      assert.is_truthy(with:find("9d", 1, true))
+    end)
+  end)
+
+  describe("trend", function()
+    it("names the trend window in the header, at its configured size", function()
+      local lines = render_lines({ "user/a" }, { trend_window_days = 14 })
+      local header = table.concat(lines, "\n", 1, render.HEADER_LINES)
+
+      assert.is_truthy(header:find("Trend:14d/14d", 1, true))
+    end)
+
+    it("falls back to the default window for a nonsensical value", function()
+      local DEFAULTS = require("github_stats.config.DEFAULTS")
+      local lines = render_lines({ "user/a" }, { trend_window_days = 0 })
+      local header = table.concat(lines, "\n", 1, render.HEADER_LINES)
+
+      assert.is_truthy(header:find(string.format("Trend:%dd/", DEFAULTS.dashboard.trend_window_days), 1, true))
+    end)
+
+    it("shows n/a rather than 0% when neither window holds data", function()
+      -- "no basis to judge" is a different statement from "flat", and the
+      -- entry for a repository that was never fetched must not claim the
+      -- latter.
+      local lines = render_lines({ "user/a" })
+
+      assert.is_truthy(lines[dashboard_state.get_repo_line(1)]:find("n/a", 1, true))
     end)
   end)
 

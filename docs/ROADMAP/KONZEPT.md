@@ -108,7 +108,18 @@ Auto-Refresh.
 an der "warum sehe ich alte Zahlen?"-Fehler entstehen. Deshalb: wenige,
 explizite Invalidierungspunkte statt Heuristik, und ein Spec pro Punkt.
 
-### 3. Der Trend-Indikator misst etwas anderes, als der Nutzer denkt
+### 3. Der Trend-Indikator misst etwas anderes, als der Nutzer denkt — ✅ erledigt
+
+> **Umgesetzt, Variante (a).** `analytics.trend_over(daily, window, ref?)`
+> vergleicht die letzten N vollständigen Tage mit den N davor, unabhängig vom
+> angezeigten Bereich; `dashboard.trend_window_days` (Default 7) stellt N ein,
+> die Kopfzeile nennt es (`Trend:7d/7d`). Gemessen wird ab **gestern** — heute
+> fällt aus jeder Aggregation heraus, ein Anker auf heute hätte sechs Tage
+> gegen sieben gestellt und einen Rückgang erfunden, der nur der Uhr gehört.
+> Beide Fenstergrenzen sind datums- statt abzählbasiert und werden von einem
+> Mittags-Anker aus gesetzt, damit fehlende Tage sie nicht verschieben und
+> eine Sommerzeitgrenze sie nicht um einen Tag versetzt. Neu ist außerdem
+> `⬌ n/a` für „in beiden Fenstern nichts“ — nicht dasselbe wie `⬌ 0%`.
 
 **Befund.** `compute_trend()` in `dashboard/render.lua` halbiert das
 **gefilterte** Fenster und vergleicht die Summe der zweiten mit der Summe der

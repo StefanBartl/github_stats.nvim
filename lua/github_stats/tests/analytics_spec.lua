@@ -149,6 +149,82 @@ describe("analytics", function()
     end)
   end)
 
+  describe("trend_over", function()
+    ---Build a daily breakdown from {["YYYY-MM-DD"] = count}
+    ---@param counts table<string, integer>
+    ---@return table<string, {count: integer, uniques: integer}>
+    local function daily(counts)
+      local out = {}
+      for date, count in pairs(counts) do
+        out[date] = { count = count, uniques = 1 }
+      end
+      return out
+    end
+
+    it("compares the last N days against the N before them", function()
+      -- reference 2026-03-31: recent = 03-25..03-31, older = 03-18..03-24
+      local breakdown = daily({
+        ["2026-03-31"] = 10,
+        ["2026-03-25"] = 10,
+        ["2026-03-24"] = 5,
+        ["2026-03-18"] = 5,
+      })
+
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals(100, analytics.trend_over(breakdown, 7, "2026-03-31"))
+    end)
+
+    it("ignores days outside both windows", function()
+      local breakdown = daily({
+        ["2026-03-31"] = 10,
+        ["2026-03-24"] = 10,
+        -- 03-17 is one day before the older window opens
+        ["2026-03-17"] = 1000,
+      })
+
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals(0, analytics.trend_over(breakdown, 7, "2026-03-31"))
+    end)
+
+    it("does not shift its boundaries when days are missing", function()
+      -- One day per window, six days apart -- a count-based split would put
+      -- both into the same half.
+      local breakdown = daily({ ["2026-03-31"] = 3, ["2026-03-20"] = 1 })
+
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals(200, analytics.trend_over(breakdown, 7, "2026-03-31"))
+    end)
+
+    it("reports 100% when there is no baseline but there is activity", function()
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals(100, analytics.trend_over(daily({ ["2026-03-31"] = 5 }), 7, "2026-03-31"))
+    end)
+
+    it("returns nil when neither window holds any data", function()
+      ---@diagnostic disable-next-line: undefined-field
+      assert.is_nil(analytics.trend_over(daily({ ["2026-01-01"] = 5 }), 7, "2026-03-31"))
+      ---@diagnostic disable-next-line: undefined-field
+      assert.is_nil(analytics.trend_over({}, 7, "2026-03-31"))
+    end)
+
+    it("measures back from yesterday by default, since today is never aggregated", function()
+      -- Flat traffic on every complete day. Anchoring on today would compare
+      -- six days against seven and invent a decline.
+      local counts = {}
+      for offset = 1, 14 do
+        counts[tostring(os.date("%Y-%m-%d", os.time() - offset * 86400))] = 10
+      end
+
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals(0, analytics.trend_over(daily(counts), 7))
+    end)
+
+    it("rejects a nonsensical window", function()
+      ---@diagnostic disable-next-line: undefined-field
+      assert.is_nil(analytics.trend_over(daily({ ["2026-03-31"] = 5 }), 0, "2026-03-31"))
+    end)
+  end)
+
   describe("get_history_span", function()
     local storage
 

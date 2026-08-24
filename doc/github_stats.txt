@@ -553,6 +553,12 @@ dashboard.refresh_interval_seconds  (integer)
     Set to 0 to disable. A non-number value is ignored.
     Default: 300 (5 minutes)
 
+dashboard.trend_window_days     (integer)
+    Days per trend comparison window: each entry's arrow compares the last
+    N complete days against the N before them, the same N whatever range is
+    displayed. See |github_stats-dashboard-trend|.
+    Default: 7
+
 dashboard.sort_by               (string)
     Default sort criteria: "clones", "views", "name", or "trend".
     Default: "clones"
@@ -577,6 +583,7 @@ Example Configuration:~
         refresh_interval_seconds = 300,
         sort_by = "clones",
         time_range = "30d",
+        trend_window_days = 7,
         keybindings = {
           navigate_down = "j",
           navigate_up = "k",
@@ -614,6 +621,24 @@ Visual Indicators:~
   ⬆ +15%    Growing (positive trend)
   ⬇ -8%     Declining (negative trend)
   ⬌ 0%      Stable (no change)
+  ⬌ n/a     Neither comparison window holds any data
+
+                                        *github_stats-dashboard-trend*
+Trend:~
+  The arrow compares the last `dashboard.trend_window_days` complete days
+  (default 7) against the same number of days before them. The comparison
+  is fixed: it does not follow the displayed range, so "+40%" means the
+  same thing at Range:7d and at Range:max, and sorting by trend orders
+  numbers that are actually comparable. The window is named in the header
+  as "Trend:7d/7d".
+
+  It is measured back from yesterday, not today: today's data is always
+  incomplete and is excluded from every aggregation, so anchoring on today
+  would compare six days against seven and invent a decline.
+
+  "n/a" means neither window holds data -- a different statement from
+  "0%", which means genuinely flat. Such entries sort below all others
+  under `sort_by = "trend"`.
 
 Sorting:~
   Press 's' to cycle through sort options:
