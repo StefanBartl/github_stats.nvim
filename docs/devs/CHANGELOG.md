@@ -25,6 +25,16 @@ documented as part of the features they affect in
 [`docs/FEATURES.md`](../FEATURES.md), not repeated here.)
 
 ### Added
+- **Read memo in `storage.read_metric_history()`**: stored metrics are read
+  and decoded once per metric directory and kept until something changes them.
+  Every dashboard render queried each repository three times and each query
+  re-listed and re-decoded every file in the directory, so a single `j` cost
+  the full stored history of every configured repository. No TTL — that would
+  be a fourth invisible answer to "how current is this data?" — but explicit
+  `storage.invalidate()` from the three places that change disk: a successful
+  `write_metric`, a successful `delete_metric_file`, a retention archive write,
+  and the dashboard's `r` key. Reads hand back a shallow copy so one caller
+  cannot corrupt the next reader's list.
 - **Dashboard highlighting**: `dashboard/highlights.lua` places extmarks over
   the rendered buffer using thirteen named groups linked to stock groups with
   `default = true` — so colours come from the user's colourscheme and a single
@@ -151,6 +161,10 @@ documented as part of the features they affect in
   while `os.time()` only ever reads a table as local time.
 
 ### Changed
+- **`r` re-reads from disk**: it re-rendered from whatever was already in
+  memory, which — before the read memo — meant the same thing as any other
+  render. It now drops the memo first, making it the documented way to pick up
+  a change another window or another Neovim wrote.
 - **The trend arrow now measures a fixed window**: the last
   `dashboard.trend_window_days` complete days (default `7`) versus the same
   number before them, independent of the displayed range. It used to halve

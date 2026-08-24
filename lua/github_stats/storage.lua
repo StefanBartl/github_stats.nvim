@@ -44,6 +44,45 @@ function M.get_metric_dir(repo, metric)
 end
 
 ---@internal
+---Memoized results of read_metric_history, keyed by metric directory.
+---@description
+--- Every dashboard render queried each repository twice (clones and views,
+--- plus a third for the trend), and every one of those queries listed the
+--- metric directory and read and JSON-decoded every file in it. A single `j`
+--- therefore cost the full stored history of every configured repository;
+--- RENDER_DEBOUNCE_MS capped how often that happened, not what it cost.
+---
+--- Keyed by directory rather than by repo/metric so that pointing the plugin
+--- at a different data directory (config.init with another config_dir, which
+--- is exactly what the specs do) cannot serve entries belonging to the
+--- previous one.
+---
+--- Deliberately no TTL. A time limit would be a fourth, invisible answer to
+--- "how current is this data?", next to the fetch interval, retention, and
+--- dashboard auto-refresh. Invalidation is explicit instead, from the three
+--- places that can actually change what is on disk: a write, a delete, and
+--- the manual refresh key.
+---@type table<string, GHStats.StoredMetricData[]>
+local history_cache = {}
+
+---Drop memoized history so the next read goes back to disk.
+---@description
+--- Called with no arguments after a delete or from the dashboard's manual
+--- refresh, which is what makes `r` mean something `j` does not: it is the
+--- documented "re-read from disk" action.
+---@param repo? string Repository identifier; omit to clear every entry
+---@param metric? string Metric type; required when repo is given
+---@return nil
+function M.invalidate(repo, metric)
+  if repo and metric then
+    history_cache[get_metric_dir(repo, metric)] = nil
+    return
+  end
+
+  history_cache = {}
+end
+
+---@internal
 ---Generate timestamp-based filename
 ---@return string # ISO 8601 filename-safe format
 local function generate_filename()
@@ -67,7 +106,13 @@ function M.write_metric(repo, metric, data)
     data = data,
   }
 
-  return require("lib.nvim.fs.json").write(filepath, storage_data)
+  local ok, err = require("lib.nvim.fs.json").write(filepath, storage_data)
+
+  if ok then
+    M.invalidate(repo, metric)
+  end
+
+  return ok, err
 end
 
 ---Read all metric files for a repository
@@ -76,6 +121,15 @@ end
 ---@return GHStats.StoredMetricData[], string? # Array of stored data, error message
 function M.read_metric_history(repo, metric)
   local dir = get_metric_dir(repo, metric)
+
+  local cached = history_cache[dir]
+  if cached then
+    -- Shallow copy: the records themselves are shared (copying them would
+    -- cost as much as the decode this avoids), but the list is not, so a
+    -- caller inserting or removing entries cannot corrupt the next reader's
+    -- view. Treat the records as read-only.
+    return vim.list_slice(cached), nil
+  end
 
   -- Check if directory exists
   local stat = loop.fs_stat(dir)
@@ -107,7 +161,9 @@ function M.read_metric_history(repo, metric)
     return a.timestamp < b.timestamp
   end)
 
-  return results, nil
+  history_cache[dir] = results
+
+  return vim.list_slice(results), nil
 end
 
 ---List raw metric files for a repository without parsing their JSON content
@@ -162,6 +218,12 @@ function M.delete_metric_file(filepath)
   if not ok then
     return false, tostring(err)
   end
+
+  -- Only the path is known here, not which repo/metric it belonged to, and
+  -- deletes come from retention runs -- rare enough that clearing everything
+  -- is cheaper than teaching this function to parse a path back into a key.
+  M.invalidate()
+
   return true, nil
 end
 

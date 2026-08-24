@@ -211,10 +211,15 @@ function M.setup_keymaps(buf)
     end
   end, which_key_entries, "GitHub Stats: show repository details")
 
-  -- Refresh: configurable (default r) -- re-renders with already-cached data
+  -- Refresh: configurable (default r) -- drops the storage read memo and
+  -- re-renders from disk, without hitting the API. This is what makes `r`
+  -- mean something plain navigation does not: since the memo landed, every
+  -- other render is served from memory, so `r` is the documented way to pick
+  -- up a change another window (or another Neovim) wrote.
   map_key(buf, keybindings.refresh_selected, function()
+    require("github_stats.storage").invalidate()
     require("github_stats.dashboard").schedule_render(true)
-  end, which_key_entries, "GitHub Stats: refresh dashboard")
+  end, which_key_entries, "GitHub Stats: re-read from disk and refresh")
 
   -- Refresh all: configurable (default R) -- force-fetches every configured repo
   map_key(buf, keybindings.refresh_all, function()

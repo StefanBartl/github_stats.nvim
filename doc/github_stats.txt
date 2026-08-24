@@ -522,7 +522,8 @@ Navigation:~
   <Enter>         Show detailed statistics for selected repository
 
 Actions:~
-  r               Re-render from cached data (no API call)
+  r               Drop the in-memory read cache and re-render from disk
+                  (no API call); see |github_stats-dashboard-caching|
   R               Force-fetch all repositories from GitHub (bypass interval)
   f               Force-fetch selected repository from GitHub (bypass interval)
   s               Cycle sort criteria (clones/views/name/trend)
@@ -622,6 +623,20 @@ Visual Indicators:~
   ⬇ -8%     Declining (negative trend)
   ⬌ 0%      Stable (no change)
   ⬌ n/a     Neither comparison window holds any data
+
+                                        *github_stats-dashboard-caching*
+Caching:~
+  Stored metrics are read from disk once and kept in memory until something
+  changes them. Without that, every keypress re-read and re-decoded the
+  entire stored history of every configured repository.
+
+  The cache is dropped when a fetch writes, when a retention run archives
+  or prunes, and when 'r' is pressed. There is no time-based expiry, so
+  nothing serves stale data because a timer had not fired yet, and nothing
+  re-reads because one did.
+
+  'r' is therefore how to pick up a change this Neovim did not make
+  itself -- a fetch from another window, or another Neovim entirely.
 
                                         *github_stats-dashboard-highlights*
 Colours:~

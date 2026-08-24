@@ -68,6 +68,20 @@ require("github_stats").setup({
 
 ## Sorting and Filtering
 
+### Caching
+
+Stored metrics are read from disk once and kept in memory until something
+changes them. Without that, every keypress in the dashboard re-read and
+re-decoded the entire stored history of every configured repository.
+
+The cache is dropped automatically whenever a fetch writes, a retention run
+archives or prunes, or you press `r`. There is no time-based expiry — nothing
+serves you stale data because a timer had not fired yet, and nothing re-reads
+because one did.
+
+`r` is therefore the way to pick up a change this Neovim did not make itself
+(a fetch from another window, or another Neovim instance entirely).
+
 ### Colours
 
 The dashboard defines its own highlight groups and links them to stock groups,
@@ -212,7 +226,9 @@ previous range stays in effect.
 
 ### Manual Refresh
 
-- `r`: Re-render the dashboard from already-fetched (cached) data — no API call
+- `r`: Drop the in-memory read cache and re-render from disk — no API call.
+  Stored metrics are memoized (see below), so this is how you pick up a change
+  another window wrote
 - `R`: Force-fetch all repositories from the GitHub API (bypasses the fetch interval)
 - `f`: Force-fetch only the selected repository from the GitHub API (bypasses the fetch interval)
 
@@ -260,7 +276,7 @@ rejected there as too aggressive — `0` is the only way to switch it off.
 | `<C-d>` / `<C-u>` | Scroll half page |
 | `<PageDown>` / `<PageUp>` | Scroll full page |
 | `<Enter>` | Show detailed view |
-| `r` | Re-render from cached data |
+| `r` | Drop the read cache and re-render from disk |
 | `R` | Force-fetch all repositories |
 | `f` | Force-fetch selected repository |
 | `s` | Cycle sort criteria (clones → views → name → trend) |

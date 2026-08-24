@@ -141,6 +141,35 @@ would draw a shuffled history that still looked plausible. A repository with
 no data in range gets no sparkline, not a flat one. `ENTRY_LINES` is unchanged
 at 5 — the sparkline shares the period line rather than claiming its own.
 
+### Reading: one memo, three invalidation points
+
+`storage.read_metric_history()` memoizes its result, keyed by metric
+directory. Without it every dashboard render queried each repository three
+times (clones, views, and the fixed trend window), and each of those listed
+the metric directory and read and JSON-decoded every file in it — so a single
+`j` cost the full stored history of every configured repository.
+`RENDER_DEBOUNCE_MS` capped how often that happened, never what it cost.
+
+Keyed by directory rather than by repo/metric, so pointing the plugin at a
+different data directory cannot serve entries belonging to the previous one.
+
+Deliberately **no TTL**: a time limit would be a fourth invisible answer to
+"how current is this data?", next to the fetch interval, retention, and
+dashboard auto-refresh. `storage.invalidate([repo, metric])` is called from
+exactly the three places that can change what is on disk:
+
+| Trigger | Call |
+|---|---|
+| `storage.write_metric()` succeeded (every fetch path) | `invalidate(repo, metric)` |
+| `storage.delete_metric_file()` succeeded (retention) | `invalidate()` — only the path is known there |
+| `retention.compact_metric()` writes an archive | `invalidate(repo, metric)` — the archive is written straight through `fs.json`, not `write_metric` |
+| The dashboard's `r` key | `invalidate()` |
+
+Reads hand back a shallow copy of the memoized list: the records are shared
+(copying them would cost as much as the decode being avoided) but the list is
+not, so a caller inserting or removing entries cannot corrupt the next
+reader's view. Treat the records themselves as read-only.
+
 ### Highlighting
 
 `dashboard/highlights.lua` places extmarks over the rendered buffer. Before
@@ -184,7 +213,10 @@ that replaces it.
 
 Three distinct refresh actions, all in `dashboard/actions.lua`:
 
-- `r` (`refresh_selected`) — re-render from already-cached data, no API call.
+- `r` (`refresh_selected`) — drop the storage read memo and re-render from
+  disk, no API call. Since the memo landed this is the documented way to pick
+  up a change another window (or another Neovim) wrote; every other render is
+  served from memory.
 - `f` (`force_refresh_selected`) — force-fetch only the selected repo via
   `fetcher.fetch_repo`, bypassing `fetch_interval_hours`.
 - `R` (`refresh_all`) — force-fetch every configured repository via

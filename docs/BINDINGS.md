@@ -61,7 +61,7 @@ Defaults come from [`lua/github_stats/config/DEFAULTS.lua`](../lua/github_stats/
 | `navigate_down` | `j` | Move selection down |
 | `navigate_up` | `k` | Move selection up |
 | `show_details` | `<CR>` | Open detailed view for the selected repo |
-| `refresh_selected` | `r` | Re-render the dashboard from already-cached data (no API call) |
+| `refresh_selected` | `r` | Drop the in-memory read cache and re-render from disk (no API call) |
 | `refresh_all` | `R` | Force-fetch all configured repositories from GitHub, then re-render |
 | `force_refresh` | `f` | Force-fetch the selected repository from GitHub, then re-render |
 | `cycle_sort` | `s` | Cycle sort criteria: `clones` → `views` → `name` → `trend`. `Ns` advances N positions |

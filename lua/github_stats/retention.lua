@@ -105,6 +105,13 @@ function M.compact_metric(repo, metric, opts)
     table.sort(archive.data[metric], function(a, b)
       return a.timestamp < b.timestamp
     end)
+    -- Written straight through fs.json rather than storage.write_metric (the
+    -- archive is not a fetch record), so the storage read memo has to be
+    -- dropped explicitly here -- otherwise a compaction that archived days
+    -- without deleting any file yet would leave readers on the pre-archive
+    -- view.
+    storage.invalidate(repo, metric)
+
     local ok, write_err = require("lib.nvim.fs.json").write(archive_path, archive)
     if not ok then
       return { archived = 0, deleted = 0, freed_bytes = 0 }, write_err

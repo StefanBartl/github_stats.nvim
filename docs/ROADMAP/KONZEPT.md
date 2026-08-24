@@ -86,7 +86,18 @@ Timer-Leak sonst entstünde.
 
 ## P1 — Substanz
 
-### 2. Jeder Tastendruck liest die gesamte Historie neu von der Platte
+### 2. Jeder Tastendruck liest die gesamte Historie neu von der Platte — ✅ erledigt
+
+> **Umgesetzt.** Memo in `storage.read_metric_history()`, geschlüsselt über
+> das Metrik-Verzeichnis (nicht über repo/metric — sonst könnte ein Wechsel
+> des Datenverzeichnisses Einträge des vorigen ausliefern). Kein TTL, wie
+> vorgeschlagen; invalidiert wird explizit an genau den Stellen, die die
+> Platte ändern: erfolgreicher `write_metric`, erfolgreicher
+> `delete_metric_file`, der Archiv-Schreibvorgang in `retention` (der an
+> `write_metric` vorbei direkt über `fs.json` geht) und die Taste `r`. Damit
+> tut `r` erstmals etwas, das `j` nicht auch tut. Gelesen wird eine flache
+> Kopie der Liste: die Records bleiben geteilt (sie zu kopieren kostete so
+> viel wie das eingesparte Decode), die Liste nicht.
 
 **Befund.** `dashboard/render.lua`s `build_lines()` ruft pro Render für
 **jedes** Repository `analytics.query_metric()` zweimal auf (clones + views);
