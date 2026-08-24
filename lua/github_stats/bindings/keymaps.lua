@@ -229,13 +229,15 @@ function M.setup_keymaps(buf)
   end, which_key_entries, "GitHub Stats: force refresh selected repository")
 
   -- Cycle sort: configurable (default s)
+  -- A count advances that many positions, matching how `j`/`k`/`<C-f>` in
+  -- this dashboard already read one. `count1`, since no count means one step.
   map_key(buf, keybindings.cycle_sort, function()
-    actions.cycle_sort()
+    actions.cycle_sort(vim.v.count1)
   end, which_key_entries, "GitHub Stats: cycle sort criteria")
 
   -- Cycle time range: configurable (default t)
   map_key(buf, keybindings.cycle_time_range, function()
-    actions.cycle_time_range()
+    actions.cycle_time_range(vim.v.count1)
   end, which_key_entries, "GitHub Stats: cycle time range")
 
   -- Custom time range: configurable (default T) -- prompts for a free-form

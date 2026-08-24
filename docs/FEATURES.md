@@ -57,11 +57,17 @@ so there's exactly one place that answers "which line is repo N on."
 `dashboard/actions.lua` cycles two independent pieces of render state, both
 re-applied on every render in `render.lua`:
 
-- Sort criteria (`cycle_sort`, key `s`): `clones` → `views` → `name` →
+- Sort criteria (`cycle_sort`, key `s`, `Ns` advances N): `clones` → `views` → `name` →
   `trend`, in a fixed cycle (`SORT_CYCLE` in `actions.lua`).
-- Time range (`cycle_time_range`, key `t`): `7d` → `30d` → `90d` → `max`
-  (`TIME_RANGE_CYCLE`), a re-aggregation window over already-fetched data —
-  switching it never triggers a new API call.
+- Time range (`cycle_time_range`, key `t`, `Nt` advances N): `7d` → `30d` →
+  `90d` → `max` (`TIME_RANGE_CYCLE`), a re-aggregation window over
+  already-fetched data — switching it never triggers a new API call.
+
+Both counts (added 2026-08-24) are taken modulo the cycle length, so a count
+larger than the cycle lands where the remainder says instead of looping for
+nothing, and a count equal to it is a deliberate no-op. From an unrecognised
+current value the count still applies from the start of the cycle, rather
+than silently collapsing to "first entry".
 - Maximum range (`max_time_range`, key `m`, `actions.M.set_max_time_range`):
   jumps straight to `max` — the longest duration the stored data can cover —
   and notifies the concrete window it resolved to, via

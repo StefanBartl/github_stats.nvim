@@ -18,28 +18,38 @@ local SORT_CYCLE = { "clones", "views", "name", "trend" }
 local TIME_RANGE_CYCLE = { "7d", "30d", "90d", "max" }
 
 ---@internal
----Return the next value in a fixed cycle, wrapping around
+---Return the value `steps` positions along a fixed cycle, wrapping around.
+---
+--- `steps` is taken modulo the cycle length, so `5s` over a four-entry cycle
+--- lands one along rather than doing nothing or looping four extra times. A
+--- count larger than the cycle is a fat-fingered keypress, not a request to
+--- spin.
 ---@param cycle string[]
 ---@param current string?
+---@param steps integer?  # defaults to 1
 ---@return string
-local function next_in_cycle(cycle, current)
+local function next_in_cycle(cycle, current, steps)
+  steps = math.max(steps or 1, 1) % #cycle
   for i, value in ipairs(cycle) do
     if value == current then
-      return cycle[(i % #cycle) + 1]
+      return cycle[((i - 1 + steps) % #cycle) + 1]
     end
   end
-  return cycle[1]
+  -- Unknown current value: start from the first entry and still honour the
+  -- count, so `3s` from an unrecognised state is not silently a no-op.
+  return cycle[(steps % #cycle) + 1]
 end
 
 ---Cycle to the next sort criteria (clones -> views -> name -> trend -> ...)
+---@param steps integer?  # advance this many positions (default 1)
 ---@return nil
-function M.cycle_sort()
+function M.cycle_sort(steps)
   local state = dashboard_state.get_state()
   if not state then
     return
   end
 
-  dashboard_state.set_sort_by(next_in_cycle(SORT_CYCLE, state.sort_by))
+  dashboard_state.set_sort_by(next_in_cycle(SORT_CYCLE, state.sort_by, steps))
 end
 
 ---Cycle to the next time range (7d -> 30d -> 90d -> max -> ...)
@@ -48,13 +58,14 @@ end
 --- no new API request is needed since analytics.query_metric re-aggregates
 --- stored data for whatever range is selected.
 ---@return nil
-function M.cycle_time_range()
+---@param steps integer?  # advance this many positions (default 1)
+function M.cycle_time_range(steps)
   local state = dashboard_state.get_state()
   if not state then
     return
   end
 
-  dashboard_state.set_time_range(next_in_cycle(TIME_RANGE_CYCLE, state.time_range))
+  dashboard_state.set_time_range(next_in_cycle(TIME_RANGE_CYCLE, state.time_range, steps))
 end
 
 ---Prompt the user for a free-form time range expression (e.g. "14d", "3m",

@@ -64,8 +64,17 @@ Defaults come from [`lua/github_stats/config/DEFAULTS.lua`](../lua/github_stats/
 | `refresh_selected` | `r` | Re-render the dashboard from already-cached data (no API call) |
 | `refresh_all` | `R` | Force-fetch all configured repositories from GitHub, then re-render |
 | `force_refresh` | `f` | Force-fetch the selected repository from GitHub, then re-render |
-| `cycle_sort` | `s` | Cycle sort criteria: `clones` → `views` → `name` → `trend` |
-| `cycle_time_range` | `t` | Cycle time range: `7d` → `30d` → `90d` → `max` |
+| `cycle_sort` | `s` | Cycle sort criteria: `clones` → `views` → `name` → `trend`. `Ns` advances N positions |
+| `cycle_time_range` | `t` | Cycle time range: `7d` → `30d` → `90d` → `max`. `Nt` advances N positions |
+
+Both counts are taken **modulo the cycle length**, so `5s` over a four-entry
+cycle lands one along rather than looping four extra times for nothing, and
+`4s` is a deliberate no-op (a full loop). A count larger than the cycle is a
+fat-fingered keypress, not a request to spin.
+
+This brings the two cycles in line with the rest of the dashboard, where
+`j`/`k`, `<C-d>`/`<C-u>`, `<C-f>`/`<C-b>` and `Ngg`/`NgG` already read a
+count — the count audit called that out as the inconsistency.
 | `custom_time_range` | `T` | Prompt for a free-form time range expression (e.g. `3m`, `since:2025-01-01`, a date preset name) |
 | `max_time_range` | `m` | Set the range to `max`: the longest duration the locally stored data covers, and notify the concrete span |
 | `quit` | `q` | Close the dashboard |
