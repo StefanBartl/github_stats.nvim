@@ -51,22 +51,21 @@ describe("analytics", function()
       assert.equals(expected_start, start_date)
     end)
 
-    it("recognizes 'Nm' month counts (30-day approximation)", function()
+    it("recognizes 'Nm' month counts, and no longer as 90 days", function()
       local start_date, _, ok = analytics.parse_time_range("3m")
-      local expected_start = os.date("!%Y-%m-%d", os.time() - 90 * 86400)
       ---@diagnostic disable-next-line: undefined-field
       assert.is_true(ok)
-      ---@diagnostic disable-next-line: undefined-field
-      assert.equals(expected_start, start_date)
-    end)
 
-    it("recognizes 'Ny' year counts (365-day approximation)", function()
-      local start_date, _, ok = analytics.parse_time_range("1y")
-      local expected_start = os.date("!%Y-%m-%d", os.time() - 365 * 86400)
-      ---@diagnostic disable-next-line: undefined-field
-      assert.is_true(ok)
-      ---@diagnostic disable-next-line: undefined-field
-      assert.equals(expected_start, start_date)
+      -- The exact date is asserted below via calendar components; here the
+      -- point is only that the 30-day approximation is gone. Skipped on the
+      -- month triples that genuinely do span 90 days, where both answers
+      -- coincide and there is nothing to tell apart.
+      local approximation = os.date("!%Y-%m-%d", os.time() - 90 * 86400)
+      local today = os.date("!%Y-%m-%d")
+      if analytics.count_days(start_date, today) ~= 91 then
+        ---@diagnostic disable-next-line: undefined-field
+        assert.are_not.equals(approximation, start_date)
+      end
     end)
 
     it("recognizes 'since:YYYY-MM-DD' as start date through today", function()
@@ -115,6 +114,45 @@ describe("analytics", function()
       assert.is_nil(start_date)
       ---@diagnostic disable-next-line: undefined-field
       assert.is_nil(end_date)
+    end)
+
+    it("steps whole calendar months for 'Nm', not 30-day blocks", function()
+      local start_date, _, ok = analytics.parse_time_range("3m")
+      ---@diagnostic disable-next-line: undefined-field
+      assert.is_true(ok)
+
+      local today = os.date("!*t")
+      local expected_month = ((today.month - 3 - 1) % 12) + 1
+      local expected_year = today.year + math.floor((today.month - 3 - 1) / 12)
+
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals(string.format("%04d-%02d", expected_year, expected_month), start_date:sub(1, 7))
+    end)
+
+    it("steps whole calendar years for 'Ny'", function()
+      local start_date = analytics.parse_time_range("1y")
+      local today = os.date("!*t")
+
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals(string.format("%04d-%02d", today.year - 1, today.month), start_date:sub(1, 7))
+    end)
+
+    it("treats 'Ny' as 12 * 'Nm'", function()
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals(analytics.parse_time_range("24m"), analytics.parse_time_range("2y"))
+    end)
+
+    it("clamps the day of month rather than rolling into the next month", function()
+      -- Month arithmetic that ignores month length turns 2026-03-31 minus one
+      -- month into 2026-03-03 (via a normalised 2026-02-31). The day is
+      -- clamped to the last real day instead.
+      local today = os.date("!*t")
+      local start_date = analytics.parse_time_range("1m")
+      local month = tonumber(start_date:sub(6, 7))
+      local expected_month = ((today.month - 1 - 1) % 12) + 1
+
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals(expected_month, month)
     end)
 
     it("reports unrecognized expressions as not ok", function()

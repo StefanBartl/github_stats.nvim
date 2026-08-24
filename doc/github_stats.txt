@@ -675,7 +675,10 @@ Time Range Expressions:~
                               in effect, "max" is the label the 't' cycle
                               and the 'm' key produce
   • "Nd" / "Nw"             - N days / N weeks back from today
-  • "Nm" / "Ny"             - ~N months (30d) / ~N years (365d) back
+  • "Nm" / "Ny"             - N calendar months / years back; the day is
+                              clamped to the target month's length, so one
+                              month back from the 31st lands on the 28th,
+                              29th or 30th rather than rolling forward
   • "since:YYYY-MM-DD"      - that date through today
   • "YYYY-MM-DD"            - same as "since:YYYY-MM-DD"
   • any |github_stats-date-presets| name, built-in or user-custom

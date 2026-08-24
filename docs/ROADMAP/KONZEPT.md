@@ -233,7 +233,14 @@ Single-Source-of-Truth-Konstante eine Einzeiländerung.
 
 ## P3 — Genauigkeit im Detail
 
-### 8. `3m` und `1y` sind Näherungen, `this_month` ist es nicht
+### 8. `3m` und `1y` sind Näherungen, `this_month` ist es nicht — ✅ erledigt
+
+> **Umgesetzt.** `Nm`/`Ny` gehen über `shift_months()` echte Kalendermonate
+> zurück, der Tag wird auf die Monatslänge geklemmt (ein Monat vor dem 31.
+> ist der 28./29./30., nicht der 3. des Folgemonats, den `os.time()` daraus
+> normalisiert hätte). Bewusst reine Datums-Arithmetik statt eines
+> `os.time()`-Umwegs: `parse_time_range` rechnet in UTC, `os.time()` liest
+> eine Tabelle immer als Lokalzeit — ein Umweg hätte beides vermischt.
 
 **Befund.** `analytics.parse_time_range()` rechnet `Nm` als N × 30 Tage und
 `Ny` als N × 365 Tage. Direkt daneben liefert `date_presets` mit

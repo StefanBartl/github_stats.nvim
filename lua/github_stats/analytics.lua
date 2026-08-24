@@ -164,10 +164,58 @@ local function aggregate_daily(history, start_date, end_date)
 end
 
 ---@internal
+---Days in a given calendar month.
+---@param year integer
+---@param month integer 1-12
+---@return integer
+local function days_in_month(year, month)
+  if month == 2 then
+    local leap = (year % 4 == 0 and year % 100 ~= 0) or year % 400 == 0
+    return leap and 29 or 28
+  end
+  if month == 4 or month == 6 or month == 9 or month == 11 then
+    return 30
+  end
+  return 31
+end
+
+---@internal
+---Shift a timestamp by whole calendar months, clamping the day of month.
+---@description
+--- `3m` used to mean "90 days ago" and `1y` "365 days ago", while the date
+--- presets sitting in the same input field (`this_month`, `this_quarter`,
+--- `this_year`) were calendar-exact -- two different notions of accuracy in
+--- one prompt. This makes `Nm`/`Ny` mean what they read like: 3 months back
+--- from 2026-05-31 is 2026-02-28, not "90 days ago".
+---
+--- Deliberately pure arithmetic on the date parts rather than a round trip
+--- through os.time(): the surrounding parse_time_range works in UTC (note the
+--- "!" in its os.date calls), and os.time() only ever interprets a table as
+--- local time -- so a round trip would silently mix the two and could land a
+--- day off near midnight. It also sidesteps os.time() normalising an
+--- impossible 2026-02-31 forward into March instead of clamping it to the
+--- 28th.
+---@param timestamp integer Unix timestamp to shift from
+---@param months integer Months to add (negative shifts into the past)
+---@return string # ISO date (YYYY-MM-DD)
+local function shift_months(timestamp, months)
+  local parts = os.date("!*t", timestamp)
+
+  -- Work in months-since-year-0 so the arithmetic wraps years by itself.
+  local total = (parts.year * 12) + (parts.month - 1) + months
+  local year = math.floor(total / 12)
+  local month = (total % 12) + 1
+  local day = math.min(parts.day, days_in_month(year, month))
+
+  return string.format("%04d-%02d-%02d", year, month, day)
+end
+
+---@internal
 ---Parse a flexible time range expression into start/end ISO dates.
 ---Recognized forms:
 ---  - "all" / "max" -- no filtering, i.e. the maximum locally stored duration
----  - "Nd" / "Nw" / "Nm" / "Ny" -- N days/weeks/~months(30d)/~years(365d) back from today
+---  - "Nd" / "Nw" -- N days / N weeks back from today
+---  - "Nm" / "Ny" -- N calendar months / years back from today (day clamped)
 ---  - "since:YYYY-MM-DD" or a bare "YYYY-MM-DD" -- that date through today
 ---  - "last week" / "last month" / "last quarter" -- legacy phrase aliases
 ---  - any name known to github_stats.date_presets (built-in or user-custom,
@@ -199,12 +247,12 @@ local function parse_time_range(time_range)
 
   local months = time_range:match("^(%d+)m$")
   if months then
-    return tostring(os.date("!%Y-%m-%d", now - tonumber(months) * 30 * 86400)), today, true
+    return shift_months(now, -tonumber(months)), today, true
   end
 
   local years = time_range:match("^(%d+)y$")
   if years then
-    return tostring(os.date("!%Y-%m-%d", now - tonumber(years) * 365 * 86400)), today, true
+    return shift_months(now, -12 * tonumber(years)), today, true
   end
 
   local since = time_range:match("^since:(%d%d%d%d%-%d%d%-%d%d)$") or time_range:match("^(%d%d%d%d%-%d%d%-%d%d)$")

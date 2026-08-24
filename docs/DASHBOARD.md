@@ -138,8 +138,8 @@ the current value. Accepted forms:
 |------|---------|
 | `Nd` | N days back (e.g. `14d`) |
 | `Nw` | N weeks back (e.g. `6w`) |
-| `Nm` | ~N months back, 30-day approximation (e.g. `3m`) |
-| `Ny` | ~N years back, 365-day approximation (e.g. `2y`) |
+| `Nm` | N calendar months back (e.g. `3m`); day clamped to the month's length |
+| `Ny` | N calendar years back (e.g. `2y`), i.e. `12 * N` months |
 | `since:YYYY-MM-DD` | That date through today |
 | `YYYY-MM-DD` | Same as `since:YYYY-MM-DD` |
 | `all` / `max` | No filtering — the maximum stored duration |

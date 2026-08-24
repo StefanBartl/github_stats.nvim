@@ -119,6 +119,17 @@ documented as part of the features they affect in
   rewritten to test the real modules (`dashboard.render`,
   `bindings.keymaps`).
 
+- **`Nm` and `Ny` are calendar-accurate**: `3m` meant "90 days ago" and `1y`
+  meant "365 days ago", while the date presets accepted in the same input
+  field (`this_month`, `this_quarter`, `this_year`) were calendar-exact — two
+  notions of accuracy in one prompt. `3m` now means three calendar months, and
+  `Ny` is `12 * N` months. The day is clamped to the target month's length, so
+  one month back from the 31st lands on the 28th/29th/30th rather than rolling
+  forward into the next month. Ranges shift by up to five days a year versus
+  the old approximation. The arithmetic is pure date-component maths rather
+  than an `os.time()` round trip, because `parse_time_range` works in UTC
+  while `os.time()` only ever reads a table as local time.
+
 ### Changed
 - **The trend arrow now measures a fixed window**: the last
   `dashboard.trend_window_days` complete days (default `7`) versus the same

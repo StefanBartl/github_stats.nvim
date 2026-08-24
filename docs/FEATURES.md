@@ -75,7 +75,8 @@ than silently collapsing to "first entry".
 
 `custom_time_range` (key `T`, `actions.M.prompt_custom_time_range`) instead
 opens a `vim.fn.input()` prompt pre-filled with the current range, accepting
-any form `analytics.parse_time_range` recognizes (`Nd`/`Nw`/`Nm`/`Ny`,
+any form `analytics.parse_time_range` recognizes (`Nd`/`Nw` in days/weeks,
+`Nm`/`Ny` in calendar months/years,
 `since:YYYY-MM-DD`, a bare ISO date, `all`/`max`, or a date-preset name). An
 unrecognized expression is rejected with an error notification and the
 previous range is left in place.
