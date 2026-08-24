@@ -89,6 +89,13 @@ it costs no extra queries. With nothing stored yet it reads `(no data)`.
 `analytics.count_days()` does the inclusive day count and rounds rather than
 truncates, so a DST boundary inside the span cannot silently lose a day.
 
+Both the header span and each entry's `Period:` line gate on `has_days()` —
+a non-empty `daily_breakdown` — rather than on `period_start` being set.
+`query_metric` echoes the *requested* range back as `period_start`/
+`period_end` for a repository with no stored files at all (and `"N/A"` when it
+has files but nothing in range), so the older check made both claim a period
+for a repository that had never been fetched.
+
 The header is five lines (`render.M.HEADER_LINES = 5`): border, title, the
 sort/range status line, a key-hint line, border. The hint line is built from
 the *effective* keybindings rather than hardcoded defaults, so a remapped or

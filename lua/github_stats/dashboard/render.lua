@@ -49,6 +49,20 @@ local function fit_width(str, width)
 end
 
 ---@internal
+---Whether an aggregation actually covered any day.
+---@description
+--- `analytics.query_metric` fills period_start/period_end with the *requested*
+--- range when a repository has no stored files at all, and with "N/A" when it
+--- has files but nothing inside the range. Neither means "there is data", so
+--- the daily breakdown -- which is empty in both cases -- is what everything
+--- displaying a period should be asking.
+---@param aggregated GHStats.AggregatedStats|nil
+---@return boolean
+local function has_days(aggregated)
+  return aggregated ~= nil and aggregated.daily_breakdown ~= nil and next(aggregated.daily_breakdown) ~= nil
+end
+
+---@internal
 ---Describe the window the current range actually resolved to, e.g.
 ---"2025-03-04 -> 2026-08-22, 172 days". Derived from the per-repo stats that
 ---were computed for this render anyway (their period_start/period_end are the
@@ -62,12 +76,21 @@ local function describe_span(stats_by_repo)
 
   for _, stats in pairs(stats_by_repo) do
     for _, aggregated in pairs({ stats.clones, stats.views }) do
-      local from, to = aggregated.period_start, aggregated.period_end
-      if from and from ~= "N/A" and (not earliest or from < earliest) then
-        earliest = from
-      end
-      if to and to ~= "N/A" and (not latest or to > latest) then
-        latest = to
+      -- Only repositories that actually contributed a day may move the span.
+      -- analytics.query_metric reports the *requested* window as
+      -- period_start/period_end when a repository has no stored files at all
+      -- (and "N/A" when it has files but none in range) -- taking the former at
+      -- face value made the header claim "Range:30d (2026-07-25 -> 2026-08-24,
+      -- 31 days)" for a repository with nothing in it. The breakdown is the
+      -- honest witness: empty means this repository saw no days.
+      if has_days(aggregated) then
+        local from, to = aggregated.period_start, aggregated.period_end
+        if from and from ~= "N/A" and (not earliest or from < earliest) then
+          earliest = from
+        end
+        if to and to ~= "N/A" and (not latest or to > latest) then
+          latest = to
+        end
       end
     end
   end
@@ -93,8 +116,7 @@ end
 local function build_key_hints()
   local DEFAULT_KEYBINDINGS = require("github_stats.config.DEFAULTS").dashboard.keybindings
   local cfg = require("github_stats.config").get()
-  local keybindings =
-    vim.tbl_extend("force", DEFAULT_KEYBINDINGS, (cfg and cfg.dashboard and cfg.dashboard.keybindings) or {})
+  local keybindings = vim.tbl_extend("force", DEFAULT_KEYBINDINGS, (cfg and cfg.dashboard and cfg.dashboard.keybindings) or {})
 
   local hints = {
     { keybindings.cycle_sort, "sort" },
@@ -294,8 +316,11 @@ local function build_entry(repo, index, is_selected, stats)
 
   table.insert(lines, string.format("  Views:   %s total, %s unique", format_number(views_count), format_number(views_uniques)))
 
-  -- Period info
-  if stats_clones and stats_clones.period_start then
+  -- Period info. Guarded by has_days() rather than by period_start being
+  -- non-nil: for a repository that was never fetched, query_metric echoes the
+  -- requested range back as period_start/period_end, so the old check printed
+  -- a period for a repository that has no data at all.
+  if has_days(stats_clones) then
     table.insert(lines, string.format("  Period:  %s to %s", stats_clones.period_start, stats_clones.period_end))
   else
     table.insert(lines, "  Period:  No data available")

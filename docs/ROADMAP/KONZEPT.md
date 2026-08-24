@@ -137,7 +137,21 @@ dasselbe messen.
 **Aufwand.** Klein. **Risiko.** Gering, aber es ist eine *Verhaltens*änderung
 an einer sichtbaren Zahl → changelog-pflichtig.
 
-### 4. Die Testabdeckung endet vor der Darstellung
+### 4. Die Testabdeckung endet vor der Darstellung — ✅ erledigt
+
+> **Umgesetzt.** `tests/dashboard_render_spec.lua`, 13 Specs über den
+> gerenderten Puffer: Zeilenbudget gegen `HEADER_LINES`/`ENTRY_LINES`,
+> Index↔Zeile als Rundreise, gleiche Rahmenbreite aller Kopfzeilen,
+> Sort/Range-Anzeige, Tastenhinweise bei Remap und bei `""`, Auswahlmarke.
+> Bewusst über `dashboard.open()` statt über Test-Exports der lokalen
+> `build_lines`/`build_header` — eine nur für den Test eingezogene Naht kann
+> grün sein, während der echte Renderpfad kaputt ist.
+>
+> Hat prompt zwei echte Fehler gefunden: `query_metric` gibt für ein
+> Repository ohne gespeicherte Dateien den *angefragten* Zeitraum als
+> `period_start`/`period_end` zurück — Kopfzeile und `Period:`-Zeile haben
+> das für bare Münze genommen und einen Zeitraum für Daten behauptet, die es
+> nicht gibt. Beide fragen jetzt `has_days()` (leeres `daily_breakdown`).
 
 **Befund.** Specs decken `analytics`, `config`, `date_presets`, `export`,
 `retention` und einen Dashboard-Flow ab. Ungetestet sind ausgerechnet die

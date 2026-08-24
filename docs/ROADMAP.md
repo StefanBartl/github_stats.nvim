@@ -7,7 +7,6 @@ decision behind them stay in [`ROADMAP/IDEAS/IDEAS.md`](ROADMAP/IDEAS/IDEAS.md).
 
 | # | Item | Why | Concept |
 |---|---|---|---|
-| 2 | Specs for the render layer | `build_lines()`/`build_header()` and the line arithmetic are untested — where the last real bugs were | [P1.4](ROADMAP/KONZEPT.md#4-die-testabdeckung-endet-vor-der-darstellung) |
 | 3 | Read memo for stored metrics | Every keypress re-reads and re-decodes the full history of every repo | [P1.2](ROADMAP/KONZEPT.md#2-jeder-tastendruck-liest-die-gesamte-historie-neu-von-der-platte) |
 | 4 | Fixed trend window | The trend arrow halves whatever range is displayed, so `7d` and `max` show the same symbol for different things | [P1.3](ROADMAP/KONZEPT.md#3-der-trend-indikator-misst-etwas-anderes-als-der-nutzer-denkt) |
 | 5 | Highlight groups | The dashboard sets no highlights at all; colour carries no information | [P2.5](ROADMAP/KONZEPT.md#5-das-dashboard-hat-keine-einzige-hervorhebung) |

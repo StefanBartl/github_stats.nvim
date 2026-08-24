@@ -25,6 +25,13 @@ documented as part of the features they affect in
 [`docs/FEATURES.md`](../FEATURES.md), not repeated here.)
 
 ### Added
+- **Specs for the presentation layer**: `tests/dashboard_render_spec.lua`, 13
+  specs driven through `dashboard.open()` and the rendered buffer rather than
+  through test-only exports — line budget against `HEADER_LINES`/`ENTRY_LINES`,
+  index↔line round trip, equal header-box widths, the sort/range status line,
+  key hints under a remap and under `""`, and the selection marker. This is the
+  area every past line-height bug came from, and nothing test-side held the
+  buffer to those constants.
 - **Maximum time range in the dashboard**: a `max` range covering the longest
   duration the locally stored data spans, reachable in one keypress via the
   new `max_time_range` binding (default `m`, `actions.set_max_time_range`) and
@@ -59,6 +66,14 @@ documented as part of the features they affect in
   retention types).
 
 ### Fixed
+- **The dashboard claimed a period for repositories with no data**: both the
+  header's resolved span and each entry's `Period:` line trusted
+  `period_start`/`period_end`, which `analytics.query_metric` fills with the
+  *requested* range when a repository has no stored files at all. A repository
+  that had never been fetched therefore rendered
+  `Range:30d (2026-07-25 -> 2026-08-24, 31 days)` and a `Period:` line, rather
+  than `(no data)` and `No data available`. Both now gate on a non-empty
+  `daily_breakdown`. Found by the new render specs.
 - **Dashboard auto-refresh did not exist**: `refresh_interval_seconds` was
   configured, validated in `health.lua`, typed in `DashboardConfig`,
   documented, and `dashboard/state.lua` even carried an `auto_refresh_timer`
