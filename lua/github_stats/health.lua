@@ -372,13 +372,19 @@ function M.check()
     else
       health.ok("Dashboard enabled")
 
+      -- 0 is the documented off switch, so it cannot be reported as an error
+      -- alongside "must be >= 10" -- that combination made the one value the
+      -- docs tell you to use fail :checkhealth.
       local refresh = dashboard_cfg.refresh_interval_seconds
+      local default_refresh = require("github_stats.config.DEFAULTS").dashboard.refresh_interval_seconds
       if refresh ~= nil and type(refresh) ~= "number" then
         health.error("dashboard.refresh_interval_seconds must be number")
+      elseif refresh == 0 then
+        health.info("Auto-refresh disabled by configuration")
       elseif refresh ~= nil and refresh < 10 then
-        health.error("dashboard.refresh_interval_seconds must be >= 10")
+        health.error("dashboard.refresh_interval_seconds must be 0 (disabled) or >= 10")
       else
-        health.ok(str_format("Auto-refresh: every %d seconds", refresh or 60))
+        health.ok(str_format("Auto-refresh: every %d seconds", refresh or default_refresh))
       end
 
       if dashboard_cfg.keybindings == nil then

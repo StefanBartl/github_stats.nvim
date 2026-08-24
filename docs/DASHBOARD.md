@@ -173,7 +173,8 @@ refresh_interval_seconds = 0
 ```
 
 A value that is not a number is ignored (no timer is started);
-`:checkhealth github_stats` reports it.
+`:checkhealth github_stats` reports it. Any other value below `10` is
+rejected there as too aggressive — `0` is the only way to switch it off.
 
 ---
 

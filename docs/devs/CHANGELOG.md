@@ -66,6 +66,12 @@ documented as part of the features they affect in
   retention types).
 
 ### Fixed
+- **`:checkhealth` rejected the documented way to disable auto-refresh**:
+  `refresh_interval_seconds = 0` is the off switch, but health validation
+  errored on anything `< 10`, so the one value the docs tell you to use failed
+  the health check. `0` now reports as info ("Auto-refresh disabled by
+  configuration"), and the "every N seconds" line falls back to the real
+  default (300) instead of a hardcoded 60.
 - **The dashboard claimed a period for repositories with no data**: both the
   header's resolved span and each entry's `Period:` line trusted
   `period_start`/`period_end`, which `analytics.query_metric` fills with the
