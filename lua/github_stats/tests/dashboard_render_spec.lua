@@ -260,6 +260,62 @@ describe("dashboard render", function()
     end)
   end)
 
+  describe("totals", function()
+    ---Seed `count` clones and views per day for `days` days
+    ---@param repo string
+    ---@param days integer
+    ---@param count integer
+    local function seed(repo, days, count)
+      local items = {}
+      for offset = 1, days do
+        table.insert(items, {
+          timestamp = tostring(os.date("%Y-%m-%d", os.time() - offset * 86400)) .. "T00:00:00Z",
+          count = count,
+          uniques = 1,
+        })
+      end
+      local storage_module = require("github_stats.storage")
+      storage_module.write_metric(repo, "clones", { clones = items })
+      storage_module.write_metric(repo, "views", { views = items })
+    end
+
+    it("sums clones and views across every repository", function()
+      render_lines({ "user/a", "user/b" }, { time_range = "max" })
+      seed("user/a", 10, 3)
+      seed("user/b", 10, 4)
+      dashboard.schedule_render(true)
+
+      local buf = require("github_stats.state.ui_state").get_buf()
+      local header = table.concat(vim.api.nvim_buf_get_lines(buf, 0, render.HEADER_LINES, false), "\n")
+
+      assert.is_truthy(header:find("2 repos", 1, true))
+      assert.is_truthy(header:find("70 clones", 1, true))
+      assert.is_truthy(header:find("70 views", 1, true))
+    end)
+
+    it("names the repository with the most clones", function()
+      render_lines({ "user/quiet", "user/busy" }, { time_range = "max" })
+      seed("user/quiet", 5, 1)
+      seed("user/busy", 5, 9)
+      dashboard.schedule_render(true)
+
+      local buf = require("github_stats.state.ui_state").get_buf()
+      local header = table.concat(vim.api.nvim_buf_get_lines(buf, 0, render.HEADER_LINES, false), "\n")
+
+      assert.is_truthy(header:find("top:user/busy", 1, true))
+    end)
+
+    it("names no top repository when nothing was cloned", function()
+      -- With everything at zero, "top" would just be whichever name happens
+      -- to sort first -- a number-shaped statement about nothing.
+      local lines = render_lines({ "user/a", "user/b" })
+      local header = table.concat(lines, "\n", 1, render.HEADER_LINES)
+
+      assert.is_truthy(header:find("0 clones", 1, true))
+      assert.is_falsy(header:find("top:", 1, true))
+    end)
+  end)
+
   describe("header key hints", function()
     it("shows the configured key, not the default one", function()
       local lines = render_lines({ "user/a" }, { keybindings = { max_time_range = "M" } })

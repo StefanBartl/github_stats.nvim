@@ -68,6 +68,18 @@ require("github_stats").setup({
 
 ## Sorting and Filtering
 
+### Totals
+
+The header's second line summarises the whole configured set over the active
+range:
+
+```
+║  2 repos  2,540 clones  2,540 views  top:user/a                        ║
+```
+
+It follows the time range like everything else, so switching to `max` gives
+all-time totals. No top repository is named while nothing has been cloned.
+
 ### Sparklines
 
 Each entry's `Period:` line ends with a sparkline of daily clones over the

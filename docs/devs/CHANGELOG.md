@@ -25,6 +25,11 @@ documented as part of the features they affect in
 [`docs/FEATURES.md`](../FEATURES.md), not repeated here.)
 
 ### Added
+- **Totals line in the dashboard header**: clones and views summed across every
+  configured repository over the active range, plus the repository with the
+  most clones. Summed from the per-repository stats already computed for that
+  render, so it costs no extra queries. `HEADER_LINES` is 6 (was 5); every line
+  and scroll calculation reads the constant, so nothing else changed.
 - **Sparkline per dashboard entry**: the `Period:` line now ends with a
   24-character sparkline of daily clones over the active range, fed from the
   `daily_breakdown` the entry already holds (no extra query).

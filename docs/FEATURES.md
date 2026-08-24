@@ -97,8 +97,15 @@ a non-empty `daily_breakdown` — rather than on `period_start` being set.
 has files but nothing in range), so the older check made both claim a period
 for a repository that had never been fetched.
 
-The header is five lines (`render.M.HEADER_LINES = 5`): border, title, the
-sort/range status line, a key-hint line, border. The hint line is built from
+The header is six lines (`render.M.HEADER_LINES = 6`): border, title, a
+totals line, the sort/range status line, a key-hint line, border. The totals
+line sums clones and views across every configured repository over the active
+range and names the one with the most clones — summed from the per-repository
+stats already computed for that render, so it costs no extra queries
+(`analytics.query_all_repos` would have re-read everything a second time to
+reach the same numbers). No top repository is named when nothing was cloned,
+since "top" would then only mean "sorts first"; ties are broken by name so the
+line does not flicker between equal repositories from render to render. The hint line is built from
 the *effective* keybindings rather than hardcoded defaults, so a remapped or
 disabled (`""`) key is shown correctly or omitted.
 

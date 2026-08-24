@@ -11,11 +11,11 @@ local lib_format_number = require("lib.lua.strings.format").format_number
 
 local M = {}
 
----Number of lines used by header (top border, title, status, key hints,
----bottom border -- see build_header). Single source of truth for every
+---Number of lines used by header (top border, title, totals, status, key
+---hints, bottom border -- see build_header). Single source of truth for every
 ---line/scroll calculation in this module, dashboard/state.lua,
 ---dashboard/movement.lua and bindings/keymaps.lua.
-M.HEADER_LINES = 5
+M.HEADER_LINES = 6
 
 ---Number of lines used by a single repository entry (see build_entry: title,
 ---Clones, Views, Period, separator). Single source of truth for every
@@ -155,7 +155,51 @@ local function build_key_hints()
 end
 
 ---@internal
----Build header lines, including a status line reflecting live sort/range state
+---Summarise the whole configured set over the active range.
+---@description
+--- The dashboard listed n repositories and answered every per-repository
+--- question while leaving the most obvious one -- "how is this going
+--- overall?" -- to mental arithmetic across a scrolling list. Summed from the
+--- per-repository stats already computed for this render, so it costs no
+--- extra queries; `analytics.query_all_repos` would have re-read everything a
+--- second time to reach the same numbers.
+---@param stats_by_repo table<string, GHStats.DashboardRepoStats>
+---@return string
+local function build_totals(stats_by_repo)
+  local repo_count, clones_total, views_total = 0, 0, 0
+  local top_repo, top_clones = nil, -1
+
+  for repo, stats in pairs(stats_by_repo) do
+    repo_count = repo_count + 1
+
+    local clones = (stats.clones and stats.clones.total_count) or 0
+    local views = (stats.views and stats.views.total_count) or 0
+
+    clones_total = clones_total + clones
+    views_total = views_total + views
+
+    -- Ties broken by name so the line does not flicker between equal repos
+    -- from one render to the next (pairs() order is arbitrary).
+    if clones > top_clones or (clones == top_clones and top_repo and repo < top_repo) then
+      top_repo, top_clones = repo, clones
+    end
+  end
+
+  local summary =
+    string.format("  %d repos  %s clones  %s views", repo_count, format_number(clones_total), format_number(views_total))
+
+  -- A top repo is only worth naming when something was actually cloned; with
+  -- every repository at zero, "top" would just be whichever name sorts first.
+  if top_repo and top_clones > 0 then
+    summary = summary .. string.format("  top:%s", top_repo)
+  end
+
+  return summary
+end
+
+---@internal
+---Build header lines, including totals, a status line reflecting live
+---sort/range state, and key hints
 ---@param state GHStats.DashboardState Current dashboard state
 ---@param stats_by_repo table<string, GHStats.DashboardRepoStats> Stats computed for this render
 ---@return string[] # Header lines
@@ -186,6 +230,7 @@ local function build_header(state, stats_by_repo)
   return {
     "╔════════════════════════════════════════════════════════════════════════╗",
     "║                     GitHub Stats Dashboard                             ║",
+    "║" .. fit_width(build_totals(stats_by_repo), HEADER_CONTENT_WIDTH) .. "║",
     "║" .. status .. "║",
     "║" .. keys .. "║",
     "╚════════════════════════════════════════════════════════════════════════╝",

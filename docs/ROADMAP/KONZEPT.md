@@ -223,7 +223,15 @@ die Zeilenarithmetik unberührt.
 zeichenbasiert zu beachten; genau der Fehler, den ein Sparkline-Spec schon
 einmal gefangen hat.
 
-### 7. Keine Gesamtsumme über alle Repositories
+### 7. Keine Gesamtsumme über alle Repositories — ✅ erledigt
+
+> **Umgesetzt.** Summenzeile im Kopf (`HEADER_LINES` 5 → 6, dank der
+> Single-Source-of-Truth-Konstante eine Einzeiländerung): Clones und Views
+> über alle Repos im aktiven Bereich, plus Top-Repo. Summiert aus den für
+> diesen Render ohnehin berechneten Werten statt über
+> `analytics.query_all_repos` — das hätte alles ein zweites Mal gelesen, um
+> auf dieselben Zahlen zu kommen. Kein Top-Repo, solange nichts geklont wurde:
+> „top" hieße dann nur „steht alphabetisch vorn".
 
 **Befund.** Das Dashboard listet n Repositories; die naheliegendste Frage
 ("wie entwickelt sich das *insgesamt*?") beantwortet es nicht.
