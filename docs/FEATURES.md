@@ -141,6 +141,45 @@ would draw a shuffled history that still looked plausible. A repository with
 no data in range gets no sparkline, not a flat one. `ENTRY_LINES` is unchanged
 at 5 — the sparkline shares the period line rather than claiming its own.
 
+### Highlighting
+
+`dashboard/highlights.lua` places extmarks over the rendered buffer. Before
+it existed there was no `nvim_buf_add_highlight`, no extmark and no `hl_group`
+anywhere in `lua/`: the dashboard was monochrome text, so rising and falling
+traffic, the selected row, and "no data at all" all looked the same.
+
+Thirteen named groups, each `nvim_set_hl(0, name, { link = ..., default =
+true })`:
+
+| Group | Links to | Marks |
+|---|---|---|
+| `GithubStatsHeader` | `Title` | the title line |
+| `GithubStatsTotals` | `MoreMsg` | the totals line |
+| `GithubStatsStatus` | `Comment` | the sort/range/trend line |
+| `GithubStatsKeyHint` | `Comment` | the key-hint line |
+| `GithubStatsRepo` | `Identifier` | an unselected entry's title |
+| `GithubStatsSelected` | `PmenuSel` | the selected entry's title |
+| `GithubStatsLabel` | `Comment` | `Clones:`/`Views:`/`Period:` labels |
+| `GithubStatsValue` | `Number` | the numbers after them |
+| `GithubStatsSparkline` | `Special` | the sparkline |
+| `GithubStatsTrendUp` | `DiagnosticOk` | a rising trend token |
+| `GithubStatsTrendDown` | `DiagnosticError` | a falling one |
+| `GithubStatsTrendFlat` | `Comment` | `⬌ 0%` and `⬌ n/a` |
+| `GithubStatsSeparator` | `NonText` | box borders and entry rules |
+
+`default = true` is the whole contract: colours come from the user's own
+colourscheme, and a single `:hi link GithubStatsTrendUp DiffAdd` overrides the
+plugin permanently. This is deliberately **not** a theme system —
+`dashboard.theme` stays reserved and highlighting needed no configuration
+surface at all.
+
+Placement is structural, not pattern-matched: `build_lines()` hands the
+highlighter the geometry it already knows (each entry's first line, whether it
+is selected, and the exact trend token it printed), so nothing has to
+re-derive the layout from the finished buffer. Marks are cleared and re-placed
+on every render, and carry `invalidate = true` so none can slide onto text
+that replaces it.
+
 ### Refreshing
 
 Three distinct refresh actions, all in `dashboard/actions.lua`:

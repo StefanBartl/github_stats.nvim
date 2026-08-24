@@ -336,6 +336,93 @@ describe("dashboard render", function()
     end)
   end)
 
+  describe("highlights", function()
+    local NAMESPACE = vim.api.nvim_create_namespace("github_stats_dashboard")
+
+    ---Collect the highlight groups placed on a given 0-based line
+    ---@param line integer
+    ---@return table<string, boolean>
+    local function groups_on(line)
+      local buf = require("github_stats.state.ui_state").get_buf()
+      local marks = vim.api.nvim_buf_get_extmarks(buf, NAMESPACE, { line, 0 }, { line, -1 }, { details = true })
+
+      local found = {}
+      for _, extmark in ipairs(marks) do
+        found[extmark[4].hl_group] = true
+      end
+      return found
+    end
+
+    ---Seed `days` days of clones, `recent` per day in the last week and
+    ---`older` per day in the week before
+    ---@param repo string
+    ---@param recent integer
+    ---@param older integer
+    local function seed_trend(repo, recent, older)
+      local items = {}
+      for offset = 1, 14 do
+        table.insert(items, {
+          timestamp = tostring(os.date("%Y-%m-%d", os.time() - offset * 86400)) .. "T00:00:00Z",
+          count = offset <= 7 and recent or older,
+          uniques = 1,
+        })
+      end
+      require("github_stats.storage").write_metric(repo, "clones", { clones = items })
+    end
+
+    it("defines its groups as default links, so a user's own :hi wins", function()
+      render_lines({ "user/a" })
+
+      local defined = vim.api.nvim_get_hl(0, { name = "GithubStatsTrendUp" })
+      assert.is_not_nil(defined)
+      assert.equals("DiagnosticOk", defined.link)
+    end)
+
+    it("marks the header roles line by line", function()
+      render_lines({ "user/a" })
+
+      assert.is_true(groups_on(1).GithubStatsHeader)
+      assert.is_true(groups_on(2).GithubStatsTotals)
+      assert.is_true(groups_on(3).GithubStatsStatus)
+      assert.is_true(groups_on(4).GithubStatsKeyHint)
+    end)
+
+    it("marks the selected entry differently from the rest", function()
+      render_lines({ "user/a", "user/b" })
+
+      local first = dashboard_state.get_repo_line(1) - 1
+      local second = dashboard_state.get_repo_line(2) - 1
+
+      assert.is_true(groups_on(first).GithubStatsSelected)
+      assert.is_falsy(groups_on(second).GithubStatsSelected)
+      assert.is_true(groups_on(second).GithubStatsRepo)
+    end)
+
+    it("colours a rising trend differently from a falling one", function()
+      render_lines({ "user/up" }, { time_range = "max" })
+      seed_trend("user/up", 20, 5)
+      dashboard.schedule_render(true)
+      assert.is_true(groups_on(dashboard_state.get_repo_line(1) - 1).GithubStatsTrendUp)
+
+      render_lines({ "user/down" }, { time_range = "max" })
+      seed_trend("user/down", 5, 20)
+      dashboard.schedule_render(true)
+      assert.is_true(groups_on(dashboard_state.get_repo_line(1) - 1).GithubStatsTrendDown)
+    end)
+
+    it("does not leave marks behind across re-renders", function()
+      render_lines({ "user/a", "user/b", "user/c" })
+
+      local buf = require("github_stats.state.ui_state").get_buf()
+      local before = #vim.api.nvim_buf_get_extmarks(buf, NAMESPACE, 0, -1, {})
+
+      dashboard.schedule_render(true)
+      dashboard.schedule_render(true)
+
+      assert.equals(before, #vim.api.nvim_buf_get_extmarks(buf, NAMESPACE, 0, -1, {}))
+    end)
+  end)
+
   describe("entries", function()
     it("marks exactly one entry as selected", function()
       local lines = render_lines({ "user/a", "user/b", "user/c" })

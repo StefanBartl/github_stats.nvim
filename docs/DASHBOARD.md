@@ -68,6 +68,32 @@ require("github_stats").setup({
 
 ## Sorting and Filtering
 
+### Colours
+
+The dashboard defines its own highlight groups and links them to stock groups,
+so colours follow whatever colourscheme you already use:
+
+| Group | Default link |
+|---|---|
+| `GithubStatsHeader` | `Title` |
+| `GithubStatsTotals` | `MoreMsg` |
+| `GithubStatsStatus`, `GithubStatsKeyHint`, `GithubStatsLabel` | `Comment` |
+| `GithubStatsRepo` | `Identifier` |
+| `GithubStatsSelected` | `PmenuSel` |
+| `GithubStatsValue` | `Number` |
+| `GithubStatsSparkline` | `Special` |
+| `GithubStatsTrendUp` | `DiagnosticOk` |
+| `GithubStatsTrendDown` | `DiagnosticError` |
+| `GithubStatsTrendFlat` | `Comment` |
+| `GithubStatsSeparator` | `NonText` |
+
+Override any of them with a single `:hi link` — the plugin's links are set
+with `default = true`, so yours wins:
+
+```lua
+vim.api.nvim_set_hl(0, "GithubStatsTrendUp", { link = "DiffAdd" })
+```
+
 ### Totals
 
 The header's second line summarises the whole configured set over the active

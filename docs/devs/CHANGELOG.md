@@ -25,6 +25,15 @@ documented as part of the features they affect in
 [`docs/FEATURES.md`](../FEATURES.md), not repeated here.)
 
 ### Added
+- **Dashboard highlighting**: `dashboard/highlights.lua` places extmarks over
+  the rendered buffer using thirteen named groups linked to stock groups with
+  `default = true` — so colours come from the user's colourscheme and a single
+  `:hi link` overrides them permanently. Before this there was no
+  `nvim_buf_add_highlight`, no extmark and no `hl_group` anywhere in `lua/`.
+  Deliberately not a theme system; `dashboard.theme` stays reserved. Placement
+  is structural: `build_lines()` hands over the geometry it already knows
+  rather than letting the highlighter re-derive the layout from the finished
+  text.
 - **Totals line in the dashboard header**: clones and views summed across every
   configured repository over the active range, plus the repository with the
   most clones. Summed from the per-repository stats already computed for that

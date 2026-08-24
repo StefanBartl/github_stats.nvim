@@ -623,6 +623,31 @@ Visual Indicators:~
   ⬌ 0%      Stable (no change)
   ⬌ n/a     Neither comparison window holds any data
 
+                                        *github_stats-dashboard-highlights*
+Colours:~
+  The dashboard defines named highlight groups and links them to stock
+  groups with `default = true`, so colours follow the user's colourscheme
+  and a single :hi link overrides them permanently:
+>
+    GithubStatsHeader       -> Title
+    GithubStatsTotals       -> MoreMsg
+    GithubStatsStatus       -> Comment
+    GithubStatsKeyHint      -> Comment
+    GithubStatsRepo         -> Identifier
+    GithubStatsSelected     -> PmenuSel
+    GithubStatsLabel        -> Comment
+    GithubStatsValue        -> Number
+    GithubStatsSparkline    -> Special
+    GithubStatsTrendUp      -> DiagnosticOk
+    GithubStatsTrendDown    -> DiagnosticError
+    GithubStatsTrendFlat    -> Comment
+    GithubStatsSeparator    -> NonText
+<
+  Example override:
+>lua
+    vim.api.nvim_set_hl(0, "GithubStatsTrendUp", { link = "DiffAdd" })
+<
+
 Totals:~
   The header's second line summarises every configured repository over the
   active range, and names the one with the most clones:

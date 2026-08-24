@@ -280,6 +280,9 @@ function M.open(force_refresh)
   -- Mark as open
   dashboard_state.mark_open()
 
+  -- Define highlight groups (default links, so a user's own :hi wins)
+  require("github_stats.dashboard.highlights").setup()
+
   -- Setup keymaps
   keymaps.setup_keymaps(buf)
 

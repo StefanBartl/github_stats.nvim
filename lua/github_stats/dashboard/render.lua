@@ -441,7 +441,7 @@ end
 ---@internal
 ---Build complete dashboard content
 ---@param state GHStats.DashboardState Current dashboard state
----@return string[] # All lines for the buffer
+---@return string[], { first_line: integer, is_selected: boolean, trend_token: string, trend: number? }[] # Buffer lines, per-entry highlight metadata
 local function build_lines(state)
   local lines = {}
 
@@ -458,14 +458,30 @@ local function build_lines(state)
   -- Header (reflects live sort_by/time_range and the span they resolved to)
   vim.list_extend(lines, build_header(state, stats_by_repo))
 
-  -- Entries
+  -- Entries. The per-entry metadata collected here is what dashboard/
+  -- highlights.lua needs to place its extmarks: recomputing "which line is
+  -- entry N on, is it selected, what exact trend token did it print" from the
+  -- finished buffer would be a second, drift-prone description of a layout
+  -- this loop already knows.
+  ---@type { first_line: integer, is_selected: boolean, trend_token: string, trend: number? }[]
+  local entries = {}
+
   for i, repo in ipairs(state.repos) do
     -- Use state.current_index as single source of truth
     local is_selected = (i == state.current_index)
-    vim.list_extend(lines, build_entry(repo, i, is_selected, stats_by_repo[repo]))
+    local stats = stats_by_repo[repo]
+
+    table.insert(entries, {
+      first_line = #lines + 1,
+      is_selected = is_selected,
+      trend_token = trend_indicator(stats.trend),
+      trend = stats.trend,
+    })
+
+    vim.list_extend(lines, build_entry(repo, i, is_selected, stats))
   end
 
-  return lines
+  return lines, entries
 end
 
 ---Render dashboard content to buffer
@@ -492,10 +508,12 @@ function M.render_dashboard()
 
   vim.api.nvim_set_option_value("modifiable", true, { buf = buf })
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
-  local lines = build_lines(state)
+  local lines, entries = build_lines(state)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
 
   vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
+
+  require("github_stats.dashboard.highlights").apply(buf, lines, entries, M.HEADER_LINES)
 
   -- Update render timestamp
   dashboard_state.mark_rendered()

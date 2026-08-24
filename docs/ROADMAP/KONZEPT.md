@@ -181,7 +181,16 @@ und `build_lines()` / `build_header()` selbst.
 
 ## P2 — Wahrnehmbare Qualität
 
-### 5. Das Dashboard hat keine einzige Hervorhebung
+### 5. Das Dashboard hat keine einzige Hervorhebung — ✅ erledigt
+
+> **Umgesetzt.** `dashboard/highlights.lua`, 13 benannte Gruppen, alle per
+> `default = true` an Standardgruppen gelinkt — Farben kommen also vom
+> Colorscheme des Nutzers, ein einzelnes `:hi link` überschreibt dauerhaft.
+> Kein eigenes Theme-System, `dashboard.theme` bleibt reserviert. Platziert
+> wird strukturell: `build_lines()` reicht die Geometrie weiter, die es ohnehin
+> kennt (erste Zeile je Eintrag, Auswahl, exaktes Trend-Token), statt den
+> Highlighter das Layout aus dem fertigen Text zurückraten zu lassen — das wäre
+> eine zweite, driftende Beschreibung desselben Layouts.
 
 **Befund.** Im gesamten `lua/`-Baum gibt es keinen Aufruf von
 `nvim_buf_add_highlight`, `nvim_buf_set_extmark` oder `nvim_set_hl` und kein
