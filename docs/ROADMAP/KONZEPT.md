@@ -49,7 +49,13 @@ aufgebauten Historie, nicht aus häufigerem Abfragen.
 
 ## P0 — Dokumentiert, aber nicht vorhanden
 
-### 1. Dashboard-Auto-Refresh gibt es nicht
+### 1. Dashboard-Auto-Refresh gibt es nicht — ✅ erledigt
+
+> **Umgesetzt.** `dashboard/init.lua`s `start_auto_refresh()` startet den
+> Timer beim Öffnen, rendert nur neu (fetcht nicht), und wird über den
+> bestehenden `clear_state()`-Pfad beendet. Vier Specs decken „positiv",
+> „`0` deaktiviert", „kein Zahlenwert wird ignoriert" und „Timer wird beim
+> Schließen geschlossen" ab.
 
 **Befund.** `dashboard.refresh_interval_seconds` ist in
 [`config/DEFAULTS.lua`](../../lua/github_stats/config/DEFAULTS.lua) mit `300`

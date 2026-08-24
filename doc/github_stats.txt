@@ -526,9 +526,11 @@ Actions:~
   R               Force-fetch all repositories from GitHub (bypass interval)
   f               Force-fetch selected repository from GitHub (bypass interval)
   s               Cycle sort criteria (clones/views/name/trend)
-  t               Cycle time range (7d/30d/90d/all)
+  t               Cycle time range (7d/30d/90d/max)
   T               Enter a custom time range (e.g. "14d", "3m", "1y",
                   "since:2025-01-01", or any date_presets name)
+  m               Set the maximum time range: the longest duration the
+                  stored data covers, notifying the resolved span
 
 Other:~
   ?               Toggle help overlay
@@ -545,7 +547,10 @@ dashboard.auto_open             (boolean)
     Default: false
 
 dashboard.refresh_interval_seconds  (integer)
-    Auto-refresh interval in seconds. Set to 0 to disable.
+    While the dashboard is open, re-render it every N seconds. This
+    re-renders only; it never fetches, so an open dashboard cannot burn
+    the API rate limit (see |github_stats-dashboard-auto-refresh|).
+    Set to 0 to disable. A non-number value is ignored.
     Default: 300 (5 minutes)
 
 dashboard.sort_by               (string)
@@ -553,7 +558,7 @@ dashboard.sort_by               (string)
     Default: "clones"
 
 dashboard.time_range            (string)
-    Default time range: "7d", "30d", "90d", "all", or any expression
+    Default time range: "7d", "30d", "90d", "max"/"all", or any expression
     accepted by the 'T' custom time range prompt (e.g. "14d", "3m", "1y",
     "since:2025-01-01", a date_presets name). See
     |github_stats-time-range-expressions|.
@@ -582,6 +587,7 @@ Example Configuration:~
           cycle_sort = "s",
           cycle_time_range = "t",
           custom_time_range = "T",
+          max_time_range = "m",
           show_help = "?",
           quit = "q",
         },
@@ -621,16 +627,28 @@ Time Ranges:~
   • 7d       - Last 7 days
   • 30d      - Last 30 days
   • 90d      - Last 90 days
-  • all      - All available data
+  • max      - The maximum duration the stored data covers
+
+  Press 'm' to jump straight to "max" without stepping through the cycle.
+  It also notifies the window it resolved to, e.g.
+  "max (2025-03-04 to 2026-08-22, 172 days)".
 
   Press 'T' to type an arbitrary range instead, via a prompt pre-filled
   with the current value. See |github_stats-time-range-expressions| for
   every accepted form.
 
+  Whatever range is active, the header status line appends the window it
+  actually resolved to, or "(no data)" when nothing is stored yet:
+>
+    Sort:clones   Range:max (2025-03-04 -> 2026-08-22, 172 days)
+<
+
                                         *github_stats-time-range-expressions*
 Time Range Expressions:~
   Both the 'T' dashboard prompt and any `time_range` field accept:
-  • "all"                  - no filtering, every available day
+  • "all" / "max"           - no filtering, every available day; identical
+                              in effect, "max" is the label the 't' cycle
+                              and the 'm' key produce
   • "Nd" / "Nw"             - N days / N weeks back from today
   • "Nm" / "Ny"             - ~N months (30d) / ~N years (365d) back
   • "since:YYYY-MM-DD"      - that date through today
@@ -642,10 +660,21 @@ Time Range Expressions:~
   An unrecognized expression is rejected with an error notification and
   the previous range is kept.
 
+                                        *github_stats-dashboard-auto-refresh*
 Auto-Refresh:~
-  When enabled, dashboard automatically refreshes data at configured interval.
-  Manual refresh available via 'R' key.
-  Auto-refresh pauses when dashboard is not visible.
+  While the dashboard is open it re-renders itself every
+  `dashboard.refresh_interval_seconds` seconds (default 300, 0 disables).
+
+  It re-renders; it never fetches. The GitHub traffic API is a rolling
+  14-day window updated once a day, so polling it every few minutes would
+  spend rate limit on data that cannot have changed. Fetching stays the
+  job of 'R', 'f', and the `fetch_interval_hours` gate. What the periodic
+  re-render does pick up is anything that reached disk meanwhile: a
+  background fetch, a `:GithubStats fetch` from another window, or a
+  retention run.
+
+  The timer is stopped and closed when the dashboard closes, on the same
+  teardown path as everything else.
 
 See also:~
   |github_stats-commands|

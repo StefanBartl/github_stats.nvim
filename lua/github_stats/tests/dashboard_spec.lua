@@ -152,35 +152,75 @@ describe("dashboard", function()
   end)
 
   describe("auto-refresh", function()
-    it("starts timer when enabled", function()
-      local config_stub = {
-        dashboard = {
-          refresh_interval_seconds = 60,
-        },
-      }
+    local tmp_dir
 
-      local config = require("github_stats.config")
-      local original_get = config.get
-
-      config.get = function()
-        return config_stub
+    ---Open the dashboard with a given refresh interval and return its state
+    ---@param interval_seconds integer|string|nil
+    ---@return GHStats.DashboardState?
+    local function open_with_interval(interval_seconds)
+      for _, name in ipairs({ "github_stats.config", "github_stats.dashboard", "github_stats.dashboard.state" }) do
+        package.loaded[name] = nil
       end
 
-      -- Create minimal state
-      local state = {
-        auto_refresh_timer = nil,
-        is_open = true,
-      }
+      tmp_dir = vim.fn.tempname()
+      vim.fn.delete(tmp_dir, "rf")
 
-      -- Test timer creation
-      -- Note: Actual timer would be created by dashboard.start_auto_refresh()
-      -- This is a simplified unit test
+      require("github_stats.config").init({
+        config_dir = tmp_dir,
+        repos = { "user/repo1" },
+        dashboard = { refresh_interval_seconds = interval_seconds },
+      })
+
+      require("github_stats.dashboard").open(false)
+      return require("github_stats.dashboard.state").get_state()
+    end
+
+    after_each(function()
+      pcall(function()
+        require("github_stats.dashboard").close()
+      end)
+      if tmp_dir then
+        vim.fn.delete(tmp_dir, "rf")
+      end
+    end)
+
+    it("starts a timer when refresh_interval_seconds is positive", function()
+      local state = open_with_interval(60)
+
+      ---@diagnostic disable-next-line: undefined-field
+      assert.is_not_nil(state)
+      ---@diagnostic disable-next-line: undefined-field
+      assert.is_not_nil(state.auto_refresh_timer)
+    end)
+
+    it("starts no timer when refresh_interval_seconds is 0 (documented off switch)", function()
+      local state = open_with_interval(0)
+
+      ---@diagnostic disable-next-line: undefined-field
+      assert.is_not_nil(state)
+      ---@diagnostic disable-next-line: undefined-field
+      assert.is_nil(state.auto_refresh_timer)
+    end)
+
+    it("starts no timer when the configured value is not a number", function()
+      -- :checkhealth already reports this; starting a timer on garbage would
+      -- only turn a config error into a runtime one.
+      local state = open_with_interval("not-a-number")
 
       ---@diagnostic disable-next-line: undefined-field
       assert.is_nil(state.auto_refresh_timer)
+    end)
 
-      -- Restore
-      config.get = original_get
+    it("stops and clears the timer when the dashboard closes", function()
+      local state = open_with_interval(60)
+      local timer = state.auto_refresh_timer
+
+      require("github_stats.dashboard").close()
+
+      ---@diagnostic disable-next-line: undefined-field
+      assert.is_nil(require("github_stats.dashboard.state").get_state())
+      ---@diagnostic disable-next-line: undefined-field
+      assert.is_true(timer:is_closing())
     end)
   end)
 

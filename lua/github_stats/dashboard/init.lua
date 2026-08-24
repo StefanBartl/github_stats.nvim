@@ -154,6 +154,63 @@ local function create_dashboard_window(buf)
 end
 
 ---@internal
+---Start the periodic re-render advertised by `dashboard.refresh_interval_seconds`.
+---@description
+--- The option was configured, validated in health.lua, typed in
+--- DashboardConfig, documented, and `dashboard/state.lua` even carried an
+--- `auto_refresh_timer` field with a teardown path -- but nothing ever started
+--- a timer, so setting it did nothing at all. This is that timer.
+---
+--- It only **re-renders**; it never fetches. A dashboard left open would
+--- otherwise hammer the GitHub API every interval for data that cannot have
+--- changed -- the traffic API is a rolling 14-day window updated daily, and
+--- fetching stays the job of `R`/`f` and the fetch-interval gate. What the
+--- re-render does pick up is anything that landed on disk meanwhile: a
+--- background fetch, a `:GithubStats fetch` from another window, a retention
+--- run.
+---
+--- The handle goes on the state, whose `clear_state()` already stops and
+--- closes it -- so the single teardown path (`cleanup_dashboard()`) covers
+--- this too, and there is no second place a timer can leak from.
+---@param state GHStats.DashboardState
+---@return nil
+local function start_auto_refresh(state)
+  local DEFAULTS = require("github_stats.config.DEFAULTS")
+  local cfg = config.get() or DEFAULTS
+  local dashboard_cfg = cfg.dashboard or DEFAULTS.dashboard
+  local interval_seconds = dashboard_cfg.refresh_interval_seconds
+
+  -- 0 disables, as documented. A non-number means a broken config that
+  -- :checkhealth already reports -- don't compound it by starting a timer on
+  -- garbage.
+  if type(interval_seconds) ~= "number" or interval_seconds <= 0 then
+    return
+  end
+
+  local interval_ms = math.floor(interval_seconds * 1000)
+  local timer = vim.uv.new_timer()
+
+  timer:start(
+    interval_ms,
+    interval_ms,
+    vim.schedule_wrap(function()
+      -- The dashboard can be gone by the time this fires (the timer is
+      -- stopped on teardown, but a callback already queued on the main loop
+      -- still runs), so re-check rather than trusting the captured state.
+      local current = dashboard_state.get_state()
+      if not current or not current.is_open then
+        return
+      end
+
+      dashboard_state.mark_refreshed()
+      M.schedule_render(true)
+    end)
+  )
+
+  state.auto_refresh_timer = timer
+end
+
+---@internal
 ---Cleanup dashboard resources: stop the render timer, stop/clear the
 ---auto-refresh timer (via dashboard_state.clear_state()), and close the
 ---window/buffer (via ui_state.cleanup_all()). Safe to call when nothing is
@@ -255,6 +312,9 @@ function M.open(force_refresh)
 
   -- Set cursor to first entry
   render.set_cursor_to_current(state)
+
+  -- Periodic re-render, if dashboard.refresh_interval_seconds asks for one
+  start_auto_refresh(state)
 
   if force_refresh then
     local fetcher = require("github_stats.fetcher")

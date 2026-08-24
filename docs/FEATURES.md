@@ -104,8 +104,19 @@ Three distinct refresh actions, all in `dashboard/actions.lua`:
 - `R` (`refresh_all`) — force-fetch every configured repository via
   `fetcher.fetch_all(true, ...)`, same interval bypass.
 
-`refresh_interval_seconds` (default `300`) drives dashboard auto-refresh
-timing; `0` disables it.
+A fourth, passive one: `refresh_interval_seconds` (default `300`) starts a
+`vim.uv` timer in `dashboard/init.lua`'s `start_auto_refresh()` when the
+dashboard opens, which **re-renders** on each tick — it never fetches, so an
+open dashboard cannot burn the rate limit on a rolling 14-day window that
+only changes daily. It picks up whatever reached disk meanwhile (background
+fetch, `:GithubStats fetch` elsewhere, a retention run). `0` disables it, a
+non-number is ignored. The handle lives on `state.auto_refresh_timer`, whose
+`clear_state()` stops and closes it, so the single `cleanup_dashboard()`
+teardown path covers it and no timer can leak.
+
+(Until this shipped, the option was configured, validated in `health.lua`,
+typed in `DashboardConfig`, documented, and had a state field and a teardown
+path — but nothing ever started a timer, so setting it did nothing.)
 
 ### Right-click context menu
 

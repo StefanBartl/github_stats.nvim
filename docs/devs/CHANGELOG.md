@@ -59,6 +59,18 @@ documented as part of the features they affect in
   retention types).
 
 ### Fixed
+- **Dashboard auto-refresh did not exist**: `refresh_interval_seconds` was
+  configured, validated in `health.lua`, typed in `DashboardConfig`,
+  documented, and `dashboard/state.lua` even carried an `auto_refresh_timer`
+  field with a teardown path — but nothing ever started a timer, so setting
+  the option did nothing at all. `dashboard/init.lua`'s `start_auto_refresh()`
+  now starts it on open. It **re-renders only, it never fetches**: the traffic
+  API is a rolling 14-day window updated daily, so polling it every few
+  minutes would spend rate limit on data that cannot have changed — fetching
+  stays with `R`/`f` and the `fetch_interval_hours` gate. `0` disables it and
+  a non-number is ignored. The handle goes on the state, whose `clear_state()`
+  stops and closes it, so the single `cleanup_dashboard()` teardown path
+  covers it.
 - **`dashboard.sort_by` / `dashboard.time_range` had no effect**:
   `dashboard/state.lua`'s `init_state()` hardcoded `"name"` / `"30d"` instead
   of reading the configuration, so both documented options were silently

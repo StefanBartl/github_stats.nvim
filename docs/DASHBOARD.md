@@ -145,7 +145,9 @@ previous range stays in effect.
 
 ### Auto-Refresh
 
-Configured via `refresh_interval_seconds`:
+While the dashboard is open it re-renders itself every
+`refresh_interval_seconds`:
+
 ```lua
 require("github_stats").setup({
   dashboard = {
@@ -154,10 +156,24 @@ require("github_stats").setup({
 })
 ```
 
+It **re-renders, it never fetches.** A dashboard left open would otherwise
+hit the GitHub API every interval for data that cannot have changed — the
+traffic API is a rolling 14-day window updated once a day. Fetching stays the
+job of `R`, `f`, and the `fetch_interval_hours` gate. What the periodic
+re-render does pick up is anything that reached disk meanwhile: a background
+fetch, a `:GithubStats fetch` from another window, a retention run.
+
+The timer is stopped and closed when the dashboard closes, on the same
+teardown path as everything else (`q`, `<Esc>`, `:GithubStats! dashboard`'s
+re-open cycle, wiping the buffer).
+
 **Disable auto-refresh:**
 ```lua
 refresh_interval_seconds = 0
 ```
+
+A value that is not a number is ignored (no timer is started);
+`:checkhealth github_stats` reports it.
 
 ---
 
