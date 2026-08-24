@@ -25,6 +25,12 @@ documented as part of the features they affect in
 [`docs/FEATURES.md`](../FEATURES.md), not repeated here.)
 
 ### Added
+- **Sparkline per dashboard entry**: the `Period:` line now ends with a
+  24-character sparkline of daily clones over the active range, fed from the
+  `daily_breakdown` the entry already holds (no extra query).
+  `visualization.lua` could always draw these; only the detail view and
+  `:GithubStats chart` used them. `ENTRY_LINES` is unchanged — the sparkline
+  shares the period line.
 - **`dashboard.trend_window_days`** (default `7`): days per trend comparison
   window, validated by `:checkhealth github_stats`.
 - **Specs for the presentation layer**: `tests/dashboard_render_spec.lua`, 13

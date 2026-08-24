@@ -200,7 +200,14 @@ mit einem `:hi link` überschreibbar.
 
 **Aufwand.** Mittel. **Risiko.** Gering.
 
-### 6. Sparklines existieren, aber nicht dort, wo man sie sucht
+### 6. Sparklines existieren, aber nicht dort, wo man sie sucht — ✅ erledigt
+
+> **Umgesetzt.** 24 Zeichen breite Sparkline am Ende jeder `Period:`-Zeile,
+> gespeist aus dem ohnehin vorhandenen `daily_breakdown`. `ENTRY_LINES`
+> bleibt 5. Ein Detail, das leicht unbemerkt geblieben wäre: `daily_breakdown`
+> ist nach ISO-Datum geschlüsselt, und `pairs()` läuft über eine Hash-Tabelle
+> in beliebiger Reihenfolge — ungesortiert hätte die Sparkline eine
+> durchmischte Historie gezeichnet, die trotzdem plausibel aussieht.
 
 **Befund.** `visualization.lua` kann `generate_sparkline()` /
 `create_daily_sparkline()`; genutzt wird das in der Detailansicht und in

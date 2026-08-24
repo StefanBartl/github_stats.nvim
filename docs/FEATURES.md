@@ -120,6 +120,20 @@ ordering quantities that were comparable only by accident. Both window
 boundaries are date-based and stepped from a midday anchor, so missing days
 do not shift them and a DST boundary cannot move them a day.
 
+### Sparklines in the list
+
+Each entry's `Period:` line carries a 24-character clone sparkline drawn by
+`visualization.generate_sparkline()` from the `daily_breakdown` the entry
+already holds — no extra query. `visualization.lua` could always draw these,
+but only the detail view and `:GithubStats chart` used them, so the shape of a
+repository's traffic was one `<CR>` away from every repository.
+
+Days are sorted by date before sampling: `daily_breakdown` is keyed by ISO
+date and `pairs()` order over a hash table is arbitrary, so an unsorted feed
+would draw a shuffled history that still looked plausible. A repository with
+no data in range gets no sparkline, not a flat one. `ENTRY_LINES` is unchanged
+at 5 — the sparkline shares the period line rather than claiming its own.
+
 ### Refreshing
 
 Three distinct refresh actions, all in `dashboard/actions.lua`:

@@ -35,8 +35,13 @@ describe("dashboard render", function()
       end)
     end
 
+    -- storage and analytics capture the config module in an upvalue at
+    -- require time, so reloading config alone leaves them writing to and
+    -- reading from the previous test's data directory.
     for _, name in ipairs({
       "github_stats.config",
+      "github_stats.storage",
+      "github_stats.analytics",
       "github_stats.dashboard",
       "github_stats.dashboard.state",
       "github_stats.dashboard.render",
@@ -204,6 +209,54 @@ describe("dashboard render", function()
       local lines = render_lines({ "user/a" })
 
       assert.is_truthy(lines[dashboard_state.get_repo_line(1)]:find("n/a", 1, true))
+    end)
+  end)
+
+  describe("sparkline", function()
+    ---Seed `count` consecutive days of clone data ending yesterday
+    ---@param repo string
+    ---@param count integer
+    local function seed_days(repo, count)
+      local items = {}
+      for offset = 1, count do
+        table.insert(items, {
+          timestamp = tostring(os.date("%Y-%m-%d", os.time() - offset * 86400)) .. "T00:00:00Z",
+          count = offset,
+          uniques = 1,
+        })
+      end
+      require("github_stats.storage").write_metric(repo, "clones", { clones = items })
+    end
+
+    it("draws one on the Period line once there is data", function()
+      render_lines({ "user/a" }, { time_range = "max" })
+      seed_days("user/a", 10)
+      dashboard.schedule_render(true)
+
+      local buf = require("github_stats.state.ui_state").get_buf()
+      local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+      local period_line = lines[dashboard_state.get_repo_line(1) + 3]
+
+      assert.is_truthy(period_line:find("Period:", 1, true))
+      assert.is_truthy(period_line:match("[▁▂▃▄▅▆▇█]"), "no sparkline on: " .. period_line)
+    end)
+
+    it("draws none for a repository with no data", function()
+      local lines = render_lines({ "user/a" })
+      local period_line = lines[dashboard_state.get_repo_line(1) + 3]
+
+      assert.is_falsy(period_line:match("[▁▂▃▄▅▆▇█]"))
+    end)
+
+    it("does not change the entry height", function()
+      render_lines({ "user/a", "user/b" }, { time_range = "max" })
+      seed_days("user/a", 30)
+      dashboard.schedule_render(true)
+
+      local buf = require("github_stats.state.ui_state").get_buf()
+      local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+
+      assert.equals(render.HEADER_LINES + 2 * render.ENTRY_LINES, #lines)
     end)
   end)
 

@@ -304,6 +304,42 @@ local function sort_repos(state, stats_by_repo)
   end
 end
 
+---Width of the per-entry sparkline, in characters
+local SPARKLINE_WIDTH = 24
+
+---@internal
+---Render a daily breakdown as a fixed-width sparkline.
+---@description
+--- visualization.lua could already draw these, but only the detail view and
+--- `:GithubStats chart` used them -- the list showed four numbers and an
+--- arrow, so the shape of a repository's traffic was one <CR> away from every
+--- repository. Fed from the `daily_breakdown` the entry already holds, so this
+--- costs no extra query.
+---
+--- Days are sorted by date before sampling: `daily_breakdown` is keyed by ISO
+--- date, and `pairs()` order over a hash table is arbitrary, so an unsorted
+--- feed would draw a shuffled history that still looked plausible.
+---@param daily table<string, {count: integer, uniques: integer}>|nil
+---@return string # Sparkline, or "" when there is nothing to draw
+local function build_sparkline(daily)
+  if not daily then
+    return ""
+  end
+
+  local dates = vim.tbl_keys(daily)
+  if #dates == 0 then
+    return ""
+  end
+  table.sort(dates)
+
+  local counts = {}
+  for _, date in ipairs(dates) do
+    table.insert(counts, daily[date].count or 0)
+  end
+
+  return require("github_stats.visualization").generate_sparkline(counts, SPARKLINE_WIDTH)
+end
+
 ---@internal
 ---Build entry lines for a single repository
 ---@param repo string Repository identifier
@@ -331,12 +367,22 @@ local function build_entry(repo, index, is_selected, stats)
 
   table.insert(lines, string.format("  Views:   %s total, %s unique", format_number(views_count), format_number(views_uniques)))
 
-  -- Period info. Guarded by has_days() rather than by period_start being
+  -- Period info, with the clone sparkline on the same line -- so the shape of
+  -- the traffic is visible in the list instead of only after <CR> in the
+  -- detail view. Guarded by has_days() rather than by period_start being
   -- non-nil: for a repository that was never fetched, query_metric echoes the
   -- requested range back as period_start/period_end, so the old check printed
   -- a period for a repository that has no data at all.
   if has_days(stats_clones) then
-    table.insert(lines, string.format("  Period:  %s to %s", stats_clones.period_start, stats_clones.period_end))
+    table.insert(
+      lines,
+      string.format(
+        "  Period:  %s to %s  %s",
+        stats_clones.period_start,
+        stats_clones.period_end,
+        build_sparkline(stats_clones.daily_breakdown)
+      )
+    )
   else
     table.insert(lines, "  Period:  No data available")
   end

@@ -68,6 +68,18 @@ require("github_stats").setup({
 
 ## Sorting and Filtering
 
+### Sparklines
+
+Each entry's `Period:` line ends with a sparkline of daily clones over the
+active range:
+
+```
+  Period:  2026-08-05 to 2026-08-24  ▆▂▆▂▅▁▅▁▄█▃▇▃▆▂▆▂▅▁▅
+```
+
+It is sampled to a fixed width, so a longer range compresses rather than
+widening the entry. A repository with no data in range shows no sparkline.
+
 ### Trend
 
 Each entry carries a trend arrow. It compares the **last 7 complete days
