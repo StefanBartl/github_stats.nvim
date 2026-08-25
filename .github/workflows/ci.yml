@@ -50,7 +50,7 @@ jobs:
           repository: StefanBartl/lib.nvim
           path: .deps/lib.nvim
       # plenary.nvim: the busted-compatible test harness the specs under
-      # lua/github_stats/tests/ are written against.
+      # TESTS/ are written against.
       - uses: actions/checkout@v4
         with:
           repository: nvim-lua/plenary.nvim

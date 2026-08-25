@@ -88,7 +88,7 @@ documented as part of the features they affect in
   and the full test suite as three independent jobs on every push/PR to
   `main`.
 - **Working test runner**: `scripts/test.sh` + `scripts/minimal_init.lua`, a
-  real headless `busted`/`plenary` runner for `lua/github_stats/tests/`,
+  real headless `busted`/`plenary` runner for `TESTS/`,
   resolving `lib.nvim`/`plenary.nvim` via an env var, a `.deps/` checkout
   (what CI uses), or a sibling checkout. Full suite: 54/54 passing.
 - **Per-subdirectory `@types/` folders**: `dashboard/@types/init.lua`

@@ -3,7 +3,7 @@
 # Runs the busted/plenary spec suite headlessly. Wraps
 # scripts/minimal_init.lua -- see that file for what it does and why.
 #
-#   scripts/test.sh                 every spec under lua/github_stats/tests/
+#   scripts/test.sh                 every spec under TESTS/
 #   scripts/test.sh path/to_spec.lua   a single spec file
 #
 # Env vars (both optional -- see scripts/minimal_init.lua's own fallbacks):
@@ -19,7 +19,7 @@ command -v nvim >/dev/null 2>&1 || {
   exit 1
 }
 
-target="${1:-lua/github_stats/tests/}"
+target="${1:-TESTS/}"
 
 if [[ "$target" == *.lua ]]; then
   cmd="PlenaryBustedFile $target"

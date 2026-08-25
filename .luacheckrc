@@ -18,7 +18,7 @@ ignore = {
 exclude_files = { "docs/BINDINGS.md", ".luarocks" }
 
 -- Test specs use busted globals and partial config tables.
-files["lua/github_stats/tests/**"] = {
+files["TESTS/**"] = {
   std = "luajit+busted",
   ignore = { "631", "211" },
 }

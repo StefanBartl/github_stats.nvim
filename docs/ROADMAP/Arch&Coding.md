@@ -92,7 +92,7 @@ entspricht, z. B. `cascade.nvim` → `doc/cascade.txt`).
 | Klarheit vor Kürze | ✅ |
 | Testbarkeit durch Design | 🟡 kein DI, aber auch keine versteckten Abhängigkeiten — Module werden direkt `require()`t und in Tests per Monkey-Patch überschrieben |
 | Snapshot-/Restore-Funktion | ❌ nicht vorhanden, kein Anwendungsfall |
-| Separater Test-Entry | ❌ nicht vorhanden — Tests liegen unter `lua/github_stats/tests/**` als `busted`-Specs, aber es gibt keinen lokal lauffähigen `busted`-Runner/CI-Job, um sie zu verifizieren; einige Specs referenzieren nicht-existente Module (`dashboard.renderer`, `dashboard.navigator`) |
+| Separater Test-Entry | ❌ nicht vorhanden — Tests liegen unter `TESTS/**` als `busted`-Specs, aber es gibt keinen lokal lauffähigen `busted`-Runner/CI-Job, um sie zu verifizieren; einige Specs referenzieren nicht-existente Module (`dashboard.renderer`, `dashboard.navigator`) |
 
 ## 7. Fehlerbehandlung & Validierung (Sicherheit)
 
