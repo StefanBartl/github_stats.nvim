@@ -12,8 +12,10 @@ ignore = {
 }
 
 -- docs/BINDINGS.md is a manually column-aligned data table (documentation),
--- not runtime code.
-exclude_files = { "docs/BINDINGS.md" }
+-- not runtime code. `.luarocks/` is the tree `luarocks install luacheck` drops
+-- into the workspace on CI -- third-party sources, several hundred findings,
+-- and nothing this repo can fix.
+exclude_files = { "docs/BINDINGS.md", ".luarocks" }
 
 -- Test specs use busted globals and partial config tables.
 files["lua/github_stats/tests/**"] = {
