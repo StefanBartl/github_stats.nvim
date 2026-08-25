@@ -131,15 +131,14 @@ local function check_curl()
     return false, "curl not found in PATH"
   end
 
-  -- Test curl version (cross-platform)
-  local version_cmd = has("win32") == 1 and "curl --version 2>nul" or "curl --version 2>&1"
-  local handle = io.popen(version_cmd)
-  if not handle then
+  -- Argv form, so no shell is involved and no platform branch is needed. The
+  -- previous io.popen ran a shell string and therefore had to carry one --
+  -- `2>nul` on Windows against `2>&1` elsewhere -- purely to silence stderr
+  -- that curl --version does not write in the first place.
+  local version_output = vim.fn.system({ "curl", "--version" })
+  if vim.v.shell_error ~= 0 then
     return false, "Failed to execute curl --version"
   end
-
-  local version_output = handle:read("*a")
-  handle:close()
 
   local version = version_output:match("curl (%d+%.%d+%.%d+)")
   if version then
