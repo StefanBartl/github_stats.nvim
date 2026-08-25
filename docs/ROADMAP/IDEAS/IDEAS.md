@@ -39,21 +39,21 @@ effort and the least aligned with the plugin's current "local polling" model.
 
 ## Ad-hoc notes
 
-- Wenn ein neuer Eintrag in der Repoliste vorhanden ist, dann wird dieser
-  automatisch nachgefetched und eine Info ausgegeben.
-- `data/` möglicherweise komprimierbar? Was hätte das für Auswirkungen auf
-  den initialen Fetch (einmal in 24h), denn wenn dieser durchgeführt wird,
-  müssen die Daten entpackt werden. Aber da diese Operation asynchron ist,
-  sollte sie auf den nvim main thread keine Auswirkung haben?!
-  - Jedenfalls könnte man einen Mechanismus einbauen, der, sofern einmal die
-    Daten entpackt wurden, diese entpackt bleiben — sollten Usercommands
-    ausgeführt werden, könnten diese dann sofort verwendet werden.
-  - Wenn sie aber nicht entpackt sind und man führt einen Usercommand aus,
-    wird das beim ersten Mal die Ausführung verzögern.
-  - Sollte weder der Init-Fetch noch ein Usercommand ausgeführt werden,
-    würden die Daten gar nicht entpackt werden.
-  - Eventuell gibt es dafür bestimmte Paradigmen/Szenarien, die man für
-    solche Fälle anwendet.
+- When a new entry appears in the repo list, it gets fetched automatically
+  and an info message is printed.
+- Is `data/` possibly compressible? What effect would that have on the
+  initial fetch (once in 24h) — because when that runs, the data has to be
+  unpacked. But since the operation is asynchronous, it should have no effect
+  on the nvim main thread?!
+  - In any case one could build in a mechanism where, once the data has been
+    unpacked, it stays unpacked — should user commands then be run, they
+    could use it immediately.
+  - If it is not unpacked, however, and one runs a user command, that will
+    delay execution the first time.
+  - Should neither the init fetch nor a user command be run, the data would
+    not be unpacked at all.
+  - There may be established paradigms/scenarios that get applied to cases
+    like this.
 
 ---
 

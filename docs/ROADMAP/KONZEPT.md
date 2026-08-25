@@ -1,322 +1,320 @@
-# Konzept — github_stats.nvim besser machen
+# Concept — making github_stats.nvim better
 
-Stand: 2026-08-23. Ausgangsfrage: *"Was fehlt dem Plugin wirklich?"* — nicht
-als Wunschliste, sondern als Ergebnis eines Durchgangs durch den aktuellen
-Quellstand. Jeder Befund unten ist am Code belegt (Datei/Funktion genannt);
-spekulative Features ohne Befund gehören weiterhin nach
-[`IDEAS/IDEAS.md`](IDEAS/IDEAS.md), nicht hierher.
+As of 2026-08-23. The starting question: *"what does the plugin really
+lack?"* — not as a wish list, but as the result of a pass through the current
+state of the source. Every finding below is backed by the code (the file and
+function are named); speculative features without a finding still belong in
+[`IDEAS/IDEAS.md`](IDEAS/IDEAS.md), not here.
 
-Abgrenzung zu den Nachbardokumenten:
+How this differs from its neighbouring documents:
 
-- [`FEATURES.md`](../FEATURES.md) — was **ist**.
-- [`ROADMAP.md`](../ROADMAP.md) — was **offen und beschlossen** ist.
-- [`IDEAS/IDEAS.md`](IDEAS/IDEAS.md) — was **denkbar** ist, ohne Entscheidung.
-- Dieses Dokument — **warum** die nächsten Schritte diese und nicht andere
-  sein sollten, mit Aufwand und Risiko pro Punkt.
-
----
-
-## Inhaltsverzeichnis
-
-- [Leitgedanke](#leitgedanke)
-- [P0 — Dokumentiert, aber nicht vorhanden](#p0--dokumentiert-aber-nicht-vorhanden)
-- [P1 — Substanz](#p1--substanz)
-- [P2 — Wahrnehmbare Qualität](#p2--wahrnehmbare-qualität)
-- [P3 — Genauigkeit im Detail](#p3--genauigkeit-im-detail)
-- [Ausdrücklich nicht vorgeschlagen](#ausdrücklich-nicht-vorgeschlagen)
-- [Empfohlene Reihenfolge](#empfohlene-reihenfolge)
+- [`FEATURES.md`](../FEATURES.md) — what **is**.
+- [`ROADMAP.md`](../ROADMAP.md) — what is **open and decided**.
+- [`IDEAS/IDEAS.md`](IDEAS/IDEAS.md) — what is **conceivable**, undecided.
+- This document — **why** the next steps should be these and not others, with
+  the effort and the risk per item.
 
 ---
 
-## Leitgedanke
+## Table of contents
 
-Das Plugin sammelt zuverlässig und speichert sauber — Fetch, Storage,
-Retention und Export sind belastbar und getestet. Die Schwächen liegen fast
-alle an **einer** Stelle: zwischen "Daten liegen auf Platte" und "der Mensch
-vor dem Bildschirm versteht sie". Genau dort setzen P0–P2 an.
-
-Der zweite Auftrag dieser Sitzung — die maximale Zeitdauer im Dashboard
-einstellbar zu machen (`max`, Taste `m`, aufgelöste Spanne in der Kopfzeile) —
-ist bereits umgesetzt und gehört zur selben Klasse: die Daten waren da, die
-Antwort auf "wie viel Historie sehe ich eigentlich?" nicht.
-
-Zweiter Leitgedanke: **kein neuer API-Verkehr**. Alle Vorschläge unten
-arbeiten auf bereits geholten Daten. Das GitHub-Traffic-API liefert ein
-rollierendes 14-Tage-Fenster; der Wert des Plugins entsteht aus der lokal
-aufgebauten Historie, nicht aus häufigerem Abfragen.
+- [Guiding thought](#guiding-thought)
+- [P0 — Documented, but not present](#p0--documented-but-not-present)
+- [P1 — Substance](#p1--substance)
+- [P2 — Perceptible quality](#p2--perceptible-quality)
+- [P3 — Precision in the detail](#p3--precision-in-the-detail)
+- [Explicitly not proposed](#explicitly-not-proposed)
+- [Recommended order](#recommended-order)
 
 ---
 
-## P0 — Dokumentiert, aber nicht vorhanden
+## Guiding thought
 
-### 1. Dashboard-Auto-Refresh gibt es nicht — ✅ erledigt
+The plugin collects reliably and stores cleanly — fetch, storage, retention
+and export are solid and tested. The weaknesses lie almost entirely at **one**
+place: between "the data is on disk" and "the human in front of the screen
+understands it". That is exactly where P0–P2 apply.
 
-> **Umgesetzt.** `dashboard/init.lua`s `start_auto_refresh()` startet den
-> Timer beim Öffnen, rendert nur neu (fetcht nicht), und wird über den
-> bestehenden `clear_state()`-Pfad beendet. Vier Specs decken „positiv",
-> „`0` deaktiviert", „kein Zahlenwert wird ignoriert" und „Timer wird beim
-> Schließen geschlossen" ab.
+The second assignment of this session — making the maximum time span
+configurable in the dashboard (`max`, the key `m`, the resolved span in the
+header) — is already implemented and belongs to the same class: the data was
+there, the answer to "how much history am I actually seeing?" was not.
 
-**Befund.** `dashboard.refresh_interval_seconds` ist in
-[`config/DEFAULTS.lua`](../../lua/github_stats/config/DEFAULTS.lua) mit `300`
-vorbelegt, in [`health.lua`](../../lua/github_stats/health.lua) validiert
-(muss Zahl sein, `>= 10`), in `DashboardConfig` typisiert und in
-[`DASHBOARD.md`](../DASHBOARD.md) als konfigurierbares Feature dokumentiert —
-und `dashboard/state.lua` hält sogar ein Feld `auto_refresh_timer` samt
-Aufräumpfad in `clear_state()`. **Niemand startet den Timer.** Eine Suche über
-`lua/` findet keinen einzigen schreibenden Zugriff auf `auto_refresh_timer`
-außer dem Aufräumen.
-
-**Warum P0.** Das ist kein fehlendes Feature, sondern eine falsche Zusage: Wer
-den Wert konfiguriert, bekommt schweigend nichts. Die teuerste Sorte Bug — er
-sieht aus wie ein funktionierendes Feature.
-
-**Vorschlag.** Timer in `dashboard/init.lua`s `M.open()` starten, wenn
-`refresh_interval_seconds > 0`, `vim.schedule_wrap`-gehüllt, und nur
-**re-rendern**, nicht fetchen — Fetch bleibt an `R`/`f` und das
-Fetch-Intervall gebunden, sonst brennt ein offen stehendes Dashboard das
-Rate-Limit ab. Beendet wird er über den bereits existierenden
-`clear_state()`-Pfad. `0` deaktiviert, wie dokumentiert.
-
-**Aufwand.** Klein (≈ 30 Zeilen + ein Spec). **Risiko.** Gering — der
-Teardown-Pfad existiert bereits und ist genau die Stelle, an der ein
-Timer-Leak sonst entstünde.
+A second guiding thought: **no new API traffic**. Every proposal below works
+on data that has already been fetched. The GitHub traffic API delivers a
+rolling 14-day window; the plugin's value comes from the history built up
+locally, not from querying more often.
 
 ---
 
-## P1 — Substanz
+## P0 — Documented, but not present
 
-### 2. Jeder Tastendruck liest die gesamte Historie neu von der Platte — ✅ erledigt
+### 1. There is no dashboard auto-refresh — ✅ done
 
-> **Umgesetzt.** Memo in `storage.read_metric_history()`, geschlüsselt über
-> das Metrik-Verzeichnis (nicht über repo/metric — sonst könnte ein Wechsel
-> des Datenverzeichnisses Einträge des vorigen ausliefern). Kein TTL, wie
-> vorgeschlagen; invalidiert wird explizit an genau den Stellen, die die
-> Platte ändern: erfolgreicher `write_metric`, erfolgreicher
-> `delete_metric_file`, der Archiv-Schreibvorgang in `retention` (der an
-> `write_metric` vorbei direkt über `fs.json` geht) und die Taste `r`. Damit
-> tut `r` erstmals etwas, das `j` nicht auch tut. Gelesen wird eine flache
-> Kopie der Liste: die Records bleiben geteilt (sie zu kopieren kostete so
-> viel wie das eingesparte Decode), die Liste nicht.
+> **Implemented.** `dashboard/init.lua`'s `start_auto_refresh()` starts the
+> timer on open, only re-renders (does not fetch), and is ended through the
+> existing `clear_state()` path. Four specs cover "positive", "`0` disables
+> it", "a non-number is ignored" and "the timer is closed on close".
 
-**Befund.** `dashboard/render.lua`s `build_lines()` ruft pro Render für
-**jedes** Repository `analytics.query_metric()` zweimal auf (clones + views);
-jeder dieser Aufrufe geht über `storage.read_metric_history()`, das das
-komplette Metrik-Verzeichnis auflistet und **jede** Datei liest und
-JSON-dekodiert. Bei 12 Repos × 2 Metriken × (Archiv + n Tagesdateien) ist das
-der Preis für ein einzelnes `j`. Gebremst wird das nur durch
-`RENDER_DEBOUNCE_MS = 50` — das begrenzt die Frequenz, nicht die Kosten.
+**Finding.** `dashboard.refresh_interval_seconds` is preset to `300` in
+[`config/DEFAULTS.lua`](../../lua/github_stats/config/DEFAULTS.lua),
+validated in [`health.lua`](../../lua/github_stats/health.lua) (must be a
+number, `>= 10`), typed in `DashboardConfig` and documented in
+[`DASHBOARD.md`](../DASHBOARD.md) as a configurable feature — and
+`dashboard/state.lua` even holds a field `auto_refresh_timer` along with a
+cleanup path in `clear_state()`. **Nobody starts the timer.** A search over
+`lua/` finds not a single write to `auto_refresh_timer` other than the
+cleanup.
 
-**Vorschlag.** Ein Lese-Memo in `analytics` oder `storage`, geschlüsselt über
-`(repo, metric)`, invalidiert von genau drei Ereignissen: erfolgreicher
-Fetch, Retention-Lauf, und die manuelle Neuzeichnung `r` — die damit erstmals
-wirklich *etwas* tut, das `j` nicht auch tut, und ihre dokumentierte Bedeutung
-"neu von Platte" behält. Bewusst **kein** TTL: eine Zeitgrenze wäre die vierte
-Wahrheit über Datenaktualität neben Fetch-Intervall, Retention und
-Auto-Refresh.
+**Why P0.** This is not a missing feature but a false promise: whoever
+configures the value silently gets nothing. The most expensive kind of bug —
+it looks like a working feature.
 
-**Aufwand.** Mittel. **Risiko.** Mittel — Cache-Invalidierung ist die Stelle,
-an der "warum sehe ich alte Zahlen?"-Fehler entstehen. Deshalb: wenige,
-explizite Invalidierungspunkte statt Heuristik, und ein Spec pro Punkt.
+**Proposal.** Start the timer in `dashboard/init.lua`'s `M.open()` when
+`refresh_interval_seconds > 0`, wrapped in `vim.schedule_wrap`, and only
+**re-render**, not fetch — fetching stays bound to `R`/`f` and the fetch
+interval, or a dashboard left open burns down the rate limit. It is ended
+through the already existing `clear_state()` path. `0` disables it, as
+documented.
 
-### 3. Der Trend-Indikator misst etwas anderes, als der Nutzer denkt — ✅ erledigt
+**Effort.** Small (≈ 30 lines plus a spec). **Risk.** Low — the teardown path
+already exists and is exactly the place a timer leak would otherwise appear.
 
-> **Umgesetzt, Variante (a).** `analytics.trend_over(daily, window, ref?)`
-> vergleicht die letzten N vollständigen Tage mit den N davor, unabhängig vom
-> angezeigten Bereich; `dashboard.trend_window_days` (Default 7) stellt N ein,
-> die Kopfzeile nennt es (`Trend:7d/7d`). Gemessen wird ab **gestern** — heute
-> fällt aus jeder Aggregation heraus, ein Anker auf heute hätte sechs Tage
-> gegen sieben gestellt und einen Rückgang erfunden, der nur der Uhr gehört.
-> Beide Fenstergrenzen sind datums- statt abzählbasiert und werden von einem
-> Mittags-Anker aus gesetzt, damit fehlende Tage sie nicht verschieben und
-> eine Sommerzeitgrenze sie nicht um einen Tag versetzt. Neu ist außerdem
-> `⬌ n/a` für „in beiden Fenstern nichts“ — nicht dasselbe wie `⬌ 0%`.
+---
 
-**Befund.** `compute_trend()` in `dashboard/render.lua` halbiert das
-**gefilterte** Fenster und vergleicht die Summe der zweiten mit der Summe der
-ersten Hälfte. Bei `Range:7d` heißt das "letzte 3–4 Tage vs. die davor" —
-plausibel. Bei `Range:max` und einem Jahr Historie ist derselbe Pfeil
-"zweites Halbjahr vs. erstes Halbjahr". Beides erscheint als `⬆ +67%`, ohne
-Hinweis worauf es sich bezieht. Zusätzlich zählt nur `clones`, obwohl in
-derselben Zeile auch `views` steht.
+## P1 — Substance
 
-**Warum das jetzt wichtiger wird.** Mit der neuen `max`-Spanne wird der
-bereichsabhängige Trend deutlich sichtbarer als vorher, wo `all` selten
-gewählt wurde.
+### 2. Every keystroke rereads the entire history from disk — ✅ done
 
-**Vorschlag** (zwei Varianten, bewusst gegeneinander gestellt):
+> **Implemented.** A memo in `storage.read_metric_history()`, keyed on the
+> metric directory (not on repo/metric — otherwise a change of the data
+> directory could serve entries from the previous one). No TTL, as proposed;
+> invalidation happens explicitly at exactly the places that change the disk:
+> a successful `write_metric`, a successful `delete_metric_file`, the archive
+> write in `retention` (which goes directly through `fs.json`, past
+> `write_metric`), and the key `r`. With that, `r` does something for the
+> first time that `j` does not also do. What is read is a shallow copy of the
+> list: the records stay shared (copying them would cost as much as the
+> decode saved), the list does not.
 
-a) **Fenster fixieren** — Trend immer "letzte 7 Tage vs. die 7 davor",
-   unabhängig vom Anzeigebereich. Vorhersagbar, über Repos vergleichbar,
-   sortierbar. Nachteil: entkoppelt vom sichtbaren Zeitraum.
-b) **Bezug sichtbar machen** — Fenster bleibt relativ, aber die Kopfzeile
-   benennt es (`Trend: 2. Hälfte vs. 1. Hälfte`).
+**Finding.** `dashboard/render.lua`'s `build_lines()` calls
+`analytics.query_metric()` twice per render for **every** repository (clones
+plus views); each of those calls goes through `storage.read_metric_history()`,
+which lists the complete metric directory and reads and JSON-decodes **every**
+file. At 12 repos × 2 metrics × (archive + n daily files) that is the price of
+a single `j`. The only brake on it is `RENDER_DEBOUNCE_MS = 50` — which limits
+the frequency, not the cost.
 
-Empfehlung: **(a)**, mit dem verwendeten Fenster in der Kopfzeile. Die
-Sortierung `sort_by = "trend"` ist nur dann sinnvoll, wenn alle Zeilen
-dasselbe messen.
+**Proposal.** A read memo in `analytics` or `storage`, keyed on
+`(repo, metric)`, invalidated by exactly three events: a successful fetch, a
+retention run, and the manual redraw `r` — which thereby does *something* for
+the first time that `j` does not also do, and keeps its documented meaning of
+"fresh from disk". Deliberately **no** TTL: a time limit would be the fourth
+truth about data freshness alongside the fetch interval, retention and
+auto-refresh.
 
-**Aufwand.** Klein. **Risiko.** Gering, aber es ist eine *Verhaltens*änderung
-an einer sichtbaren Zahl → changelog-pflichtig.
+**Effort.** Medium. **Risk.** Medium — cache invalidation is where "why am I
+seeing old numbers?" bugs come from. Hence: few, explicit invalidation points
+instead of a heuristic, and one spec per point.
 
-### 4. Die Testabdeckung endet vor der Darstellung — ✅ erledigt
+### 3. The trend indicator measures something other than what the user thinks — ✅ done
 
-> **Umgesetzt.** `tests/dashboard_render_spec.lua`, 13 Specs über den
-> gerenderten Puffer: Zeilenbudget gegen `HEADER_LINES`/`ENTRY_LINES`,
-> Index↔Zeile als Rundreise, gleiche Rahmenbreite aller Kopfzeilen,
-> Sort/Range-Anzeige, Tastenhinweise bei Remap und bei `""`, Auswahlmarke.
-> Bewusst über `dashboard.open()` statt über Test-Exports der lokalen
-> `build_lines`/`build_header` — eine nur für den Test eingezogene Naht kann
-> grün sein, während der echte Renderpfad kaputt ist.
+> **Implemented, variant (a).** `analytics.trend_over(daily, window, ref?)`
+> compares the last N complete days with the N before them, independent of
+> the displayed range; `dashboard.trend_window_days` (default 7) sets N, and
+> the header names it (`Trend:7d/7d`). Measurement starts from **yesterday** —
+> today drops out of every aggregation; an anchor on today would have put six
+> days against seven and invented a decline that belongs to the clock alone.
+> Both window boundaries are date-based rather than count-based and are set
+> from a midday anchor, so that missing days do not shift them and a
+> daylight-saving boundary does not displace them by a day. Also new is
+> `⬌ n/a` for "nothing in either window" — not the same as `⬌ 0%`.
+
+**Finding.** `compute_trend()` in `dashboard/render.lua` halves the
+**filtered** window and compares the sum of the second half with the sum of
+the first. With `Range:7d` that means "the last 3–4 days vs. the ones before"
+— plausible. With `Range:max` and a year of history, the same arrow is
+"the second half-year vs. the first". Both appear as `⬆ +67%`, with no hint of
+what it refers to. On top of that only `clones` counts, even though `views`
+sits on the same line.
+
+**Why this becomes more important now.** With the new `max` span, the
+range-dependent trend becomes considerably more visible than before, when
+`all` was rarely chosen.
+
+**Proposal** (two variants, deliberately set against each other):
+
+a) **Fix the window** — the trend is always "the last 7 days vs. the 7 before",
+   independent of the display range. Predictable, comparable across repos,
+   sortable. Drawback: decoupled from the visible period.
+b) **Make the reference visible** — the window stays relative, but the header
+   names it (`Trend: 2nd half vs. 1st half`).
+
+Recommendation: **(a)**, with the window used named in the header. The sort
+`sort_by = "trend"` only makes sense if every row measures the same thing.
+
+**Effort.** Small. **Risk.** Low, but it is a *behavioural* change to a
+visible number → it requires a changelog entry.
+
+### 4. The test coverage stops short of the presentation — ✅ done
+
+> **Implemented.** `tests/dashboard_render_spec.lua`, 13 specs over the
+> rendered buffer: the line budget against `HEADER_LINES`/`ENTRY_LINES`,
+> index ↔ line as a round trip, the same frame width for all header lines,
+> the sort/range display, the key hints on a remap and on `""`, the selection
+> marker. Deliberately through `dashboard.open()` rather than through test
+> exports of the local `build_lines`/`build_header` — a seam introduced only
+> for the test can be green while the real render path is broken.
 >
-> Hat prompt zwei echte Fehler gefunden: `query_metric` gibt für ein
-> Repository ohne gespeicherte Dateien den *angefragten* Zeitraum als
-> `period_start`/`period_end` zurück — Kopfzeile und `Period:`-Zeile haben
-> das für bare Münze genommen und einen Zeitraum für Daten behauptet, die es
-> nicht gibt. Beide fragen jetzt `has_days()` (leeres `daily_breakdown`).
+> It promptly found two real bugs: `query_metric` returns the *requested*
+> period as `period_start`/`period_end` for a repository with no stored files
+> — the header and the `Period:` line took that at face value and claimed a
+> period for data that does not exist. Both now ask `has_days()` (an empty
+> `daily_breakdown`).
 
-**Befund.** Specs decken `analytics`, `config`, `date_presets`, `export`,
-`retention` und einen Dashboard-Flow ab. Ungetestet sind ausgerechnet die
-Module, in denen die letzten echten Bugs saßen: die Zeilenarithmetik in
-`dashboard/state.lua` / `movement.lua` (der `* 6`- bzw. `2 + 3*N`-Vorfall)
-und `build_lines()` / `build_header()` selbst.
+**Finding.** Specs cover `analytics`, `config`, `date_presets`, `export`,
+`retention` and one dashboard flow. What is untested is precisely the modules
+the last real bugs sat in: the line arithmetic in `dashboard/state.lua` /
+`movement.lua` (the `* 6` and `2 + 3*N` incident) and `build_lines()` /
+`build_header()` themselves.
 
-**Vorschlag.** `build_lines()` ist eine reine Funktion von (State, Stats) →
-`string[]` und damit ohne Fenster testbar: Kopfzeilenhöhe gegen
-`HEADER_LINES`, Eintragshöhe gegen `ENTRY_LINES`, Rahmenbreite, sowie
-`get_repo_line()` / `get_repo_from_line()` als Rundreise über alle Indizes.
+**Proposal.** `build_lines()` is a pure function of (state, stats) →
+`string[]` and therefore testable without a window: header height against
+`HEADER_LINES`, entry height against `ENTRY_LINES`, frame width, plus
+`get_repo_line()` / `get_repo_from_line()` as a round trip over all indices.
 
-**Aufwand.** Klein bis mittel. **Risiko.** Keins.
+**Effort.** Small to medium. **Risk.** None.
 
 ---
 
-## P2 — Wahrnehmbare Qualität
+## P2 — Perceptible quality
 
-### 5. Das Dashboard hat keine einzige Hervorhebung — ✅ erledigt
+### 5. The dashboard has not a single highlight — ✅ done
 
-> **Umgesetzt.** `dashboard/highlights.lua`, 13 benannte Gruppen, alle per
-> `default = true` an Standardgruppen gelinkt — Farben kommen also vom
-> Colorscheme des Nutzers, ein einzelnes `:hi link` überschreibt dauerhaft.
-> Kein eigenes Theme-System, `dashboard.theme` bleibt reserviert. Platziert
-> wird strukturell: `build_lines()` reicht die Geometrie weiter, die es ohnehin
-> kennt (erste Zeile je Eintrag, Auswahl, exaktes Trend-Token), statt den
-> Highlighter das Layout aus dem fertigen Text zurückraten zu lassen — das wäre
-> eine zweite, driftende Beschreibung desselben Layouts.
+> **Implemented.** `dashboard/highlights.lua`, 13 named groups, all linked to
+> standard groups with `default = true` — so the colours come from the user's
+> colorscheme, and a single `:hi link` overrides them permanently. No theme
+> system of its own; `dashboard.theme` stays reserved. Placement is
+> structural: `build_lines()` passes on the geometry it knows anyway (the
+> first line per entry, the selection, the exact trend token), instead of
+> letting the highlighter guess the layout back out of the finished text —
+> that would be a second, drifting description of the same layout.
 
-**Befund.** Im gesamten `lua/`-Baum gibt es keinen Aufruf von
-`nvim_buf_add_highlight`, `nvim_buf_set_extmark` oder `nvim_set_hl` und kein
-`hl_group`. Der Dashboard-Puffer ist monochromer Text; die Option `theme` ist
-in `DASHBOARD.md` ausdrücklich als "reserved for future use" markiert. Farbe
-trägt damit null Information — weder steigend/fallend, noch Auswahl, noch
-"keine Daten".
+**Finding.** In the entire `lua/` tree there is no call to
+`nvim_buf_add_highlight`, `nvim_buf_set_extmark` or `nvim_set_hl`, and no
+`hl_group`. The dashboard buffer is monochrome text; the option `theme` is
+expressly marked "reserved for future use" in `DASHBOARD.md`. Colour
+therefore carries zero information — neither rising/falling, nor the
+selection, nor "no data".
 
-**Vorschlag.** Ein kleiner, benannter Satz Highlight-Gruppen
+**Proposal.** A small, named set of highlight groups
 (`GithubStatsTrendUp`, `GithubStatsTrendDown`, `GithubStatsHeader`,
-`GithubStatsSelected`, `GithubStatsMuted`), per `default = true` an vorhandene
-Standardgruppen gelinkt (`DiagnosticOk` / `DiagnosticError` / `Title` /
-`CursorLine` / `Comment`), gesetzt über Extmarks beim Rendern. Kein eigenes
-Theme-System — `theme` bliebe reserviert. Farbschema-unabhängig und vom Nutzer
-mit einem `:hi link` überschreibbar.
+`GithubStatsSelected`, `GithubStatsMuted`), linked to existing standard
+groups with `default = true` (`DiagnosticOk` / `DiagnosticError` / `Title` /
+`CursorLine` / `Comment`), set through extmarks while rendering. No theme
+system of its own — `theme` would stay reserved. Independent of the
+colorscheme, and overridable by the user with a single `:hi link`.
 
-**Aufwand.** Mittel. **Risiko.** Gering.
+**Effort.** Medium. **Risk.** Low.
 
-### 6. Sparklines existieren, aber nicht dort, wo man sie sucht — ✅ erledigt
+### 6. Sparklines exist, but not where one looks for them — ✅ done
 
-> **Umgesetzt.** 24 Zeichen breite Sparkline am Ende jeder `Period:`-Zeile,
-> gespeist aus dem ohnehin vorhandenen `daily_breakdown`. `ENTRY_LINES`
-> bleibt 5. Ein Detail, das leicht unbemerkt geblieben wäre: `daily_breakdown`
-> ist nach ISO-Datum geschlüsselt, und `pairs()` läuft über eine Hash-Tabelle
-> in beliebiger Reihenfolge — ungesortiert hätte die Sparkline eine
-> durchmischte Historie gezeichnet, die trotzdem plausibel aussieht.
+> **Implemented.** A 24-character sparkline at the end of every `Period:`
+> line, fed from the `daily_breakdown` that exists anyway. `ENTRY_LINES`
+> stays 5. One detail that could easily have gone unnoticed:
+> `daily_breakdown` is keyed by ISO date, and `pairs()` runs over a hash table
+> in arbitrary order — unsorted, the sparkline would have drawn a shuffled
+> history that nonetheless looks plausible.
 
-**Befund.** `visualization.lua` kann `generate_sparkline()` /
-`create_daily_sparkline()`; genutzt wird das in der Detailansicht und in
-`:GithubStats chart`. Die Dashboard-Zeile eines Repos zeigt vier Zahlen und
-einen Pfeil — den Verlauf sieht man erst nach `<CR>`.
+**Finding.** `visualization.lua` can do `generate_sparkline()` /
+`create_daily_sparkline()`; that gets used in the detail view and in
+`:GithubStats chart`. A repository's dashboard line shows four numbers and an
+arrow — the course of it is only visible after `<CR>`.
 
-**Vorschlag.** Eine Sparkline in die bestehende `Period:`-Zeile jedes
-Eintrags, gespeist aus dem `daily_breakdown`, das für den Trend ohnehin schon
-berechnet wird — also ohne zusätzliche Abfrage. `ENTRY_LINES` bleibt bei 5,
-die Zeilenarithmetik unberührt.
+**Proposal.** A sparkline in the existing `Period:` line of every entry, fed
+from the `daily_breakdown` that is already computed for the trend anyway — so
+without an additional query. `ENTRY_LINES` stays at 5, the line arithmetic
+untouched.
 
-**Aufwand.** Klein. **Risiko.** Gering — die Breitenberechnung ist byte- vs.
-zeichenbasiert zu beachten; genau der Fehler, den ein Sparkline-Spec schon
-einmal gefangen hat.
+**Effort.** Small. **Risk.** Low — the width computation is byte- versus
+character-based and needs care; exactly the bug a sparkline spec has caught
+once before.
 
-### 7. Keine Gesamtsumme über alle Repositories — ✅ erledigt
+### 7. No grand total across all repositories — ✅ done
 
-> **Umgesetzt.** Summenzeile im Kopf (`HEADER_LINES` 5 → 6, dank der
-> Single-Source-of-Truth-Konstante eine Einzeiländerung): Clones und Views
-> über alle Repos im aktiven Bereich, plus Top-Repo. Summiert aus den für
-> diesen Render ohnehin berechneten Werten statt über
-> `analytics.query_all_repos` — das hätte alles ein zweites Mal gelesen, um
-> auf dieselben Zahlen zu kommen. Kein Top-Repo, solange nichts geklont wurde:
-> „top" hieße dann nur „steht alphabetisch vorn".
+> **Implemented.** A totals line in the header (`HEADER_LINES` 5 → 6, a
+> one-line change thanks to the single-source-of-truth constant): clones and
+> views across all repos in the active range, plus the top repo. Summed from
+> the values already computed for this render rather than through
+> `analytics.query_all_repos` — that would have read everything a second time
+> to arrive at the same numbers. No top repo as long as nothing has been
+> cloned: "top" would then only mean "first alphabetically".
 
-**Befund.** Das Dashboard listet n Repositories; die naheliegendste Frage
-("wie entwickelt sich das *insgesamt*?") beantwortet es nicht.
-`analytics.query_all_repos()` und `compute_highlights()` liefern die Bausteine
-bereits — genutzt werden sie nur vom Export.
+**Finding.** The dashboard lists n repositories; the most obvious question
+("how is this developing *overall*?") it does not answer.
+`analytics.query_all_repos()` and `compute_highlights()` already deliver the
+building blocks — they are only used by the export.
 
-**Vorschlag.** Eine Summenzeile im Kopf: Clones/Views gesamt über den aktiven
-Bereich, plus Top-Repo. Erhöht `HEADER_LINES` auf 6 — dank der
-Single-Source-of-Truth-Konstante eine Einzeiländerung.
+**Proposal.** A totals line in the header: clones/views in total across the
+active range, plus the top repo. Raises `HEADER_LINES` to 6 — a one-line
+change thanks to the single-source-of-truth constant.
 
-**Aufwand.** Klein. **Risiko.** Gering.
-
----
-
-## P3 — Genauigkeit im Detail
-
-### 8. `3m` und `1y` sind Näherungen, `this_month` ist es nicht — ✅ erledigt
-
-> **Umgesetzt.** `Nm`/`Ny` gehen über `shift_months()` echte Kalendermonate
-> zurück, der Tag wird auf die Monatslänge geklemmt (ein Monat vor dem 31.
-> ist der 28./29./30., nicht der 3. des Folgemonats, den `os.time()` daraus
-> normalisiert hätte). Bewusst reine Datums-Arithmetik statt eines
-> `os.time()`-Umwegs: `parse_time_range` rechnet in UTC, `os.time()` liest
-> eine Tabelle immer als Lokalzeit — ein Umweg hätte beides vermischt.
-
-**Befund.** `analytics.parse_time_range()` rechnet `Nm` als N × 30 Tage und
-`Ny` als N × 365 Tage. Direkt daneben liefert `date_presets` mit
-`this_month` / `this_quarter` / `this_year` kalendergenaue Grenzen. Zwei
-Genauigkeitsbegriffe im selben Eingabefeld (`T`-Prompt).
-
-**Vorschlag.** `Nm` / `Ny` über `os.date` / `os.time`-Kalenderarithmetik
-führen (Monat bzw. Jahr dekrementieren, Tag klemmen). Verhaltensänderung um
-bis zu 5 Tage pro Jahr → changelog-pflichtig. Alternativ: so lassen und die
-Näherung im Prompt kennzeichnen. Sie ist heute in `DASHBOARD.md` korrekt
-dokumentiert, also kein Fehler — nur eine Inkonsistenz.
-
-**Aufwand.** Klein. **Risiko.** Gering.
+**Effort.** Small. **Risk.** Low.
 
 ---
 
-## Ausdrücklich nicht vorgeschlagen
+## P3 — Precision in the detail
 
-- **Webhooks / HTTP-Server** (siehe `IDEAS/IDEAS.md`): widerspricht dem
-  lokalen Polling-Modell, größter Aufwand im Dokument, kleinster Ertrag für
-  einen Einzelnutzer.
-- **Häufigeres Fetchen**: Das Traffic-API liefert dieselben 14 Tage. Mehr
-  Abfragen erzeugen keine neuen Daten, nur Rate-Limit-Verbrauch.
-- **Eigenes Theme-System**: Highlight-Gruppen mit `default = true` erledigen
-  dasselbe, ohne dass das Plugin Farben besitzen muss.
-- **Datenbank / Kompression** (`IDEAS/IDEAS.md`, Ad-hoc-Notizen): Bei wenigen
-  hundert Tageswerten pro Repo ist das Datenvolumen kein Problem. Das
-  Kostenproblem ist das *wiederholte Lesen* (P1.2), nicht die Größe — und
-  Kompression würde es verschärfen, nicht lösen.
+### 8. `3m` and `1y` are approximations, `this_month` is not — ✅ done
+
+> **Implemented.** `Nm`/`Ny` go back real calendar months through
+> `shift_months()`, with the day clamped to the month's length (a month
+> before the 31st is the 28th/29th/30th, not the 3rd of the following month
+> that `os.time()` would have normalized it into). Deliberately pure date
+> arithmetic instead of a detour through `os.time()`: `parse_time_range`
+> computes in UTC, and `os.time()` always reads a table as local time — a
+> detour would have mixed the two.
+
+**Finding.** `analytics.parse_time_range()` computes `Nm` as N × 30 days and
+`Ny` as N × 365 days. Right next to it, `date_presets` delivers
+calendar-exact boundaries with `this_month` / `this_quarter` / `this_year`.
+Two notions of precision in the same input field (the `T` prompt).
+
+**Proposal.** Run `Nm` / `Ny` through `os.date` / `os.time` calendar
+arithmetic (decrement the month or year, clamp the day). A behavioural change
+of up to 5 days per year → it requires a changelog entry. Alternatively:
+leave it and mark the approximation in the prompt. It is documented correctly
+in `DASHBOARD.md` today, so it is not a bug — merely an inconsistency.
+
+**Effort.** Small. **Risk.** Low.
 
 ---
 
-## Empfohlene Reihenfolge
+## Explicitly not proposed
 
-1. **P0.1 Auto-Refresh** — behebt eine falsche Zusage, kleiner Eingriff,
-   nutzt den vorhandenen Teardown-Pfad.
-2. **P1.4 Tests für die Darstellungsschicht** — vor allen weiteren
-   Render-Änderungen, damit P2 auf einem Netz landet.
-3. **P1.2 Lese-Memo** — größter spürbarer Gewinn pro Tastendruck.
-4. **P1.3 Trend-Definition** — klein, aber Verhaltensänderung: früh erledigen,
-   solange wenig darauf aufbaut.
-5. **P2.5 Highlights** → **P2.6 Sparklines** → **P2.7 Summenzeile** — in
-   dieser Reihenfolge, weil jeder Schritt auf dem vorigen aufsetzt.
-6. **P3.8** — nur zusammen mit einer ohnehin anstehenden `analytics`-Runde.
+- **Webhooks / an HTTP server** (see `IDEAS/IDEAS.md`): contradicts the local
+  polling model, the largest effort in this document, the smallest return for
+  a single user.
+- **Fetching more often**: the traffic API delivers the same 14 days. More
+  queries produce no new data, only rate-limit consumption.
+- **A theme system of its own**: highlight groups with `default = true`
+  achieve the same thing without the plugin having to own colours.
+- **A database / compression** (`IDEAS/IDEAS.md`, ad-hoc notes): at a few
+  hundred daily values per repo, the data volume is not a problem. The cost
+  problem is the *repeated reading* (P1.2), not the size — and compression
+  would sharpen it, not solve it.
+
+---
+
+## Recommended order
+
+1. **P0.1 auto-refresh** — fixes a false promise, a small intervention, uses
+   the existing teardown path.
+2. **P1.4 tests for the presentation layer** — before any further render
+   changes, so that P2 lands in a net.
+3. **P1.2 the read memo** — the largest perceptible gain per keystroke.
+4. **P1.3 the trend definition** — small, but a behavioural change: do it
+   early, while little builds on it.
+5. **P2.5 highlights** → **P2.6 sparklines** → **P2.7 the totals line** — in
+   that order, because each step builds on the previous one.
+6. **P3.8** — only together with an `analytics` round that is due anyway.
