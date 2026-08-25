@@ -31,3 +31,22 @@ risk per item. Speculative designs with no decision behind them stay in
 [`FEATURES.md`](FEATURES.md) remains the authoritative list of what exists.
 
 ---
+
+## `docs/ROADMAP/` — design notes, audits, concepts
+
+Everything below lives in [`docs/ROADMAP/`](ROADMAP/) and is **not** open work
+unless it says so. Indexed here because a folder next to a file is easy to
+miss, and these are the documents that explain *why* the plugin is shaped the
+way it is.
+
+| Document | What it is |
+| --- | --- |
+| [`Arch&Coding.md`](ROADMAP/Arch&Coding.md) | Architecture and coding rules, applied to this plugin. |
+| [`Checklist.md`](ROADMAP/Checklist.md) | The PR/architecture checklist, applied to this plugin. |
+| [`Zentral-Prinzipien.md`](ROADMAP/Zentral-Prinzipien.md) | The central principles, applied to this plugin. |
+| [`KONZEPT.md`](ROADMAP/KONZEPT.md) | Concept: what would make github_stats.nvim better. |
+| [`IDEAS/IDEAS.md`](ROADMAP/IDEAS/IDEAS.md) | Loose ideas, not costed. |
+
+The audits share a convention: **✅ good · 🟡 partial · ❌ gap**.
+Findings that were acted on are removed rather than ticked, so what is left
+standing is either an open gap or a deliberate deviation with its reasoning.
