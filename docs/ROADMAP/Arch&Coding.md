@@ -1,6 +1,6 @@
 # Architektur- & Coding-Regeln — angewendet auf github_stats.nvim
 
-Quelle: [`Arch&Coding-Regeln.md`](E:/repos/Notes/MyNotes/Checklists/Lua/Arch&Coding-Regeln.md).
+Quelle: [`regeln/PRINCIPLES.md`](../../../WKDBooks/Development/wkdbook-Lua/Checklists/regeln/PRINCIPLES.md).
 Diese Version bewertet github_stats.nvim konkret gegen die Regeln, statt sie
 zu wiederholen. Die Quelldatei enthält außerdem einen großen, generischen
 Abschnitt zu CPU-Zyklenkosten, GC-Tuning, Weak-Table-Memoization und
@@ -8,6 +8,12 @@ String/Table-Mikro-Benchmarks — das ist bei diesem Plugin (kleine JSON-Arrays,
 kein Hot-Path, keine Millionen-Elemente-Schleifen) **nicht praktisch
 relevant** und wird hier nicht dupliziert; siehe stattdessen den kurzen
 Performance-Abschnitt unten.
+
+> The source checklists (`Arch&Coding-Regeln.md`, `Checklist.md`,
+> `Zentrale-Prinzipien.md`) were retired: they were absorbed into the rule
+> collection under `WKDBooks/Development/wkdbook-Lua/Checklists/`, which is
+> now the canonical one. The links above point there.
+
 
 **`lib.nvim`-Hinweis:** wie in [Zentral-Prinzipien.md](./Zentral-Prinzipien.md)
 vermerkt — nicht genutzt, keine Annahme darüber getroffen.

@@ -1,6 +1,6 @@
 # PR/Architektur-Checkliste — angewendet auf github_stats.nvim
 
-Quelle: [`Checklist.md`](E:/repos/Notes/MyNotes/Checklists/Lua/Checklist.md)
+Quelle: [`regeln/`](../../../WKDBooks/Development/wkdbook-Lua/Checklists/regeln/)
 (Lua/Neovim-Architektur-, Performance- und Codierungs-Checkliste). Dieses
 Dokument wendet die **praktisch relevanten** Abschnitte konkret auf
 github_stats.nvim an. Die Abschnitte zu Sortieralgorithmen, klassischen
@@ -11,6 +11,12 @@ Plugin. github_stats.nvim verarbeitet kleine, JSON-basierte Datenmengen
 (wenige Repos × wenige hundert Tageswerte); an dieser Größenordnung ist keine
 der dort behandelten Techniken (Radix Sort, B-Bäume, Bloom-Filter, ...)
 gerechtfertigt.
+
+> The source checklists (`Arch&Coding-Regeln.md`, `Checklist.md`,
+> `Zentrale-Prinzipien.md`) were retired: they were absorbed into the rule
+> collection under `WKDBooks/Development/wkdbook-Lua/Checklists/`, which is
+> now the canonical one. The links above point there.
+
 
 ---
 
@@ -33,7 +39,7 @@ gerechtfertigt.
 `lib.nvim.notify`, `lib.nvim.map`, `lib.nvim.window`, `lib.nvim.cross.executable`,
 `lib.nvim.net.curl`, `lib.nvim.fs.json`, `lib.nvim.usercmd.composer`, `lib.nvim.ui.kit.note`,
 `lib.lua.strings.format`, `lib.lua.tables` across most of the plugin — see
-[LUA_NVIM.md](E:/repos/Notes/MyNotes/Checklists/Lua/LUA_NVIM.md#libnvim-verwenden)). The
+[`regeln/LUA_NVIM.md`](../../../WKDBooks/Development/wkdbook-Lua/Checklists/regeln/LUA_NVIM.md#libnvim-verwenden)). The
 note in [Zentral-Prinzipien.md](./Zentral-Prinzipien.md) predates this and is stale.
 
 ---

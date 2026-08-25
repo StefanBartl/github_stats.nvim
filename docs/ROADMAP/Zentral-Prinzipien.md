@@ -1,9 +1,15 @@
 # Zentrale Prinzipien — angewendet auf github_stats.nvim
 
-Quelle: [`Zentrale-Prinzipien.md`](E:/repos/Notes/MyNotes/Checklists/Lua/Zentrale-Prinzipien.md)
+Quelle: [`regeln/PRINCIPLES.md`](../../../WKDBooks/Development/wkdbook-Lua/Checklists/regeln/PRINCIPLES.md)
 (generische 10-Punkte-Selbstprüfung pro Modul). Dieses Dokument bewertet
 github_stats.nvim konkret gegen die 10 Punkte, statt die generische Liste zu
 wiederholen.
+
+> The source checklists (`Arch&Coding-Regeln.md`, `Checklist.md`,
+> `Zentrale-Prinzipien.md`) were retired: they were absorbed into the rule
+> collection under `WKDBooks/Development/wkdbook-Lua/Checklists/`, which is
+> now the canonical one. The links above point there.
+
 
 **Hinweis zu `lib.nvim`:** Die separate Architekturentscheidung ist inzwischen
 gefallen — github_stats.nvim hängt jetzt von `StefanBartl/lib.nvim` ab. Drei
