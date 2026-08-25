@@ -40,11 +40,9 @@ Requires Neovim >= 0.9.0, `curl`, and a GitHub Personal Access Token with `repo`
   "StefanBartl/github_stats.nvim",
   dependencies = { "StefanBartl/lib.nvim" },
   event = "VimEnter",
-  config = function()
-    require("github_stats").setup({
-      repos = { "user/repo1", "user/repo2" },
-    })
-  end,
+  opts = {
+    repos = { "user/repo1", "user/repo2" },
+  },
 }
 ```
 
