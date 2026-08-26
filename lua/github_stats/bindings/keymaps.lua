@@ -7,7 +7,11 @@
 --- "" to disable it) via setup(). Fixed bindings (arrow keys, Ctrl-d/u/f/b,
 --- gg/G, Esc) are not part of the configurable set and always apply.
 --- CRITICAL: Blocks native cursor movement to prevent race conditions.
---- Optionally registers descriptions with which-key.nvim if it is installed.
+---
+--- No which-key registration: which-key reads buffer-local keymaps itself and
+--- labels each from its own `desc`, which every binding here sets. This file
+--- used to send those same strings a second time, which only gave one label
+--- two places to drift apart in.
 
 local config = require("github_stats.config")
 local map = require("lib.nvim.bindings.keymap")
@@ -36,10 +40,9 @@ end
 ---@param buf integer Buffer handle
 ---@param key string Key sequence, empty string disables the binding
 ---@param action function Action to perform
----@param which_key_entries table[] Accumulator for which-key registration
----@param desc? string Human-readable description for which-key
+---@param desc? string Human-readable description, shown by which-key
 ---@return nil
-local function map_key(buf, key, action, which_key_entries, desc)
+local function map_key(buf, key, action, desc)
   if not key or key == "" then
     return
   end
@@ -49,10 +52,6 @@ local function map_key(buf, key, action, which_key_entries, desc)
     -- Trigger debounced render
     require("github_stats.dashboard").schedule_render(false)
   end, { buffer = buf }, desc)
-
-  if desc then
-    table.insert(which_key_entries, { key, desc = desc, buffer = buf })
-  end
 end
 
 ---@internal
@@ -105,23 +104,6 @@ local function jump_to_repo(state, target_index)
   end
 end
 
----@internal
----Register collected keybindings with which-key.nvim, if installed
----@param which_key_entries table[] Entries in which-key's mapping-table format
----@return nil
-local function register_which_key(which_key_entries)
-  if #which_key_entries == 0 then
-    return
-  end
-
-  local ok, which_key = pcall(require, "which-key")
-  if not ok then
-    return
-  end
-
-  pcall(which_key.add, which_key_entries)
-end
-
 ---Setup all dashboard keymaps
 ---@param buf integer Buffer handle
 ---@return nil
@@ -132,8 +114,6 @@ function M.setup_keymaps(buf)
   end
 
   local keybindings = get_keybindings()
-  ---@type table[]
-  local which_key_entries = {}
 
   -- Block conflicting cursor movements first
   block_cursor_movement(buf)
@@ -142,19 +122,19 @@ function M.setup_keymaps(buf)
   -- count1: e.g. 5j moves down 5 repositories instead of 1
   map_key(buf, keybindings.navigate_down, function()
     movement.move_cursor_down(state, vim.v.count1)
-  end, which_key_entries, "GitHub Stats: navigate down")
+  end, "GitHub Stats: navigate down")
 
   map_key(buf, "<Down>", function()
     movement.move_cursor_down(state, vim.v.count1)
-  end, which_key_entries)
+  end)
 
   map_key(buf, keybindings.navigate_up, function()
     movement.move_cursor_up(state, vim.v.count1)
-  end, which_key_entries, "GitHub Stats: navigate up")
+  end, "GitHub Stats: navigate up")
 
   map_key(buf, "<Up>", function()
     movement.move_cursor_up(state, vim.v.count1)
-  end, which_key_entries)
+  end)
 
   -- Scroll: Ctrl-d/u (fixed)
   -- Raw count: 0 (no prefix) keeps the fixed default of 10 lines; an
@@ -162,24 +142,24 @@ function M.setup_keymaps(buf)
   map_key(buf, "<C-d>", function()
     local lines = vim.v.count > 0 and vim.v.count or 10
     dashboard_state.scroll_by(lines)
-  end, which_key_entries, "GitHub Stats: scroll half page down")
+  end, "GitHub Stats: scroll half page down")
 
   map_key(buf, "<C-u>", function()
     local lines = vim.v.count > 0 and vim.v.count or 10
     dashboard_state.scroll_by(-lines)
-  end, which_key_entries, "GitHub Stats: scroll half page up")
+  end, "GitHub Stats: scroll half page up")
 
   -- Page navigation: Ctrl-f/b (fixed)
   -- count1: e.g. 3<C-f> scrolls 3 pages instead of 1
   map_key(buf, "<C-f>", function()
     local page_size = state.win_height - render.HEADER_LINES
     dashboard_state.scroll_by(page_size * vim.v.count1)
-  end, which_key_entries, "GitHub Stats: scroll full page down")
+  end, "GitHub Stats: scroll full page down")
 
   map_key(buf, "<C-b>", function()
     local page_size = state.win_height - render.HEADER_LINES
     dashboard_state.scroll_by(-page_size * vim.v.count1)
-  end, which_key_entries, "GitHub Stats: scroll full page up")
+  end, "GitHub Stats: scroll full page up")
 
   -- Jump to top/bottom: gg/G (fixed)
   -- Raw count: 0 (no prefix) keeps jumping to first/last; NgG or Ngg jumps
@@ -191,7 +171,7 @@ function M.setup_keymaps(buf)
       dashboard_state.set_current_index(1)
       dashboard_state.set_scroll_offset(0)
     end
-  end, which_key_entries, "GitHub Stats: jump to top")
+  end, "GitHub Stats: jump to top")
 
   map_key(buf, "G", function()
     if vim.v.count > 0 then
@@ -201,7 +181,7 @@ function M.setup_keymaps(buf)
       local max_scroll = state.max_scroll
       dashboard_state.set_scroll_offset(max_scroll)
     end
-  end, which_key_entries, "GitHub Stats: jump to bottom")
+  end, "GitHub Stats: jump to bottom")
 
   -- View details: configurable (default <CR>)
   map_key(buf, keybindings.show_details, function()
@@ -209,7 +189,7 @@ function M.setup_keymaps(buf)
       local repo = state.repos[state.current_index]
       detail.show_detail(repo)
     end
-  end, which_key_entries, "GitHub Stats: show repository details")
+  end, "GitHub Stats: show repository details")
 
   -- Refresh: configurable (default r) -- drops the storage read memo and
   -- re-renders from disk, without hitting the API. This is what makes `r`
@@ -219,44 +199,44 @@ function M.setup_keymaps(buf)
   map_key(buf, keybindings.refresh_selected, function()
     require("github_stats.storage").invalidate()
     require("github_stats.dashboard").schedule_render(true)
-  end, which_key_entries, "GitHub Stats: re-read from disk and refresh")
+  end, "GitHub Stats: re-read from disk and refresh")
 
   -- Refresh all: configurable (default R) -- force-fetches every configured repo
   map_key(buf, keybindings.refresh_all, function()
     config.notify("[github-stats] Refreshing all repositories...", "info")
     actions.refresh_all()
-  end, which_key_entries, "GitHub Stats: refresh all repositories")
+  end, "GitHub Stats: refresh all repositories")
 
   -- Force refresh: configurable (default f) -- force-fetches the selected repo
   map_key(buf, keybindings.force_refresh, function()
     config.notify("[github-stats] Force-refreshing selected repository...", "info")
     actions.force_refresh_selected()
-  end, which_key_entries, "GitHub Stats: force refresh selected repository")
+  end, "GitHub Stats: force refresh selected repository")
 
   -- Cycle sort: configurable (default s)
   -- A count advances that many positions, matching how `j`/`k`/`<C-f>` in
   -- this dashboard already read one. `count1`, since no count means one step.
   map_key(buf, keybindings.cycle_sort, function()
     actions.cycle_sort(vim.v.count1)
-  end, which_key_entries, "GitHub Stats: cycle sort criteria")
+  end, "GitHub Stats: cycle sort criteria")
 
   -- Cycle time range: configurable (default t)
   map_key(buf, keybindings.cycle_time_range, function()
     actions.cycle_time_range(vim.v.count1)
-  end, which_key_entries, "GitHub Stats: cycle time range")
+  end, "GitHub Stats: cycle time range")
 
   -- Custom time range: configurable (default T) -- prompts for a free-form
   -- expression instead of stepping through the fixed 7d/30d/90d/all cycle
   map_key(buf, keybindings.custom_time_range, function()
     actions.prompt_custom_time_range()
-  end, which_key_entries, "GitHub Stats: enter custom time range")
+  end, "GitHub Stats: enter custom time range")
 
   -- Max time range: configurable (default m) -- one keypress to the longest
   -- window the stored data can cover, instead of stepping the t cycle around
   -- or typing an expression at the T prompt
   map_key(buf, keybindings.max_time_range, function()
     actions.set_max_time_range()
-  end, which_key_entries, "GitHub Stats: set maximum time range")
+  end, "GitHub Stats: set maximum time range")
 
   -- Quit: configurable (default q), plus fixed Esc fallback. The dashboard
   -- buffer is bufhidden=wipe, so closing the window here also triggers the
@@ -265,7 +245,6 @@ function M.setup_keymaps(buf)
   local quit_keys = { "<Esc>" }
   if keybindings.quit and keybindings.quit ~= "" then
     quit_keys[#quit_keys + 1] = keybindings.quit
-    table.insert(which_key_entries, { keybindings.quit, desc = "GitHub Stats: quit dashboard", buffer = buf })
   end
   local win = ui_state.get_win()
   if win then
@@ -292,9 +271,7 @@ function M.setup_keymaps(buf)
         .. string.format("  %-9s - Show this help", keybindings.show_help),
       "info"
     )
-  end, which_key_entries, "GitHub Stats: show help")
-
-  register_which_key(which_key_entries)
+  end, "GitHub Stats: show help")
 end
 
 return M
