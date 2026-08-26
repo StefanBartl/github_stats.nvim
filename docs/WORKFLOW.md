@@ -91,7 +91,14 @@ count).
 ## Time range: `t` cycles, `T` types — and `T` never touches the network either
 
 `t` cycles the dashboard's aggregation window through a fixed `7d → 30d →
-90d → all` list. `T` opens a prompt (pre-filled with the current value) for
+90d → max` list, and `m` jumps straight to `max` in one keypress. `max` is the
+longest span the locally stored data actually covers, and the header names the
+window it resolved to — `Range:max (2025-03-04 → 2026-08-22, 172 days)`, or
+`(no data)` when nothing is stored. `max` and `all` filter identically; `all`
+is still accepted from `setup()` and the `T` prompt, `max` is the label the
+cycle produces. Both cycles take a count (`Nt`, `Ns`), taken modulo the cycle
+length, so a count larger than the cycle lands where it should instead of
+looping. `T` opens a prompt (pre-filled with the current value) for
 anything `analytics.parse_time_range` understands — `14d`, `3m`, `1y`,
 `since:2025-01-01`, a bare ISO date, or any configured date-preset name
 (`this_month`, `last_quarter`, a custom one from
@@ -105,6 +112,38 @@ pulled.
 An unrecognized `T` expression is rejected with an error notification and
 the *previous* range stays active — it doesn't fall back to a default, so a
 typo is safe to retry immediately.
+
+**`3m` and `1y` are calendar-accurate, not 90 and 365 days.** They used to be
+fixed blocks while the date presets accepted in the very same field
+(`this_month`, `this_quarter`, `this_year`) were calendar-exact — two notions
+of accuracy in one prompt, differing by up to five days a year. One month back
+from the 31st now lands on the 28th, 29th or 30th, and `Ny` is `12 * N` months.
+Worth knowing when comparing a `3m` figure against one you wrote down earlier.
+
+## Reading the header before reading the list
+
+The header answers the question the list cannot: *how is this going overall?*
+Its second line carries clones and views summed over the active range plus the
+repository with the most clones — summed from the per-repository stats already
+computed for that render, so it costs nothing. No top repository is named while
+nothing has been cloned, because "top" would then only mean "sorts first".
+
+Each entry's `Period:` line ends with a sparkline of daily clones over the
+range, which is the fastest way to tell a steady trickle from one spike — the
+two produce the same total and mean entirely different things.
+
+**`Trend` is measured over a fixed window, not over what is on screen.** It
+used to halve whatever range was displayed and compare the two halves, so the
+same `⬆ +67%` meant "last 3 days vs the 3 before" at `Range:7d` and "second
+half-year vs first" at `Range:max`, with nothing on screen saying which — and
+`sort_by = "trend"` was ordering repositories by quantities comparable only by
+accident. It is now the last N complete days against the N before them, the
+same N whatever is displayed, named in the header as `Trend:7d/7d` and set by
+`dashboard.trend_window_days`.
+
+The practical consequence: **changing the range no longer changes the trend.**
+If you were reading the two together, they are now independent — the range is
+what you are looking at, the trend is a fixed-window measurement beside it.
 
 ## Retention: dry-run before you trust the numbers on someone else's config
 
