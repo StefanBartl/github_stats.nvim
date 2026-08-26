@@ -8,7 +8,7 @@
 --- creates that buffer, since they are lifecycle details of that instance
 --- rather than global plugin bindings.
 
-local autocmd = require("lib.nvim.autocmd")
+local autocmd = require("lib.nvim.bindings.autocmd")
 
 local M = {}
 

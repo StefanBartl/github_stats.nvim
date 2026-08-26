@@ -16,7 +16,7 @@ GitHub Stats. Implementation lives under `lua/github_stats/bindings/`.
 ## User Commands
 
 One command, `:GithubStats <subcommand>` (built via
-[`lib.nvim.usercmd.composer`](https://github.com/StefanBartl/lib.nvim), with
+[`lib.nvim.bindings.usercmd.composer`](https://github.com/StefanBartl/lib.nvim), with
 `<Tab>` completion at every level — subcommand name, then each positional
 argument; repo names and date presets complete dynamically from live
 config). Registered in

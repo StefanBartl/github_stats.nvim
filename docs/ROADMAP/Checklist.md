@@ -36,8 +36,8 @@ gerechtfertigt.
 | 10 | Import-Reihenfolge | 🟡 | Nicht strikt System→Debug→Utils→State→UI→Controller→Keymaps, aber konsistent und nachvollziehbar pro Datei (z. B. `bindings/keymaps.lua`: config → state → movement/render → ui_state → detail → actions). |
 
 **Bonuspunkt `lib.nvim`:** ✅ genutzt (`dependencies = { "StefanBartl/lib.nvim" }`;
-`lib.nvim.notify`, `lib.nvim.map`, `lib.nvim.window`, `lib.nvim.cross.executable`,
-`lib.nvim.net.curl`, `lib.nvim.fs.json`, `lib.nvim.usercmd.composer`, `lib.nvim.ui.kit.note`,
+`lib.nvim.notify`, `lib.nvim.bindings.keymap`, `lib.nvim.window`, `lib.nvim.cross.executable`,
+`lib.nvim.net.curl`, `lib.nvim.fs.json`, `lib.nvim.bindings.usercmd.composer`, `lib.nvim.ui.kit.note`,
 `lib.lua.strings.format`, `lib.lua.tables` across most of the plugin — see
 [`regeln/LUA_NVIM.md`](../../../WKDBooks/Development/wkdbook-Lua/Checklists/regeln/LUA_NVIM.md#libnvim-verwenden)). The
 note in [Zentral-Prinzipien.md](./Zentral-Prinzipien.md) predates this and is stale.

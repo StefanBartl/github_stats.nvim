@@ -427,7 +427,7 @@ function M.check()
     end
   end
 
-  require("lib.nvim.usercmd.composer").checkhealth("GithubStats")
+  require("lib.nvim.bindings.usercmd.composer").checkhealth("GithubStats")
 end
 
 return M

@@ -10,7 +10,7 @@ local analytics = require("github_stats.analytics")
 local utils = require("github_stats.bindings.usrcmds.utils")
 local config = require("github_stats.config")
 local format_number = require("lib.lua.strings.format").format_number
-local map = require("lib.nvim.map")
+local map = require("lib.nvim.bindings.keymap")
 
 local M = {}
 

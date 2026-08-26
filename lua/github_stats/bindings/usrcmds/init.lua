@@ -2,7 +2,7 @@
 ---@brief User command registration and orchestration
 ---@description
 --- Central registry for all GitHub Stats user commands, built via
---- lib.nvim.usercmd.composer as a single `:GithubStats <subcommand>` verb.
+--- lib.nvim.bindings.usercmd.composer as a single `:GithubStats <subcommand>` verb.
 --- Each execute()/complete() pair below is unchanged from before the
 --- migration; routes only reconstruct a compatible `{ args = "..." }` table
 --- (the same shape nvim_create_user_command's callback passed) and forward
@@ -14,7 +14,7 @@
 --- the subcommand (composer only supports one bang slot per command, shared
 --- across all subcommands), matching cascade.nvim's precedent.
 
-local composer = require("lib.nvim.usercmd.composer")
+local composer = require("lib.nvim.bindings.usercmd.composer")
 
 local fetch = require("github_stats.bindings.usrcmds.fetch")
 local show = require("github_stats.bindings.usrcmds.show")

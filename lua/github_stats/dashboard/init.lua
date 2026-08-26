@@ -296,12 +296,12 @@ function M.open(force_refresh)
 
   -- Setup cleanup on buffer delete.
   --
-  -- This used to stay on the raw API with a note that lib.nvim.autocmd.create
+  -- This used to stay on the raw API with a note that lib.nvim.bindings.autocmd.create
   -- did not forward `buffer`, so routing it through the wrapper would have
   -- silently made it a global BufWipeout listener. It forwards `buffer` now,
   -- and does so explicitly ahead of `pattern` -- so the wrapper is safe here
   -- and brings its error reporting along.
-  require("lib.nvim.autocmd").create("BufWipeout", function()
+  require("lib.nvim.bindings.autocmd").create("BufWipeout", function()
     cleanup_dashboard()
   end, {
     buffer = buf,

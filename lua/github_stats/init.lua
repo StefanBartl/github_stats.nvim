@@ -8,7 +8,7 @@
 --- Configuration:
 ---   Edit ~/.config/nvim/lua/plugins/github-stats/config.json
 ---
---- Available commands (built via lib.nvim.usercmd.composer):
+--- Available commands (built via lib.nvim.bindings.usercmd.composer):
 ---   :GithubStats fetch [force]              - Fetch all metrics
 ---   :GithubStats show {repo} {metric}       - Show detailed stats
 ---   :GithubStats summary {clones|views}     - Summary across all repos

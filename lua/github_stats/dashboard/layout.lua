@@ -17,10 +17,10 @@ function M.setup_resize_handler(state)
   end
 
   -- Create autocmd for window resize. Buffer-scoped through
-  -- lib.nvim.autocmd.create, which forwards `buffer` (it did not when this
+  -- lib.nvim.bindings.autocmd.create, which forwards `buffer` (it did not when this
   -- was written, which is why the sibling in dashboard/init.lua carried a
   -- note about staying on the raw API).
-  require("lib.nvim.autocmd").create("VimResized", function()
+  require("lib.nvim.bindings.autocmd").create("VimResized", function()
     if state and state.is_open then
       local renderer = require("github_stats.dashboard.renderer")
       -- Re-render on resize

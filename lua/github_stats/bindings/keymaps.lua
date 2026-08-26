@@ -10,7 +10,7 @@
 --- Optionally registers descriptions with which-key.nvim if it is installed.
 
 local config = require("github_stats.config")
-local map = require("lib.nvim.map")
+local map = require("lib.nvim.bindings.keymap")
 local window = require("lib.nvim.window")
 local DEFAULT_KEYBINDINGS = require("github_stats.config.DEFAULTS").dashboard.keybindings
 local dashboard_state = require("github_stats.dashboard.state")
