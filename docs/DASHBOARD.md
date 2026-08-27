@@ -241,9 +241,24 @@ While the dashboard is open it re-renders itself every
 require("github_stats").setup({
   dashboard = {
     refresh_interval_seconds = 300, -- 5 minutes
+
+    -- Layout and redraw. `header_width` is the content area between the
+    -- header box's borders (72 fits an 80-column terminal and wastes half a
+    -- wide monitor); `sparkline_width` is how many characters one row's
+    -- daily breakdown gets; `render_debounce_ms` is the floor between two
+    -- redraws — right for a local terminal, worth raising over a slow SSH
+    -- connection where fewer, larger redraws read better.
+    header_width       = 72,
+    sparkline_width    = 24,
+    render_debounce_ms = 50,
   },
 })
 ```
+
+The sparkline itself draws with Unicode block elements (`▁▂▃▄▅▆▇█`) only when
+you have declared a Nerd Font via `vim.g.have_nerd_font`; otherwise it falls
+back to an ASCII ramp (`.,-=+*#@`), chosen as a whole set so one row cannot
+mix the two.
 
 It **re-renders, it never fetches.** A dashboard left open would otherwise
 hit the GitHub API every interval for data that cannot have changed — the

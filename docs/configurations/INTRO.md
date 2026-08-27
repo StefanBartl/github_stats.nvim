@@ -178,6 +178,18 @@ fetch_interval_hours = 168  -- Weekly
 
 **Note:** Manual fetches with `:GithubStats fetch force` bypass this interval.
 
+**Related:** `background.initial_delay_ms` (default `1000`) is the delay
+before the *first* cycle — it keeps the fetch out of startup. Raise it if
+your startup is heavy enough that one second still lands inside it.
+
+#### `max_user_repo_pages`
+**Type:** `number`
+**Default:** `30`
+
+Pages followed when listing a watched user's repositories, 100 per page.
+Past the cap, later repos are **silently not tracked** — raise it only for
+an account with more than 3000 public repos.
+
 #### `notification_level`
 **Type:** `"all" | "errors" | "silent"`
 **Default:** `"all"`
