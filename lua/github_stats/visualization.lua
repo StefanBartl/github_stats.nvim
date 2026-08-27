@@ -11,9 +11,27 @@ local tbl_insert, tbl_sort, tbl_concat = table.insert, table.sort, table.concat
 local str_format, str_rep = string.format, string.rep
 local format_number = require("lib.lua.strings.format").format_number
 
----Sparkline characters (Unicode block elements)
+---Sparkline ramp: Unicode block elements, or an ASCII ramp where those are
+---not safe to draw.
+---
+---Which one is not this module's decision and not a config key of its own:
+---`lib.nvim.ui.nerd_font` already answers "may I draw rich characters", the
+---user declares it once via `vim.g.have_nerd_font`, and it holds for every
+---plugin here rather than for this dashboard alone. The set is picked as a
+---whole -- a row mixing `█` with `#` reads worse than either ramp.
 ---@type string[]
-local SPARKLINE_CHARS = { "▁", "▂", "▃", "▄", "▅", "▆", "▇", "█" }
+local RAMP_RICH = { "▁", "▂", "▃", "▄", "▅", "▆", "▇", "█" }
+---@type string[]
+local RAMP_PLAIN = { ".", ",", "-", "=", "+", "*", "#", "@" }
+
+---@return string[]
+local function ramp()
+  local ok, nerd_font = pcall(require, "lib.nvim.ui.nerd_font")
+  if not ok or type(nerd_font.chars) ~= "function" then
+    return RAMP_RICH
+  end
+  return nerd_font.chars(RAMP_RICH, RAMP_PLAIN)
+end
 
 ---Generate sparkline from numeric data
 ---@param data number[] Array of numeric values
@@ -49,15 +67,18 @@ function M.generate_sparkline(data, width)
 
   -- Avoid division by zero
   if max_val == min_val then
-    return str_rep(SPARKLINE_CHARS[4], #sampled_data)
+    return str_rep(ramp()[4], #sampled_data)
   end
 
-  -- Generate sparkline
+  -- Generate sparkline. The ramp is resolved once per call, not per
+  -- character: it cannot change mid-row, and picking it eight times would
+  -- only be eight chances to disagree with itself.
+  local chars = ramp()
   local result = {}
   for _, val in ipairs(sampled_data) do
     local normalized = (val - min_val) / (max_val - min_val)
-    local char_idx = math.floor(normalized * (#SPARKLINE_CHARS - 1)) + 1
-    tbl_insert(result, SPARKLINE_CHARS[char_idx])
+    local char_idx = math.floor(normalized * (#chars - 1)) + 1
+    tbl_insert(result, chars[char_idx])
   end
 
   return tbl_concat(result)
