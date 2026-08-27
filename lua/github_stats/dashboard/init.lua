@@ -17,8 +17,19 @@ local M = {}
 ---@type uv.uv_timer_t?
 local render_timer = nil
 
----Minimum time between renders (milliseconds)
-local RENDER_DEBOUNCE_MS = 50
+---Minimum time between renders (milliseconds).
+---
+---`dashboard.render_debounce_ms`: 50 is right for a local terminal and wrong
+---over a slow SSH connection, where fewer, larger redraws read better.
+---@return integer
+local function render_debounce_ms()
+  local ok, cfg_mod = pcall(require, "github_stats.config")
+  if not ok or type(cfg_mod.get) ~= "function" then
+    return 50
+  end
+  local n = ((cfg_mod.get() or {}).dashboard or {}).render_debounce_ms
+  return (type(n) == "number" and n >= 0) and n or 50
+end
 
 ---Dashboard buffer name constant
 local DASHBOARD_BUF_NAME = "GitHub Stats Dashboard"
@@ -40,11 +51,12 @@ function M.schedule_render(force)
   end
 
   -- Check if enough time has passed
-  if not dashboard_state.should_render(RENDER_DEBOUNCE_MS) then
+  local debounce = render_debounce_ms()
+  if not dashboard_state.should_render(debounce) then
     -- Too soon, schedule debounced render
     render_timer = vim.uv.new_timer()
     render_timer:start(
-      RENDER_DEBOUNCE_MS,
+      debounce,
       0,
       vim.schedule_wrap(function()
         if render_timer then

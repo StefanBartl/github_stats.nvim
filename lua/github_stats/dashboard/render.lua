@@ -33,8 +33,19 @@ local function format_number(num)
   return lib_format_number(num)
 end
 
----Fixed-width content area between the header box's left/right borders
-local HEADER_CONTENT_WIDTH = 72
+---Fixed-width content area between the header box's left/right borders.
+---
+---`dashboard.header_width`: 72 fits an 80-column terminal, and wastes half a
+---wide monitor.
+---@return integer
+local function header_content_width()
+  local ok, cfg_mod = pcall(require, "github_stats.config")
+  if not ok or type(cfg_mod.get) ~= "function" then
+    return 72
+  end
+  local n = ((cfg_mod.get() or {}).dashboard or {}).header_width
+  return (type(n) == "number" and n > 20) and n or 72
+end
 
 ---@internal
 ---Pad or truncate a string to an exact display width
@@ -126,7 +137,7 @@ end
 ---Build the header's key-hint line from the *effective* keybindings, not from
 ---hardcoded defaults: a user who remapped `cycle_time_range` or disabled a key
 ---(set to "") would otherwise be shown a hint that is simply wrong. Kept to
----single-space separation so the full set still fits HEADER_CONTENT_WIDTH.
+---single-space separation so the full set still fits the header width.
 ---@return string
 local function build_key_hints()
   local DEFAULT_KEYBINDINGS = require("github_stats.config.DEFAULTS").dashboard.keybindings
@@ -208,7 +219,7 @@ local function build_header(state, stats_by_repo)
   -- dashboard/actions.lua's prompt_custom_time_range), not just one of the
   -- fixed 7d/30d/90d/max cycle values, and the resolved span appended to it
   -- is unbounded too -- fit_width() truncates safely rather than breaking the
-  -- box border when either grows past HEADER_CONTENT_WIDTH.
+  -- box border when either grows past the configured header width.
   local span = describe_span(stats_by_repo)
   local range = state.time_range or "30d"
   local trend_window = get_trend_window_days()
@@ -222,15 +233,15 @@ local function build_header(state, stats_by_repo)
       trend_window,
       trend_window
     ),
-    HEADER_CONTENT_WIDTH
+    header_content_width()
   )
 
-  local keys = fit_width(build_key_hints(), HEADER_CONTENT_WIDTH)
+  local keys = fit_width(build_key_hints(), header_content_width())
 
   return {
     "╔════════════════════════════════════════════════════════════════════════╗",
     "║                     GitHub Stats Dashboard                             ║",
-    "║" .. fit_width(build_totals(stats_by_repo), HEADER_CONTENT_WIDTH) .. "║",
+    "║" .. fit_width(build_totals(stats_by_repo), header_content_width()) .. "║",
     "║" .. status .. "║",
     "║" .. keys .. "║",
     "╚════════════════════════════════════════════════════════════════════════╝",
@@ -349,8 +360,18 @@ local function sort_repos(state, stats_by_repo)
   end
 end
 
----Width of the per-entry sparkline, in characters
-local SPARKLINE_WIDTH = 24
+---Width of the per-entry sparkline, in characters.
+---
+---`dashboard.sparkline_width`. Wider means more days visible per row.
+---@return integer
+local function sparkline_width()
+  local ok, cfg_mod = pcall(require, "github_stats.config")
+  if not ok or type(cfg_mod.get) ~= "function" then
+    return 24
+  end
+  local n = ((cfg_mod.get() or {}).dashboard or {}).sparkline_width
+  return (type(n) == "number" and n > 0) and n or 24
+end
 
 ---@internal
 ---Render a daily breakdown as a fixed-width sparkline.
@@ -382,7 +403,7 @@ local function build_sparkline(daily)
     table.insert(counts, daily[date].count or 0)
   end
 
-  return require("github_stats.visualization").generate_sparkline(counts, SPARKLINE_WIDTH)
+  return require("github_stats.visualization").generate_sparkline(counts, sparkline_width())
 end
 
 ---@internal

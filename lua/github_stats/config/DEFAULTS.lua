@@ -24,6 +24,10 @@ local DEFAULT_CONFIG = {
   token_source = "env",
   token_env_var = "GITHUB_TOKEN",
   fetch_interval_hours = 24,
+  -- Pages followed when listing a watched user's repositories (100 per page).
+  -- Raise it only for an account with more than 3000 public repos: past the
+  -- cap, later repos are silently not tracked.
+  max_user_repo_pages = 30,
   notification_level = "all",
   progress_style = "auto", -- indicator while a manual fetch runs; needs lib.nvim, no-op without it
 
@@ -70,6 +74,12 @@ local DEFAULT_CONFIG = {
     -- and the arrow at Range:max would mean different things while looking
     -- identical, and sorting by trend would order incomparable numbers.
     trend_window_days = 7,
+    -- Layout and redraw. `header_width` is the content area between the
+    -- header box's borders; `sparkline_width` how many characters one row's
+    -- daily breakdown gets.
+    header_width = 72,
+    sparkline_width = 24,
+    render_debounce_ms = 50,
     theme = "default",
     -- Right-click context menu (nvzone/menu, soft dependency; entries
     -- provided by github_stats.integrations.menu). Off automatically when

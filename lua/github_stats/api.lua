@@ -140,9 +140,22 @@ function M.fetch_all_metrics(repo, callback)
   end
 end
 
----Maximum pages to follow when listing a user's repositories (safety cap:
----100 repos/page, so 30 pages covers up to 3000 repos before giving up)
-local MAX_USER_REPO_PAGES = 30
+---Maximum pages to follow when listing a user's repositories.
+---
+---100 repos/page, so the default 30 covers 3000 repos. Configurable because
+---this cap *silently drops data*: past it, a watched user's later repos are
+---simply not tracked, and nothing in the UI distinguishes that from the user
+---not having them. `watch_users` on an account with more than 3000 public
+---repos is unusual but not impossible.
+---@return integer
+local function max_user_repo_pages()
+  local ok, cfg_mod = pcall(require, "github_stats.config")
+  if not ok or type(cfg_mod.get) ~= "function" then
+    return 30
+  end
+  local n = (cfg_mod.get() or {}).max_user_repo_pages
+  return (type(n) == "number" and n > 0) and n or 30
+end
 
 ---@internal
 ---Fetch a single page of a user's public repositories
@@ -194,7 +207,7 @@ function M.list_user_repos(username, callback)
   local all_names = {}
 
   local function fetch_page(page)
-    if page > MAX_USER_REPO_PAGES then
+    if page > max_user_repo_pages() then
       schedule(function()
         callback(all_names, nil)
       end)

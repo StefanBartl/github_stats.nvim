@@ -105,26 +105,34 @@ function M.init(opts)
   PATHS.config_file = PATHS.config_dir .. "/config.json"
   PATHS.data_dir = resolve_data_dir(opts.data_dir, PATHS.config_dir)
 
-  -- Priority 1: Setup options
-  if opts.repos and #opts.repos > 0 then
-    config = vim.tbl_deep_extend("force", DEFAULT_CONFIG, opts)
-    return true, nil
-  end
-
-  -- Priority 2: config.json
+  -- Base: config.json when it exists, otherwise the defaults (creating the
+  -- file on the way, as before).
   local stat = loop.fs_stat(PATHS.config_file)
-  if stat then
-    return load_config_file()
+  if not stat then
+    local ok, err = ensure_config_exists()
+    if not ok then
+      return false, err
+    end
   end
 
-  -- Priority 3: Create default config.json
-  local ok, err = ensure_config_exists()
-  if not ok then
-    return false, err
+  local ok_file, err_file = load_config_file()
+  if not ok_file then
+    return false, err_file
   end
 
-  -- Re-read created config
-  return load_config_file()
+  -- setup() wins over the file.
+  --
+  -- It used to be the other way around, and only for `repos`: setup options
+  -- were honoured *only* when `opts.repos` was non-empty, and dropped whole
+  -- otherwise. So `setup({ dashboard = { header_width = 100 } })` silently did
+  -- nothing as soon as a config.json existed -- which it always does, since
+  -- the plugin writes one on first run. Explicit code beating a generated
+  -- file is both the conventional order and the only one that makes every
+  -- option reachable from setup().
+  if next(opts) ~= nil then
+    config = vim.tbl_deep_extend("force", config or DEFAULT_CONFIG, opts)
+  end
+  return true, nil
 end
 
 ---Get storage root directory
