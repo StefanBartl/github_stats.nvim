@@ -34,6 +34,10 @@ local DEFAULT_CONFIG = {
   watch_users = {},
   background = {
     enabled = true,
+    -- Delay before the first cycle, in ms. Keeps the fetch out of startup;
+    -- raise it if your startup is heavy enough that one second still lands
+    -- inside it.
+    initial_delay_ms = 1000,
   },
   retention = {
     enabled = true,

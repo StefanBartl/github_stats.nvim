@@ -49,6 +49,14 @@ end
 ---governed by `fetch_interval_hours` inside fetcher.should_fetch(). It only
 ---controls how promptly a long-running session notices a fetch is due,
 ---instead of waiting for the next VimEnter.
+---How long to wait before the FIRST background cycle, in ms.
+---@param cfg GHStats.SetupOptions?
+---@return integer
+local function initial_delay_ms(cfg)
+  local n = cfg and cfg.background and cfg.background.initial_delay_ms
+  return (type(n) == "number" and n >= 0) and math.floor(n) or 1000
+end
+
 ---@param cfg GHStats.SetupOptions?
 ---@return integer
 local function poll_interval_ms(cfg)
@@ -71,8 +79,12 @@ function M.start()
     return
   end
 
-  -- First cycle, deferred to avoid competing with startup
-  vim.defer_fn(run_cycle, 1000)
+  -- First cycle, deferred to avoid competing with startup. Configurable for
+  -- the same reason the recurring interval below already is: how long startup
+  -- actually takes is a property of the user's config, not of this plugin --
+  -- one second is plenty after a lean start and lands in the middle of a
+  -- heavy one.
+  vim.defer_fn(run_cycle, initial_delay_ms(cfg))
 
   -- Recurring cycles for the rest of the session
   timer = vim.uv.new_timer()
