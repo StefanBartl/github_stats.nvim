@@ -1,6 +1,6 @@
 ---@diagnostic disable: undefined-global
 
--- Specs for storage.lua's read memo (docs/ROADMAP/KONZEPT.md, P1.2).
+-- Specs for storage.lua read memo.
 --
 -- The memo is only correct if it is dropped at every point that can change
 -- what is on disk, so most of what is worth testing here is invalidation, not

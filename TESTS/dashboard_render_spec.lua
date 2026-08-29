@@ -3,7 +3,7 @@
 -- Specs for the dashboard's presentation layer: the rendered buffer itself and
 -- the line arithmetic that maps between repository indices and buffer lines.
 --
--- Why this file exists (docs/ROADMAP/KONZEPT.md, P1.4): every bug this area has
+-- Why this file exists: every bug this area has
 -- actually produced was a line-height bug -- three independent hardcoded
 -- formulas (`* 6` twice, `2 + 3*N` in a dead path) that drifted apart and cut
 -- off the last entry when scrolled. They were fixed by making

@@ -74,8 +74,6 @@ Then try it out:
 - [Cross-Platform Support](docs/cross-platform.md) — Windows, macOS, and Linux specifics.
 - [Architecture](docs/architecture.md) — on-disk data layout and GitHub API endpoints used.
 - [Features](docs/FEATURES.md) — dev-facing catalog of every shipped feature, verified against current source.
-- [Roadmap](docs/ROADMAP.md) — what's actually open, nothing else.
-- [Konzept](docs/ROADMAP/KONZEPT.md) — the reasoning behind the roadmap: findings from the current source, alternatives, effort and risk per item (German).
 
 ---
 

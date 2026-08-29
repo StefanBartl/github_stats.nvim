@@ -80,8 +80,7 @@ documented as part of the features they affect in
   **`analytics.count_days(start, end)`**: the maximum stored window across
   repositories, and an inclusive day count that rounds rather than truncates
   so a DST boundary inside a span cannot silently lose a day.
-- **Concept document** [`docs/ROADMAP/KONZEPT.md`](../ROADMAP/KONZEPT.md), and
-  [`docs/ROADMAP.md`](../ROADMAP.md) filled in from it — findings from the
+- **Concept document and roadmap** — findings from the
   current source with effort and risk per item, feeding a prioritized list of
   what is actually open.
 - **CI**: `.github/workflows/ci.yml` runs `stylua --check .`, `luacheck .`,
@@ -198,10 +197,9 @@ documented as part of the features they affect in
   module that was never actually built that way (superseded by
   `bindings/keymaps.lua`); the wrong `require()` paths above are exactly the
   kind of confusion stale documentation like this causes.
-- `docs/ROADMAP.md` trimmed to open items only (currently none). Shipped
+- The roadmap trimmed to open items only (currently none). Shipped
   behavior moved to [`docs/FEATURES.md`](../FEATURES.md); speculative,
-  undecided feature designs moved to
-  [`docs/ROADMAP/IDEAS/IDEAS.md`](../ROADMAP/IDEAS/IDEAS.md).
+  undecided feature designs moved to a separate ideas document.
 - Two more real doc bugs fixed in `docs/DASHBOARD.md`: a fabricated
   "60 second cache" claim with no matching code, and a `luarepos`
   typo/broken code fence.
