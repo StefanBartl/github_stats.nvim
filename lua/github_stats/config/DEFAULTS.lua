@@ -4,7 +4,7 @@
 --- Central definition of the plugin's default configuration.
 --- Used as the base for vim.tbl_deep_extend when merging user options.
 
----@type GHStats.SetupOptions
+---@type GHStats.Config
 local DEFAULT_CONFIG = {
   notify_fetch = true,
   repos = {

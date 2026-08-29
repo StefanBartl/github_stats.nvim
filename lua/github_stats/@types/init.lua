@@ -16,12 +16,12 @@
 ---@field prune_days integer referrers/paths: age (days) after which a snapshot is deleted outright (the newest snapshot is always kept)
 
 ---@class GHStats.SetupOptions
----@field notify_fetch boolean Notify at startup whether a fetch was performed or not
----@field repos string[] List of individually tracked repositories ("owner/repo")
+---@field notify_fetch? boolean Notify at startup whether a fetch was performed or not
+---@field repos? string[] List of individually tracked repositories ("owner/repo")
 ---@field watch_users? string[] GitHub usernames whose public repositories are auto-discovered and tracked in addition to `repos`
 ---@field background? GHStats.BackgroundConfig Background fetch/discovery configuration
 ---@field retention? GHStats.RetentionConfig Data retention configuration (archiving/pruning old metric files)
----@field token_source "env"|"file" Token source
+---@field token_source? "env"|"file" Token source
 ---@field token_env_var? string Environment variable name
 ---@field token_file? string Path to token file
 ---@field fetch_interval_hours? number Fetch interval
@@ -31,6 +31,16 @@
 ---@field config_dir? string Custom config directory (default: stdpath('config')/lua/plugins/github-stats)
 ---@field data_dir? string Custom data directory (default: config_dir/data)
 ---@field date_presets? GHStats.DatePresetConfig Date range preset configuration
----@field dashboard GHStats.DashboardConfig Dashboard configuration
+---@field dashboard? GHStats.DashboardConfig Dashboard configuration
+
+--- The resolved configuration: `GHStats.SetupOptions` after the merge over
+--- `config/DEFAULTS.lua`, where the four fields the plugin cannot run without
+--- are guaranteed. `DEFAULTS` and `config.get()` carry this; `setup()` takes
+--- the optional-everything input type above.
+---@class GHStats.Config : GHStats.SetupOptions
+---@field notify_fetch  boolean
+---@field repos         string[]
+---@field token_source  "env"|"file"
+---@field dashboard     GHStats.Dashboard.Resolved
 
 return {}

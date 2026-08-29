@@ -14,11 +14,11 @@ local str_format = string.format
 -- "[github-stats] " text, so a lib.nvim prefix here would double it.
 local notifier = require("lib.nvim.notify").create("")
 
----@type GHStats.SetupOptions?
+---@type GHStats.Config?
 local config = nil
 
 ---Default configuration
----@type GHStats.SetupOptions
+---@type GHStats.Config
 local DEFAULT_CONFIG = require("github_stats.config.DEFAULTS")
 
 ---Resolved paths (set during init)
@@ -148,7 +148,7 @@ function M.get_config_dir()
 end
 
 ---Get current configuration
----@return GHStats.SetupOptions?
+---@return GHStats.Config?
 function M.get()
   return config
 end
