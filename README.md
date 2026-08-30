@@ -104,3 +104,7 @@ Please use the [GitHub issue tracker](https://github.com/StefanBartl/github_stat
 For general discussion, feel free to open a [GitHub Discussion](https://github.com/StefanBartl/github_stats.nvim/discussions).
 
 If you find this plugin helpful, consider giving it a star on GitHub — it helps others discover the project.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
