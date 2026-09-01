@@ -27,9 +27,12 @@ describe("dashboard", function()
       local original_get = config.get
       local original_get_repos = config.get_repos
 
+      -- Test double over a typed module function; restored below.
+      ---@diagnostic disable-next-line: duplicate-set-field
       config.get = function()
         return config_stub
       end
+      ---@diagnostic disable-next-line: duplicate-set-field
       config.get_repos = function()
         return config_stub.repos
       end
@@ -172,6 +175,7 @@ describe("dashboard", function()
       require("github_stats.config").init({
         config_dir = tmp_dir,
         repos = { "user/repo1" },
+        ---@diagnostic disable-next-line: assign-type-mismatch
         dashboard = { refresh_interval_seconds = interval_seconds },
       })
 
@@ -234,6 +238,8 @@ describe("dashboard", function()
       local analytics = require("github_stats.analytics")
       local original_query = analytics.query_metric
 
+      -- Test double over a typed module function; restored below.
+      ---@diagnostic disable-next-line: duplicate-set-field
       analytics.query_metric = function(_)
         return nil, "No data available"
       end

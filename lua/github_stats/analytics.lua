@@ -200,6 +200,7 @@ end
 ---@return string # ISO date (YYYY-MM-DD)
 local function shift_months(timestamp, months)
   local parts = os.date("!*t", timestamp)
+  ---@cast parts { year: integer, month: integer, day: integer }
 
   -- Work in months-since-year-0 so the arithmetic wraps years by itself.
   local total = (parts.year * 12) + (parts.month - 1) + months

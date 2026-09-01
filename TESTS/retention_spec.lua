@@ -6,7 +6,9 @@ describe("retention", function()
   local DAY_SECONDS = 86400
 
   local function today_midnight()
-    local now = os.time(os.date("!*t"))
+    local parts = os.date("!*t")
+    ---@cast parts osdate
+    local now = os.time(parts)
     return now - (now % DAY_SECONDS)
   end
 

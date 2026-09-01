@@ -65,7 +65,7 @@ describe("dashboard render", function()
 
     dashboard.open(false)
 
-    local buf = require("github_stats.state.ui_state").get_buf()
+    local buf = assert(require("github_stats.state.ui_state").get_buf(), "dashboard.open() must have created a buffer")
     return vim.api.nvim_buf_get_lines(buf, 0, -1, false)
   end
 
@@ -178,7 +178,7 @@ describe("dashboard render", function()
       })
       dashboard.schedule_render(true)
 
-      local buf = require("github_stats.state.ui_state").get_buf()
+      local buf = assert(require("github_stats.state.ui_state").get_buf(), "dashboard.open() must have created a buffer")
       local with = table.concat(vim.api.nvim_buf_get_lines(buf, 0, render.HEADER_LINES, false), "\n")
 
       assert.is_truthy(with:find("2026-01-02 -> 2026-01-10", 1, true))
@@ -247,7 +247,7 @@ describe("dashboard render", function()
       seed_days(repo, 10)
       dashboard.schedule_render(true)
 
-      local buf = require("github_stats.state.ui_state").get_buf()
+      local buf = assert(require("github_stats.state.ui_state").get_buf(), "dashboard.open() must have created a buffer")
       local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
       return lines[dashboard_state.get_repo_line(1) + 3]
     end
@@ -283,7 +283,7 @@ describe("dashboard render", function()
       seed_days("user/a", 30)
       dashboard.schedule_render(true)
 
-      local buf = require("github_stats.state.ui_state").get_buf()
+      local buf = assert(require("github_stats.state.ui_state").get_buf(), "dashboard.open() must have created a buffer")
       local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
 
       assert.equals(render.HEADER_LINES + 2 * render.ENTRY_LINES, #lines)
@@ -315,7 +315,7 @@ describe("dashboard render", function()
       seed("user/b", 10, 4)
       dashboard.schedule_render(true)
 
-      local buf = require("github_stats.state.ui_state").get_buf()
+      local buf = assert(require("github_stats.state.ui_state").get_buf(), "dashboard.open() must have created a buffer")
       local header = table.concat(vim.api.nvim_buf_get_lines(buf, 0, render.HEADER_LINES, false), "\n")
 
       assert.is_truthy(header:find("2 repos", 1, true))
@@ -329,7 +329,7 @@ describe("dashboard render", function()
       seed("user/busy", 5, 9)
       dashboard.schedule_render(true)
 
-      local buf = require("github_stats.state.ui_state").get_buf()
+      local buf = assert(require("github_stats.state.ui_state").get_buf(), "dashboard.open() must have created a buffer")
       local header = table.concat(vim.api.nvim_buf_get_lines(buf, 0, render.HEADER_LINES, false), "\n")
 
       assert.is_truthy(header:find("top:user/busy", 1, true))
@@ -373,7 +373,7 @@ describe("dashboard render", function()
     ---@param line integer
     ---@return table<string, boolean>
     local function groups_on(line)
-      local buf = require("github_stats.state.ui_state").get_buf()
+      local buf = assert(require("github_stats.state.ui_state").get_buf(), "dashboard.open() must have created a buffer")
       local marks = vim.api.nvim_buf_get_extmarks(buf, NAMESPACE, { line, 0 }, { line, -1 }, { details = true })
 
       local found = {}
@@ -443,7 +443,7 @@ describe("dashboard render", function()
     it("does not leave marks behind across re-renders", function()
       render_lines({ "user/a", "user/b", "user/c" })
 
-      local buf = require("github_stats.state.ui_state").get_buf()
+      local buf = assert(require("github_stats.state.ui_state").get_buf(), "dashboard.open() must have created a buffer")
       local before = #vim.api.nvim_buf_get_extmarks(buf, NAMESPACE, 0, -1, {})
 
       dashboard.schedule_render(true)

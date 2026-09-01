@@ -88,8 +88,10 @@ function M.start()
 
   -- Recurring cycles for the rest of the session
   timer = vim.uv.new_timer()
-  local interval_ms = poll_interval_ms(cfg)
-  timer:start(interval_ms, interval_ms, vim.schedule_wrap(run_cycle))
+  if timer then
+    local interval_ms = poll_interval_ms(cfg)
+    timer:start(interval_ms, interval_ms, vim.schedule_wrap(run_cycle))
+  end
 end
 
 ---Stop the background cycle, if running (mainly for tests/reload)

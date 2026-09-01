@@ -21,7 +21,14 @@ local config = nil
 ---@type GHStats.Config
 local DEFAULT_CONFIG = require("github_stats.config.DEFAULTS")
 
----Resolved paths (set during init)
+---Resolved paths. Empty until `M.setup()` fills them; every reader below
+---runs after that, and says so with an `assert` rather than assuming it.
+---@class GHStats.Config.Paths
+---@field config_dir string?
+---@field config_file string?
+---@field data_dir string?
+
+---@type GHStats.Config.Paths
 local PATHS = {
   config_dir = nil,
   config_file = nil,
@@ -58,8 +65,8 @@ end
 ---Create default config file if it doesn't exist
 ---@return boolean, string? # Success flag, error message
 local function ensure_config_exists()
-  local config_dir = PATHS.config_dir
-  local config_file = PATHS.config_file
+  local config_dir = assert(PATHS.config_dir, "setup() resolves the config paths first")
+  local config_file = assert(PATHS.config_file, "setup() resolves the config paths first")
 
   -- Create directory if needed
   local stat = loop.fs_stat(config_dir)

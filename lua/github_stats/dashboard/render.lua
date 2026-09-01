@@ -439,7 +439,7 @@ local function build_entry(repo, index, is_selected, stats)
   -- non-nil: for a repository that was never fetched, query_metric echoes the
   -- requested range back as period_start/period_end, so the old check printed
   -- a period for a repository that has no data at all.
-  if has_days(stats_clones) then
+  if stats_clones and has_days(stats_clones) then
     table.insert(
       lines,
       string.format(

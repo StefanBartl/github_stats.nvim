@@ -55,18 +55,21 @@ function M.schedule_render(force)
   if not dashboard_state.should_render(debounce) then
     -- Too soon, schedule debounced render
     render_timer = vim.uv.new_timer()
-    render_timer:start(
-      debounce,
-      0,
-      vim.schedule_wrap(function()
-        if render_timer then
-          render_timer:stop()
-          render_timer = nil
-        end
-        render.render_dashboard()
-      end)
-    )
-    return
+    if render_timer then
+      render_timer:start(
+        debounce,
+        0,
+        vim.schedule_wrap(function()
+          if render_timer then
+            render_timer:stop()
+            render_timer = nil
+          end
+          render.render_dashboard()
+        end)
+      )
+      return
+    end
+    -- No timer to debounce on: render now rather than drop the frame.
   end
 
   -- Enough time has passed, render immediately
@@ -201,6 +204,10 @@ local function start_auto_refresh(state)
 
   local interval_ms = math.floor(interval_seconds * 1000)
   local timer = vim.uv.new_timer()
+  if not timer then
+    -- No auto-refresh without a timer; the refresh keys still work.
+    return
+  end
 
   timer:start(
     interval_ms,

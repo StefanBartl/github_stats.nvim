@@ -24,6 +24,12 @@
 ---@field buffer integer? Dashboard buffer handle
 ---@field window integer? Dashboard window handle
 
+--- Right-click context menu (nvzone/menu, a soft dependency). Only
+--- controls whether the trigger and entries are offered; the
+--- integration turns itself off when nvzone/menu is absent.
+---@class GHStats.DashboardMenuConfig
+---@field enable? boolean Offer the context menu at all (default true)
+
 ---@class GHStats.DashboardKeybindings
 ---@field navigate_down string Keybinding to navigate down
 ---@field navigate_up string Keybinding to navigate up
@@ -49,12 +55,18 @@
 ---@field sparkline_width? integer Width of a row's daily-breakdown sparkline, in characters (default 24)
 ---@field render_debounce_ms? integer Minimum time between dashboard renders in ms (default 50)
 ---@field theme? "default"|"minimal"|"compact" Display theme (reserved for future)
+---@field menu? GHStats.DashboardMenuConfig Right-click context menu (nvzone/menu)
 ---@field keybindings? GHStats.DashboardKeybindings Customizable keybindings
 
---- The dashboard half of `GHStats.Config`: the two fields the dashboard reads
+--- The dashboard half of `GHStats.Config`: the fields the dashboard reads
 --- without a fallback are guaranteed once the defaults are merged in.
+--- `sort_by` and `time_range` belong here because `dashboard/state.lua`
+--- ends its `or` chain at DEFAULTS -- an optional there leaves the chain
+--- open, and `GHStats.DashboardState` declares both non-optional.
 ---@class GHStats.Dashboard.Resolved : GHStats.DashboardConfig
 ---@field enabled                  boolean
 ---@field refresh_interval_seconds integer
+---@field sort_by                  "clones"|"views"|"name"|"trend"
+---@field time_range               string
 
 return {}

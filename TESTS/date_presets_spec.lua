@@ -83,6 +83,8 @@ describe("date_presets", function()
       -- Temporarily override config.get()
       local config = require("github_stats.config")
       local original_get = config.get
+      -- Test double over a typed module function; restored below.
+      ---@diagnostic disable-next-line: duplicate-set-field
       config.get = function()
         return config_stub
       end
@@ -112,6 +114,8 @@ describe("date_presets", function()
 
       local config = require("github_stats.config")
       local original_get = config.get
+      -- Test double over a typed module function; restored below.
+      ---@diagnostic disable-next-line: duplicate-set-field
       config.get = function()
         return config_stub
       end

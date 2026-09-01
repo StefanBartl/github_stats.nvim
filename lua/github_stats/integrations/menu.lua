@@ -33,11 +33,18 @@ local function menu_enabled()
 end
 
 ---@internal
----Whether a repository is currently selected in the dashboard.
+---The repository the dashboard has selected, or nil when there is none.
+---
+---Returns the repo rather than a boolean on purpose: a boolean helper is
+---not a type guard, so every caller would still be indexing an optional
+---state afterwards.
 ---@param state GHStats.DashboardState?
----@return boolean
-local function has_selection(state)
-  return state ~= nil and state.current_index >= 1 and state.current_index <= #state.repos
+---@return string|nil
+local function selected_repo(state)
+  if state == nil or state.current_index < 1 or state.current_index > #state.repos then
+    return nil
+  end
+  return state.repos[state.current_index]
 end
 
 ---@internal
@@ -90,16 +97,16 @@ function M.items()
 
   local dashboard_state = require("github_stats.dashboard.state")
   local state = dashboard_state.get_state()
-  local selected = has_selection(state)
+  local selected = selected_repo(state) ~= nil
 
   local out = {}
 
   contextmenu.group(
     out,
     contextmenu.entry(selected, "  Show details", function()
-      local s = dashboard_state.get_state()
-      if has_selection(s) then
-        require("github_stats.dashboard.detail").show_detail(s.repos[s.current_index])
+      local repo = selected_repo(dashboard_state.get_state())
+      if repo then
+        require("github_stats.dashboard.detail").show_detail(repo)
       end
     end, "<CR>")
   )
@@ -149,9 +156,9 @@ function M.items()
   contextmenu.group(
     out,
     contextmenu.entry(selected, "  Export selected…", function()
-      local s = dashboard_state.get_state()
-      if has_selection(s) then
-        export_selected(s.repos[s.current_index])
+      local repo = selected_repo(dashboard_state.get_state())
+      if repo then
+        export_selected(repo)
       end
     end)
   )
