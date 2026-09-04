@@ -91,7 +91,7 @@ Check `:GithubStats debug` for error details.
 
 **Related:**
 - See [Configuration Guide](configurations/INTRO.md) for `fetch_interval_hours`
-- See [Troubleshooting](TROUBLESHOOTING.md#understanding-x-errors-messages) for error resolution
+- See [Troubleshooting](TROUBLESHOOTING.md#understanding-error-messages) for error resolution
 
 ---
 
@@ -617,7 +617,7 @@ with both clones and views highlights, instead of two separate reports.
 
 **Related:**
 - `:GithubStats show` to view data before exporting
-- See [Export Module](../README.md#export-data-new-in-v120) for more details
+- See [Export to CSV, Markdown, and PDF](FEATURES.md#export-to-csv-markdown-and-pdf) for more details
 
 ---
 

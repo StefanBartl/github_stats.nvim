@@ -118,7 +118,7 @@ require("github_stats").setup({
 **Type:** `boolean`
 **Default:** `true`
 
-Master switch for the silent background fetch/discovery cycle (started on `VimEnter`, stays active for the whole session). When `false`, only manual `:GithubStats fetch` ever fetches data — see [Background Fetching & Auto-Discovered Repos](../../README.md#background-fetching--auto-discovered-repos) in the README for the full behavior.
+Master switch for the silent background fetch/discovery cycle (started on `VimEnter`, stays active for the whole session). When `false`, only manual `:GithubStats fetch` ever fetches data — see [Background fetching](../WORKFLOW.md#background-fetching-runs-the-whole-session--know-the-two-intervals) in the workflow guide for the full behavior.
 
 #### `token_source`
 **Type:** `"env" | "file"`

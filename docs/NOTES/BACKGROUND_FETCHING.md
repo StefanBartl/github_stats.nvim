@@ -2,7 +2,7 @@
 
 Developer-facing walkthrough of how the silent background fetch/discovery
 cycle actually works under the hood. For user-facing configuration, see
-[README.md](../../README.md#background-fetching--auto-discovered-repos).
+[WORKFLOW.md](../WORKFLOW.md#background-fetching-runs-the-whole-session--know-the-two-intervals).
 
 ## Entry point
 
