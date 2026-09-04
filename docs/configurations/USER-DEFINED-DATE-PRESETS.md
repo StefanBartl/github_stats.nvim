@@ -338,7 +338,7 @@ end
 
 ## Further Reading
 
-- [Built-in Commands](../USERCOMMANDS.md)
+- [Built-in Commands](../usercommands.md)
 - [Date Format Specification](https://en.wikipedia.org/wiki/ISO_8601)
 - [Lua os.date Documentation](https://www.lua.org/manual/5.1/manual.html#pdf-os.date)
 

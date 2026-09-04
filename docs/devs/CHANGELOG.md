@@ -313,10 +313,10 @@ documented as part of the features they affect in
 
 - **Documentation Overhaul**
   - New configuration guide split into logical sections
-    - [docs/configuration/INTRO.md](../configuration/INTRO.md)
-    - [docs/configuration/PREPARATION.md](../configuration/PREPARATION.md)
-    - [docs/configuration/OPTION-A.md](../configuration/OPTION-A.md)
-    - [docs/configuration/OPTION-B.md](../configuration/OPTION-B.md)
+    - [docs/configurations/INTRO.md](../configurations/INTRO.md)
+    - [docs/configurations/PREPARATION.md](../configurations/PREPARATION.md)
+    - [docs/configurations/OPTION-A.md](../configurations/OPTION-A.md)
+    - [docs/configurations/OPTION-B.md](../configurations/OPTION-B.md)
   - Updated README with clearer structure
   - Enhanced vim help file (`doc/github_stats.txt`)
   - Updated user commands reference

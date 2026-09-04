@@ -90,7 +90,7 @@ Or with errors:
 Check `:GithubStats debug` for error details.
 
 **Related:**
-- See [Configuration Guide](configuration/INTRO.md) for `fetch_interval_hours`
+- See [Configuration Guide](configurations/INTRO.md) for `fetch_interval_hours`
 - See [Troubleshooting](TROUBLESHOOTING.md#understanding-x-errors-messages) for error resolution
 
 ---
@@ -845,7 +845,7 @@ Success! Sample data:
 
 1. **"Token: ERROR - GITHUB_TOKEN not set"**
    - Token not configured
-   - See [Configuration](configuration/PREPARATION.md#setting-up-token-access)
+   - See [Configuration](configurations/PREPARATION.md#setting-up-token-access)
 
 2. **"API Error: 401 Unauthorized"**
    - Invalid or expired token
@@ -961,7 +961,7 @@ separately.
 
 **For more information:**
 - [README](../README.md) – Plugin overview
-- [Configuration Guide](configuration/INTRO.md) – Setup instructions
+- [Configuration Guide](configurations/INTRO.md) – Setup instructions
 - [Troubleshooting](TROUBLESHOOTING.md) – Common issues and solutions
 - `:help github_stats` – Vim help file
 
