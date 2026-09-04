@@ -63,6 +63,9 @@ Then try it out:
 
 ## Documentation
 
+Start at [docs/README.md](docs/README.md), which says what is where and which
+question each page answers.
+
 - [Installation](docs/installation.md) — requirements, loading strategies, lazy.nvim/packer.nvim setup.
 - [Configuration Guide](docs/configurations/INTRO.md) — all configuration options, methods, and defaults.
 - [Preparation](docs/configurations/PREPARATION.md) — creating a GitHub token and verifying prerequisites.
@@ -75,6 +78,7 @@ Then try it out:
 - [Cross-Platform Support](docs/cross-platform.md) — Windows, macOS, and Linux specifics.
 - [Architecture](docs/architecture.md) — on-disk data layout and GitHub API endpoints used.
 - [Features](docs/FEATURES.md) — dev-facing catalog of every shipped feature, verified against current source.
+- [Workflow](docs/WORKFLOW.md) — how the pieces combine over a session, including the two background-fetch intervals.
 
 ---
 
