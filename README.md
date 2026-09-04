@@ -13,7 +13,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Neovim](https://img.shields.io/badge/Neovim-0.9%2B-57A143?logo=neovim&logoColor=white)](https://neovim.io)
 [![Lua](https://img.shields.io/badge/Lua-5.1%2FLuaJIT-2C2D72?logo=lua&logoColor=white)](https://www.lua.org)
-![Status](https://img.shields.io/badge/status-beta-orange)
+![Status](https://img.shields.io/badge/status-alpha-red)
 
 A Neovim plugin for automatic collection and analysis of GitHub repository traffic statistics. It silently collects clones, views, referrers, and paths in the background, stores the history locally as JSON with automatic archiving/pruning to keep it bounded, and gives you commands, charts, period-over-period diffs, CSV/Markdown/PDF exports, and an interactive dashboard to explore it.
 
