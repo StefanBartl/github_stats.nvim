@@ -19,7 +19,7 @@ function M.execute(args)
   local parts = vim.split(args.args, "%s+")
 
   if #parts < 4 then
-    config.notify("[github-stats] Usage: GithubStatsDiff {repo} {metric} {period1} {period2}", "error")
+    config.notify("[github-stats] Usage: :GithubStats diff {repo} {metric} {period1} {period2}", "error")
     config.notify("[github-stats] Period format: YYYY-MM or YYYY  (e.g.: 2025-01 or 2025)", "info")
     return
   end

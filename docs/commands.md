@@ -91,7 +91,7 @@ Check `:GithubStats debug` for error details.
 
 **Related:**
 - See [Configuration Guide](configurations/INTRO.md) for `fetch_interval_hours`
-- See [Troubleshooting](TROUBLESHOOTING.md#understanding-error-messages) for error resolution
+- See [Troubleshooting](troubleshooting.md#understanding-error-messages) for error resolution
 
 ---
 
@@ -115,11 +115,19 @@ Displays detailed statistics for a single repository and metric, including total
 **Autocompletion:**
 - Repository names from configuration
 - Metric types: `clones`, `views`
+- Date preset names at both date slots — but see the warning below
+
+> **`show` does not resolve date presets.** Completion offers them, but
+> `show.lua` hands the argument straight to `analytics.query_metric` as
+> `start_date`, and `parse_date` there accepts `YYYY-MM-DD` only. A preset
+> name fails to parse and becomes *no filter at all*, so the command
+> silently reports the full stored history. Use ISO dates here, or
+> `:GithubStats chart` / the dashboard's `T` prompt for presets — see
+> [Where presets actually resolve](configurations/USER-DEFINED-DATE-PRESETS.md#where-presets-actually-resolve).
 
 **Smart Defaults:**
 - No `start_date` → Shows all available data
 - No `end_date` → Defaults to today's date
-- Plugin notifies about applied defaults
 
 **Examples:**
 ```vim
@@ -370,7 +378,7 @@ Top Paths: username/repo
 
 **Usage:**
 ```vim
-:GithubStats chart {repo} {metric} [start_date] [end_date]
+:GithubStats chart {repo} {metric} [start_date|time_range] [end_date]
 ```
 
 **Description:**
@@ -380,17 +388,30 @@ Renders GitHub traffic data as ASCII sparklines or comparison charts. Provides v
 **Arguments:**
 - `{repo}` – Repository identifier (`owner/repo`)
 - `{metric}` – `clones`, `views`, or `both` (comparison)
-- `[start_date]` (optional) – Start date (`YYYY-MM-DD`)
-- `[end_date]` (optional) – End date (`YYYY-MM-DD`)
+- `[start_date|time_range]` (optional) – Either a start date (`YYYY-MM-DD`) **or** a relative time range
+- `[end_date]` (optional) – End date (`YYYY-MM-DD`); ignored when the third argument was a time range
+
+**The third argument does double duty.** An argument that looks like `Nd`
+(`7d`, `30d`) or contains `last` (`last_month`, `last_quarter`) is treated
+as a *time range* and passed straight through as such; anything else is
+treated as a start date. So `:GithubStats chart user/repo clones 30d` is the
+last 30 days, while `:GithubStats chart user/repo clones 2025-11-01` is
+everything from that date on.
+
+That rule is also what decides whether a **date preset** works here: only
+names matching it reach `analytics.parse_time_range`, which is the only
+place presets are resolved. `last_quarter` works; `this_quarter` is treated
+as a start date, fails to parse, and silently filters nothing. See
+[Where presets actually resolve](configurations/USER-DEFINED-DATE-PRESETS.md#where-presets-actually-resolve).
 
 **Autocompletion:**
 - Repository names
 - Metric types: `clones`, `views`, `both`
+- Date presets at both date slots
 
 **Smart Defaults:**
-- No `start_date` → All available data
-- No `end_date` → Today's date
-- Plugin notifies about applied defaults
+- No third argument → All available data
+- Third argument is a date, no `[end_date]` → Today's date
 
 **Examples:**
 ```vim
@@ -405,6 +426,9 @@ Renders GitHub traffic data as ASCII sparklines or comparison charts. Provides v
 
 " Only start date
 :GithubStats chart username/repo clones 2025-11-01
+
+" Relative time range instead of a start date
+:GithubStats chart username/repo clones 30d
 
 " Using autocomplete
 :GithubStats chart <Tab>               " Lists repositories
@@ -610,14 +634,14 @@ with both clones and views highlights, instead of two separate reports.
 
 **Error Messages:**
 ```
-[github-stats] 'all' target only supports Markdown format
+[github-stats] 'all' target only supports Markdown/PDF format
 [github-stats] Export failed: Permission denied
-[github-stats] File must have .csv or .md extension
+[github-stats] File must have .csv, .md or .pdf extension
 ```
 
 **Related:**
 - `:GithubStats show` to view data before exporting
-- See [Export to CSV, Markdown, and PDF](FEATURES.md#export-to-csv-markdown-and-pdf) for more details
+- See [Export to CSV, Markdown, and PDF](FEATURES/EXPORT.md) for more details
 
 ---
 
@@ -646,6 +670,11 @@ Compares traffic metrics between two time periods, showing absolute values and p
 - Repository names
 - Metric types: `clones`, `views`
 - Period suggestions (current month, last month, current year, last year)
+
+> Completion at the period slots also offers **date preset names**, but
+> `diff` does not accept them: `parse_period` takes `YYYY-MM` and `YYYY`
+> only, and anything else fails with `Invalid period1/2`. Presets work at
+> the date slots of `show` and `chart`, and at the dashboard's `T` prompt.
 
 **Examples:**
 ```vim
@@ -754,7 +783,7 @@ on demand.
 
 **Related:**
 - See [Configuration Guide](configurations/INTRO.md) for `opts.retention`
-- See [Features](FEATURES.md#data-retention-archive-and-prune) for the full retention model
+- See [Data retention](FEATURES/RETENTION.md) for the full retention model
 
 ---
 
@@ -862,7 +891,7 @@ Success! Sample data:
 **Related:**
 - `:checkhealth github_stats` for comprehensive health check
 - `:messages` to view all Neovim messages
-- [Troubleshooting Guide](TROUBLESHOOTING.md)
+- [Troubleshooting Guide](troubleshooting.md)
 
 ---
 
@@ -887,7 +916,7 @@ Full keybindings, sorting/time-range controls, and configuration are covered
 separately.
 
 **Related:**
-- [Dashboard Guide](DASHBOARD.md) — keybindings, sorting, time ranges, configuration
+- [Dashboard Guide](dashboard.md) — keybindings, sorting, time ranges, configuration
 - [Bindings Reference](BINDINGS.md#dashboard-keymaps) — dashboard keymap table
 
 ---
@@ -962,7 +991,5 @@ separately.
 **For more information:**
 - [README](../README.md) – Plugin overview
 - [Configuration Guide](configurations/INTRO.md) – Setup instructions
-- [Troubleshooting](TROUBLESHOOTING.md) – Common issues and solutions
+- [Troubleshooting](troubleshooting.md) – Common issues and solutions
 - `:help github_stats` – Vim help file
-
-**Last Updated:** 2025-12-22

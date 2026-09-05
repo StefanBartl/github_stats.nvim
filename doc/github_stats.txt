@@ -8,11 +8,11 @@ CONTENTS                                              *github_stats-contents*
     3. Installation ........................... |github_stats-installation|
     4. Configuration .......................... |github_stats-configuration|
     5. Commands ............................... |github_stats-commands|
-    6. Dashboard UI ........................... |github_stats-dashboards|
+    6. Dashboard UI ........................... |github_stats-dashboard|
     7. Visualization .......................... |github_stats-visualization|
     8. Export ................................. |github_stats-export|
     9. Diff ................................... |github_stats-diff|
-   10. Date Presets ........................... |github_stats-date_presets|
+   10. Date Presets ........................... |github_stats-date-presets|
    11. API .................................... |github_stats-api|
    12. Storage ................................ |github_stats-storage|
    13. Troubleshooting ........................ |github_stats-troubleshooting|
@@ -42,9 +42,15 @@ Features:~
 ==============================================================================
 REQUIREMENTS                                      *github_stats-requirements*
 
-• Neovim >= 0.9.0
+• Neovim >= 0.10.0 (vim.uv is used unguarded)
+• lib.nvim (required: notify, fs.json, net.curl, usercmd composer,
+  cross.executable)
 • curl (for API requests)
 • GitHub Personal Access Token with `repo` permission
+
+Optional:~
+• pdfport.nvim for .pdf export
+• nvzone/menu for the dashboard's right-click menu
 
 Create token:~
   1. https://github.com/settings/tokens
@@ -65,6 +71,7 @@ With lazy.nvim (recommended):~
 >lua
     {
       "StefanBartl/github_stats.nvim",
+      dependencies = { "StefanBartl/lib.nvim" },
       event = "VimEnter",
       config = function()
         require("github_stats").setup({
@@ -78,6 +85,7 @@ With lazy.nvim (eager):~
 >lua
     {
       "StefanBartl/github_stats.nvim",
+      dependencies = { "StefanBartl/lib.nvim" },
       lazy = false,
       config = function()
         require("github_stats").setup({
@@ -91,6 +99,7 @@ With packer.nvim:~
 >lua
     use {
       "StefanBartl/github_stats.nvim",
+      requires = { "StefanBartl/lib.nvim" },
       config = function()
         require("github_stats").setup({
           repos = { "user/repo1", "user/repo2" },
@@ -195,7 +204,7 @@ progress_style          Progress indicator while a fetch is in flight.
                         lib.nvim installed this option is silently a
                         no-op and fetching behaves exactly as before.
 
-                        Only manual fetches (`:GithubStatsFetch`, the
+                        Only manual fetches (`:GithubStats fetch`, the
                         dashboard refresh keys) show an indicator — the
                         silent background cycle never does, matching how
                         it already suppresses info notifications.
@@ -460,6 +469,24 @@ the dashboard subcommand.
     Examples:~
         :GithubStats diff username/repo clones 2025-01 2025-02
         :GithubStats diff username/repo views 2024 2025
+
+                                                    *:GithubStats-compact*
+:GithubStats compact [dry-run]
+    Archives old clones/views data and prunes stale referrers/paths
+    snapshots. Runs automatically at most once per 24h after a fetch;
+    this command runs it on demand.
+
+    Optional: `dry-run` - Reports would-be archived/deleted counts and
+    freed bytes without touching disk
+
+    Autocompletion: `dry-run`
+
+    Governed by: retention.enabled, retention.cutoff_days (floor 14),
+    retention.prune_days
+
+    Examples:~
+        :GithubStats compact dry-run
+        :GithubStats compact
 
                                                       *:GithubStats-debug*
 :GithubStats debug
@@ -877,11 +904,28 @@ Built-in Presets:~
   this_quarter    Start of quarter to today
   this_year       January 1st to today
 
+Where presets resolve:~
+
+Completion offers preset names in more slots than the code resolves them
+in. Resolution happens only in analytics.parse_time_range, and only these
+reach it:
+
+    Dashboard T prompt          always
+    :GithubStats chart, arg 3   only if the name contains "last" or looks
+                                like Nd (chart.lua routes those to
+                                time_range)
+    :GithubStats show           never - the argument becomes start_date,
+                                which accepts YYYY-MM-DD only
+    :GithubStats diff           never - parse_period accepts YYYY-MM or
+                                YYYY only
+
+Where a name is not resolved it fails to parse as a date and becomes NO
+filter, silently reporting the full stored history.
+
 Usage with Commands:~
 >
-    :GithubStats show username/repo clones last_month
-    :GithubStats chart username/repo views this_quarter
-    :GithubStats diff username/repo clones last_week this_week
+    :GithubStats chart username/repo clones last_month
+    :GithubStats show username/repo clones 2025-12-01   " ISO dates here
 
 
 Custom Presets:~
@@ -920,8 +964,8 @@ Example Configuration:~
 
 Using Custom Presets:~
 >
-    :GithubStats show username/repo clones fiscal_year
-    :GithubStats chart username/repo both current_sprint
+    :GithubStats chart username/repo clones last_fiscal_year
+    " fiscal_year / current_sprint resolve only at the dashboard T prompt
 
 
 Configuration Options:~
@@ -946,7 +990,8 @@ Preset Function Requirements:~
 
 Autocompletion:~
 
-Tab-completion shows all available presets when entering date parameters
+Tab-completion shows all available presets when entering date parameters,
+including in the slots that do not resolve them (see above)
 in commands that support date ranges:
   • |:GithubStats-show|
   • |:GithubStats-chart|
@@ -1131,7 +1176,7 @@ Solution:~
 
 Problem: Autocompletion not working~
 Solution:~
-    1. Check Neovim version: >= 0.9.0 required
+    1. Check Neovim version: >= 0.10.0 required
     2. Run: :checkhealth github_stats
     3. Verify configuration is loaded
 
@@ -1142,7 +1187,7 @@ Diagnostic Workflow:~
     4. Check config: ~/.config/nvim/lua/plugins/github-stats/config.json
 
 For comprehensive troubleshooting guide, see:
-    docs/TROUBLESHOOTING.md
+    docs/troubleshooting.md
 
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:

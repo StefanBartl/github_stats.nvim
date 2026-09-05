@@ -22,7 +22,7 @@ Dashboard time-range pass on top of the earlier repo/tooling pass (CI, test
 runner, internal restructuring). (User-facing fixes from the tooling pass —
 dashboard bang, `dashboard.close()` crash, `setup(opts)` forwarding — are
 documented as part of the features they affect in
-[`docs/FEATURES.md`](../FEATURES.md), not repeated here.)
+[`docs/FEATURES/`](FEATURES/README.md), not repeated here.)
 
 ### Added
 - **Read memo in `storage.read_metric_history()`**: stored metrics are read
@@ -57,7 +57,7 @@ documented as part of the features they affect in
   shares the period line.
 - **`dashboard.trend_window_days`** (default `7`): days per trend comparison
   window, validated by `:checkhealth github_stats`.
-- **Specs for the presentation layer**: `tests/dashboard_render_spec.lua`, 13
+- **Specs for the presentation layer**: `TESTS/dashboard_render_spec.lua`, 13
   specs driven through `dashboard.open()` and the rendered buffer rather than
   through test-only exports — line budget against `HEADER_LINES`/`ENTRY_LINES`,
   index↔line round trip, equal header-box widths, the sort/range status line,
@@ -140,10 +140,10 @@ documented as part of the features they affect in
   `DEFAULT_CONFIG`, the way `config.get_retention()`/
   `get_notification_level()` already do — found by finally getting the test
   runner working.
-- `tests/dashboard_spec.lua`'s sparkline-width assertion compared byte
+- `TESTS/dashboard_spec.lua`'s sparkline-width assertion compared byte
   length (`#sparkline`) against a string of 3-byte-per-glyph UTF-8
   characters; fixed to `vim.fn.strchars()`.
-- Two broken `require()` paths in `tests/dashboard_spec.lua`
+- Two broken `require()` paths in `TESTS/dashboard_spec.lua`
   (`dashboard.renderer`, `dashboard.navigator` — neither module exists)
   rewritten to test the real modules (`dashboard.render`,
   `bindings.keymaps`).
@@ -177,9 +177,9 @@ documented as part of the features they affect in
 - **`⬌ n/a` instead of `⬌ 0%` when there is nothing to compare**: no data in
   either window is not the same statement as flat traffic. Such entries sort
   below every real trend value.
-- **Dashboard header is five lines** (`render.M.HEADER_LINES = 5`, was 4):
-  border, title, sort/range status, key hints, border. Every line and scroll
-  calculation already read the constant, so nothing else changed.
+- **The dashboard header grew from four lines to six** (`render.M.HEADER_LINES`):
+  border, title, totals, sort/range status, key hints, border. Every line and
+  scroll calculation already read the constant, so nothing else changed.
 - **The header's key-hint line is built from the effective keybindings**
   rather than a hardcoded string, so a remapped key is shown correctly and a
   disabled one (`""`) is omitted.
@@ -198,9 +198,9 @@ documented as part of the features they affect in
   `bindings/keymaps.lua`); the wrong `require()` paths above are exactly the
   kind of confusion stale documentation like this causes.
 - The roadmap trimmed to open items only (currently none). Shipped
-  behavior moved to [`docs/FEATURES.md`](../FEATURES.md); speculative,
+  behavior moved to [`docs/FEATURES/`](FEATURES/README.md); speculative,
   undecided feature designs moved to a separate ideas document.
-- Two more real doc bugs fixed in `docs/DASHBOARD.md`: a fabricated
+- Two more real doc bugs fixed in `docs/dashboard.md`: a fabricated
   "60 second cache" claim with no matching code, and a `luarepos`
   typo/broken code fence.
 
@@ -247,7 +247,7 @@ documented as part of the features they affect in
 - Type safety improved with proper error handling
 
 ### Documentation
-- New comprehensive dashboard guide: `docs/DASHBOARD.md`
+- New comprehensive dashboard guide: `docs/dashboard.md`
 - README.md section with dashboard usage and configuration
 - Help file extended with dashboard documentation
 - Configuration examples for all dashboard features
@@ -313,10 +313,10 @@ documented as part of the features they affect in
 
 - **Documentation Overhaul**
   - New configuration guide split into logical sections
-    - [docs/configurations/INTRO.md](../configurations/INTRO.md)
-    - [docs/configurations/PREPARATION.md](../configurations/PREPARATION.md)
-    - [docs/configurations/OPTION-A.md](../configurations/OPTION-A.md)
-    - [docs/configurations/OPTION-B.md](../configurations/OPTION-B.md)
+    - [docs/configurations/INTRO.md](configurations/INTRO.md)
+    - [docs/configurations/PREPARATION.md](configurations/PREPARATION.md)
+    - [docs/configurations/OPTION-A.md](configurations/OPTION-A.md)
+    - [docs/configurations/OPTION-B.md](configurations/OPTION-B.md)
   - Updated README with clearer structure
   - Enhanced vim help file (`doc/github_stats.txt`)
   - Updated user commands reference

@@ -21,12 +21,12 @@ One command, `:GithubStats <subcommand>` (built via
 argument; repo names and date presets complete dynamically from live
 config). Registered in
 [`lua/github_stats/bindings/usrcmds/init.lua`](../lua/github_stats/bindings/usrcmds/init.lua).
-See [docs/usercommands.md](usercommands.md) for full usage examples.
+See [docs/commands.md](commands.md) for full usage examples.
 
-**Bang now attaches to the verb, not the subcommand**: forced dashboard
-refresh is `:GithubStats! dashboard`, not `:GithubStats dashboard!` (Vim's
-`!` always binds to the command name itself, so collapsing multiple
-commands into one verb moves it there).
+**The bang attaches to the verb, not the subcommand**: forced dashboard
+refresh is `:GithubStats! dashboard`, not `:GithubStats dashboard!`. Vim's
+`!` always binds to the command name itself, so a single verb has exactly
+one bang slot shared across all its subcommands.
 
 | Command | Args | Description |
 |---|---|---|
@@ -74,11 +74,9 @@ Defaults come from [`lua/github_stats/config/DEFAULTS.lua`](../lua/github_stats/
 Both counts are taken **modulo the cycle length**, so `5s` over a four-entry
 cycle lands one along rather than looping four extra times for nothing, and
 `4s` is a deliberate no-op (a full loop). A count larger than the cycle is a
-fat-fingered keypress, not a request to spin.
-
-This brings the two cycles in line with the rest of the dashboard, where
-`j`/`k`, `<C-d>`/`<C-u>`, `<C-f>`/`<C-b>` and `Ngg`/`NgG` already read a
-count — the count audit called that out as the inconsistency.
+fat-fingered keypress, not a request to spin. This matches the rest of the
+dashboard, where `j`/`k`, `<C-d>`/`<C-u>`, `<C-f>`/`<C-b>` and `Ngg`/`NG`
+already read a count.
 
 Sorting and time-range filtering are applied on every render based on
 `state.sort_by`/`state.time_range` (see
@@ -106,23 +104,25 @@ tied to the customizable action set above):
 
 | Key | Action |
 |---|---|
-| `<Down>` / `<Up>` | Navigate down/up (arrow-key mirror of `navigate_down`/`navigate_up`) |
-| `<C-d>` / `<C-u>` | Scroll half page down/up |
-| `<C-f>` / `<C-b>` | Scroll full page down/up |
-| `gg` / `G` | Jump to top/bottom |
+| `<Down>` / `<Up>` | Navigate down/up (arrow-key mirror of `navigate_down`/`navigate_up`), count-aware |
+| `<C-d>` / `<C-u>` | Scroll down/up by 10 lines, or by an explicit count (`5<C-d>`) |
+| `<C-f>` / `<C-b>` | Scroll full page down/up; `N<C-f>` scrolls N pages |
+| `gg` / `G` | Jump to first/last repository; `Ngg` / `NG` jumps to repository N (clamped) |
 | `<Esc>` | Quit dashboard (fixed fallback alongside `quit`) |
-| `<RightMouse>` | Open a context menu mirroring the keymaps above (`nvzone/menu`, soft dependency; `dashboard.menu.enable` to disable) — see [Right-Click Context Menu](DASHBOARD.md#right-click-context-menu) |
+| `<Left>` / `<Right>` / `<PageUp>` / `<PageDown>` / `<Home>` / `<End>` / `h` / `l` | Mapped to `<Nop>`: native cursor movement would race the dashboard's own selection state |
+| `<RightMouse>` | Open a context menu mirroring the keymaps above (`nvzone/menu`, soft dependency; `dashboard.menu.enable` to disable) — see [Right-Click Context Menu](dashboard.md#right-click-context-menu) |
 
 ---
 
 ## Autocmds
 
-| Event | Group | Location | Purpose |
-|---|---|---|---|
-| `VimEnter` | `GithubStatsAutoFetch` | [`lua/github_stats/bindings/autocmds.lua`](../lua/github_stats/bindings/autocmds.lua) | Deferred auto-fetch on startup; opens the dashboard afterwards if `dashboard.auto_open` is set |
-| `BufWipeout` | – | [`lua/github_stats/dashboard/init.lua`](../lua/github_stats/dashboard/init.lua) | Cleans up dashboard state/timers when the dashboard buffer is wiped |
+| Event | Group | Scope | Location | Purpose |
+|---|---|---|---|---|
+| `VimEnter` | `GithubStatsAutoFetch` | global | [`lua/github_stats/bindings/autocmds.lua`](../lua/github_stats/bindings/autocmds.lua) | Starts the background fetch/discovery cycle; opens the dashboard 1s later if `dashboard.enabled` and `dashboard.auto_open` are both set |
+| `BufWipeout` | – | dashboard buffer | [`lua/github_stats/dashboard/init.lua`](../lua/github_stats/dashboard/init.lua) | Cleans up dashboard state/timers when the dashboard buffer is wiped |
+| `VimResized` | – | dashboard buffer | [`lua/github_stats/dashboard/layout.lua`](../lua/github_stats/dashboard/layout.lua) | Re-renders the dashboard after a terminal/window resize |
 
-`BufWipeout` is buffer-scoped and created per dashboard instance at open time,
-so it lives next to the code that creates that buffer rather than in
+The last two are buffer-scoped and created per dashboard instance at open
+time, so they live next to the code that creates that buffer rather than in
 `bindings/autocmds.lua`, which only owns plugin-lifecycle (non-buffer-scoped)
-autocmds.
+autocmds. That is also why they carry no group: they die with their buffer.

@@ -21,11 +21,16 @@ Comprehensive guide for using the interactive dashboard.
 
 The dashboard provides a unified view of all configured repositories with:
 
-- Real-time statistics (clones, views, referrers)
+- Clones and views per repository over the active range, plus a totals line
 - Visual trend indicators with sparklines
 - Interactive sorting and filtering
-- Auto-refresh capabilities
-- Drill-down to detailed views
+- Auto-refresh (re-render only, never a fetch)
+- Drill-down (`<CR>`) to a per-repository detail view with count and
+  uniques sparklines
+
+Referrers and paths are collected and stored, but they are not part of the
+dashboard — they have their own commands, `:GithubStats referrers` and
+`:GithubStats paths`.
 
 ---
 
@@ -61,8 +66,14 @@ require("github_stats").setup({
 
 - `<C-d>`: Scroll down half page
 - `<C-u>`: Scroll up half page
-- `<PageDown>`: Scroll down full page
-- `<PageUp>`: Scroll up full page
+- `<C-f>`: Scroll down full page
+- `<C-b>`: Scroll up full page
+- `gg` / `G`: Jump to the first/last repository (`Ngg`/`NG` jumps to repository N)
+
+`<Left>`, `<Right>`, `<PageUp>`, `<PageDown>`, `<Home>`, `<End>`, `h` and
+`l` are deliberately mapped to `<Nop>` in the dashboard buffer: native
+cursor movement fights the plugin's own selection state, so it is blocked
+rather than left to race.
 
 ---
 
@@ -181,7 +192,7 @@ also notifies the concrete window it resolved to, e.g.:
 ```
 
 `max` applies no date filter at all, so it shows everything still on disk
-after [retention](architecture.md) has compacted and pruned. `all` is an
+after [retention](FEATURES/RETENTION.md) has compacted and pruned. `all` is an
 accepted synonym (in `setup()` and at the `T` prompt); `max` is simply the
 label the cycle and the `m` key use, and the one the header annotates with
 the resolved span.
@@ -288,8 +299,9 @@ rejected there as too aggressive — `0` is the only way to switch it off.
 |-----|--------|
 | `j` / `<Down>` | Navigate down |
 | `k` / `<Up>` | Navigate up |
-| `<C-d>` / `<C-u>` | Scroll half page |
-| `<PageDown>` / `<PageUp>` | Scroll full page |
+| `<C-d>` / `<C-u>` | Scroll half page (10 lines, or a given count) |
+| `<C-f>` / `<C-b>` | Scroll full page (`N<C-f>` scrolls N pages) |
+| `gg` / `G` | Jump to first/last repository (`Ngg`/`NG`: repository N) |
 | `<Enter>` | Show detailed view |
 | `r` | Drop the read cache and re-render from disk |
 | `R` | Force-fetch all repositories |
@@ -393,11 +405,15 @@ dashboard = {
 
 ### Many Repositories (50+)
 
-The dashboard always renders from the on-disk data written by the last
-`:GithubStats fetch` — there is no separate in-memory cache layer with its
-own TTL. Rendering itself is debounced (`RENDER_DEBOUNCE_MS = 50` in
-`dashboard/init.lua`), so rapid re-renders (e.g. repeated navigation) don't
-each trigger a full redraw.
+The dashboard renders from the on-disk data written by the last fetch, read
+through the memo described under [Caching](#caching) — so the cost of a
+render is the layout, not the decode. There is no time-based expiry
+anywhere in that path.
+
+Rendering is debounced by `dashboard.render_debounce_ms` (default `50`), so
+rapid re-renders — repeated `j`/`k`, a held key — don't each trigger a full
+redraw. Raise it over a slow SSH connection, where fewer and larger redraws
+read better.
 
 **Recommendations:**
 - Use longer refresh intervals (`refresh_interval_seconds = 600` for 10 minutes)

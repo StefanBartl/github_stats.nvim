@@ -1,7 +1,7 @@
 ---@module 'github_stats.bindings.usrcmds.dashboard'
 ---@brief Dashboard command handler
 ---@description
---- Handles GithubStatsDashboard command execution.
+--- Handles `:GithubStats dashboard` execution.
 
 local M = {}
 

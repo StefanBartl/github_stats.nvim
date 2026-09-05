@@ -1,7 +1,7 @@
 # Workflow — getting real use out of github_stats.nvim day to day
 
-Every feature here is documented on its own elsewhere (`docs/FEATURES.md`,
-`docs/usercommands.md`, `docs/DASHBOARD.md`). This is the different
+Every feature here is documented on its own elsewhere (`docs/FEATURES/`,
+`docs/commands.md`, `docs/dashboard.md`). This is the different
 question: once several features exist, *how do they actually combine* into
 a routine worth running regularly, and which combinations trip people up.
 
@@ -62,6 +62,9 @@ manual fetch. Both still route through `config.notify()`, so
 want to see routine fetch activity while debugging a setup, don't look for
 a `background`-specific toggle — set `notification_level = "all"` (the
 default) and either wait for the next poll or force one manually.
+
+The mechanics of both guards and both intervals are written out in
+[background-fetching.md](background-fetching.md).
 
 ## Manual fetch: `force` bypasses the interval, nothing else does
 
@@ -168,7 +171,7 @@ is the fast way to notice that before assuming your config took effect.
 
 CSV only supports a single repo — `:GithubStats export all clones
 report.csv` is not a shortcut for "everything in one CSV", it's an error
-(`'all' target only supports Markdown format`). For a fleet-wide report, go
+(`'all' target only supports Markdown/PDF format`). For a fleet-wide report, go
 straight to `.md` (or `.pdf` with `pdfport.nvim` installed):
 
 ```vim
