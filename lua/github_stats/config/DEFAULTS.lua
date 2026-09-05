@@ -23,6 +23,14 @@ local DEFAULT_CONFIG = {
   },
   token_source = "env",
   token_env_var = "GITHUB_TOKEN",
+  -- Every GitHub API request goes through these two: a request that never
+  -- gets a response would otherwise hang the calling coroutine/callback
+  -- forever, and curl's own `--max-filesize` (checked against the response's
+  -- Content-Length) caps how much a single response can claim to be before
+  -- curl aborts it -- traffic-stats bodies are at most a few KB, so this is
+  -- headroom, not a real limit.
+  api_timeout_ms = 15000,
+  api_max_response_bytes = 5 * 1024 * 1024,
   fetch_interval_hours = 24,
   -- Pages followed when listing a watched user's repositories (100 per page).
   -- Raise it only for an account with more than 3000 public repos: past the

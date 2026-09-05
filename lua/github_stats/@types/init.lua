@@ -25,6 +25,8 @@
 ---@field token_env_var? string Environment variable name
 ---@field token_file? string Path to token file
 ---@field fetch_interval_hours? number Fetch interval
+---@field api_timeout_ms? integer Timeout for GitHub API requests in ms (default 15000)
+---@field api_max_response_bytes? integer Byte cap for GitHub API responses, enforced via curl --max-filesize (default 5 MiB)
 ---@field max_user_repo_pages? integer Pages followed when listing a watched user's repos, 100 per page (default 30). Past the cap, later repos are silently not tracked.
 ---@field notification_level? "all"|"errors"|"silent" Notification level
 ---@field progress_style? "auto"|"notify"|"statusline"|"fidget"|"float"|"kit" Indicator while a manual fetch is in flight; needs lib.nvim, no-op without it. Background cycles never show one.
