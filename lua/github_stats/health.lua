@@ -322,7 +322,7 @@ function M.check()
         "See documentation for default configuration",
       })
     elseif type(dashboard_cfg.enabled) ~= "boolean" then
-      health.error("dashboard.enabled must be boolean")
+      health.error("dashboard.enabled must be boolean", { "Set dashboard.enabled to true or false in config.json" })
     elseif not dashboard_cfg.enabled then
       health.info("Dashboard disabled by configuration")
     else
@@ -336,18 +336,27 @@ function M.check()
       local default_refresh = DEFAULT_DASHBOARD.refresh_interval_seconds
       local default_trend_window = DEFAULT_DASHBOARD.trend_window_days
       if refresh ~= nil and type(refresh) ~= "number" then
-        health.error("dashboard.refresh_interval_seconds must be number")
+        health.error(
+          "dashboard.refresh_interval_seconds must be number",
+          { "Set dashboard.refresh_interval_seconds to 0 or a number >= 10 in config.json" }
+        )
       elseif refresh == 0 then
         health.info("Auto-refresh disabled by configuration")
       elseif refresh ~= nil and refresh < 10 then
-        health.error("dashboard.refresh_interval_seconds must be 0 (disabled) or >= 10")
+        health.error(
+          "dashboard.refresh_interval_seconds must be 0 (disabled) or >= 10",
+          { "Set dashboard.refresh_interval_seconds to 0 or a number >= 10 in config.json" }
+        )
       else
         health.ok(str_format("Auto-refresh: every %d seconds", refresh or default_refresh))
       end
 
       local trend_window = dashboard_cfg.trend_window_days
       if trend_window ~= nil and (type(trend_window) ~= "number" or trend_window < 1) then
-        health.error("dashboard.trend_window_days must be a number >= 1")
+        health.error(
+          "dashboard.trend_window_days must be a number >= 1",
+          { "Set dashboard.trend_window_days to a number >= 1 in config.json" }
+        )
       else
         health.ok(
           str_format(
@@ -359,9 +368,9 @@ function M.check()
       end
 
       if dashboard_cfg.keybindings == nil then
-        health.error("Dashboard keybindings not configured")
+        health.error("Dashboard keybindings not configured", { "Add a dashboard.keybindings table to config.json" })
       elseif type(dashboard_cfg.keybindings) ~= "table" then
-        health.error("dashboard.keybindings must be table")
+        health.error("dashboard.keybindings must be table", { "Set dashboard.keybindings to a table in config.json" })
       else
         local essential_keys = { "navigate_down", "navigate_up", "quit" }
         local missing_keys = {}
