@@ -11,7 +11,6 @@ local cross_executable = require("lib.nvim.cross.executable")
 local M = {}
 
 local fn = vim.fn
-local has = fn.has
 local health = vim.health
 local str_format = string.format
 local tbl_concat = table.concat
@@ -150,6 +149,15 @@ end
 
 ---@internal
 ---Test API connectivity synchronously with timeout
+---
+---Goes through `lib.nvim.net.curl` (the same client `api.lua` uses for every
+---live request) instead of hand-building a curl command: an earlier version
+---interpolated the token straight into a shell string executed via
+---`fn.system(string)`, which both ran through a shell unnecessarily (a repo
+---name in `url` was interpolated right along with it) and put the token in
+---the process argv, visible to any other process on the machine for the
+---call's lifetime. `bearer_token` in `lib.nvim.net.curl` instead feeds curl
+---the header via `-K -` (stdin), never argv.
 ---@return boolean, string, number # Success flag, message, duration_ms
 local function check_api_sync()
   local repos = config.get_repos()
@@ -164,85 +172,34 @@ local function check_api_sync()
     return false, str_format("Cannot test API: %s", token_err), 0
   end
 
-  -- Build curl command with output to temp file for reliable parsing
   local url = str_format("https://api.github.com/repos/%s/traffic/clones", test_repo)
-
-  -- Use temp file for response
-  local temp_file = fn.tempname()
-  local temp_headers = fn.tempname()
-
-  local curl_cmd
-  if has("win32") == 1 or has("win64") == 1 then
-    -- Windows: Use temp files to avoid parsing issues
-    curl_cmd = str_format(
-      'curl -s -D "%s" -o "%s" -H "Accept: application/vnd.github+json" -H "Authorization: Bearer %s" -H "X-GitHub-Api-Version: 2022-11-28" --max-time 10 "%s"',
-      temp_headers,
-      temp_file,
-      token,
-      url
-    )
-  else
-    -- Unix: Use temp files for consistency
-    curl_cmd = str_format(
-      'curl -s -D "%s" -o "%s" -H "Accept: application/vnd.github+json" -H "Authorization: Bearer %s" -H "X-GitHub-Api-Version: 2022-11-28" --max-time 10 "%s"',
-      temp_headers,
-      temp_file,
-      token,
-      url
-    )
-  end
+  local curl = require("lib.nvim.net.curl")
 
   local start_time = vim.uv.hrtime()
 
-  -- Execute synchronously
-  fn.system(curl_cmd)
-  local exit_code = vim.v.shell_error
+  local ok, response = curl.fetch_raw_blocking(url, {
+    headers = { Accept = "application/vnd.github+json", ["X-GitHub-Api-Version"] = "2022-11-28" },
+    bearer_token = token,
+    timeout_ms = 10000,
+  })
 
   local duration_ms = math.floor((vim.uv.hrtime() - start_time) / 1000000)
 
-  -- Check for timeout or network error
-  if exit_code ~= 0 then
-    -- Cleanup temp files
-    pcall(fn.delete, temp_file)
-    pcall(fn.delete, temp_headers)
-
+  if not ok then
     if duration_ms >= 10000 then
       return false, "API test timed out (10s)", duration_ms
     else
-      return false, str_format("curl failed (exit code: %d)", exit_code), duration_ms
+      return false, str_format("curl failed: %s", tostring(response)), duration_ms
     end
   end
 
-  -- Read HTTP headers
-  local headers_ok, headers_content = pcall(fn.readfile, temp_headers)
-  if not headers_ok or #headers_content == 0 then
-    pcall(fn.delete, temp_file)
-    pcall(fn.delete, temp_headers)
-    return false, "Failed to read response headers", duration_ms
-  end
-
-  -- Parse HTTP status code from first line
-  local status_line = headers_content[1]
-  local http_code = status_line:match("HTTP/%S+ (%d+)")
-
-  -- Read response body
-  local body_ok, body_content = pcall(vim.fn.readfile, temp_file)
-
-  -- Cleanup temp files
-  pcall(fn.delete, temp_file)
-  pcall(fn.delete, temp_headers)
-
-  -- Check HTTP status
-  local code_num = tonumber(http_code)
-  if not code_num then
-    return false, "Invalid HTTP response", duration_ms
-  end
+  ---@cast response Lib.Net.Curl.RawResponse
+  local code_num = response.status
 
   if code_num == 200 then
     -- Verify we got valid JSON
-    if body_ok and #body_content > 0 then
-      local body_str = tbl_concat(body_content, "\n")
-      local json_ok, _ = pcall(vim.json.decode, body_str)
+    if response.body and response.body ~= "" then
+      local json_ok, _ = pcall(vim.json.decode, response.body)
       if json_ok then
         return true, str_format("API connectivity confirmed (tested %s)", test_repo), duration_ms
       else

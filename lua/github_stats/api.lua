@@ -53,7 +53,16 @@ local function fetch_json(url, token, callback)
     headers["X-GitHub-Api-Version"] = "2022-11-28"
   end
 
-  curl.fetch_json(url, { headers = headers, bearer_token = token }, function(ok, data_or_err, obj)
+  local cfg = config.get() or {}
+  local timeout_ms = cfg.api_timeout_ms or 15000
+  local max_bytes = cfg.api_max_response_bytes or (5 * 1024 * 1024)
+
+  curl.fetch_json(url, {
+    headers = headers,
+    bearer_token = token,
+    timeout_ms = timeout_ms,
+    raw_args = { "--max-filesize", tostring(max_bytes) },
+  }, function(ok, data_or_err, obj)
     schedule(function()
       if not ok then
         if obj.code ~= 0 then
