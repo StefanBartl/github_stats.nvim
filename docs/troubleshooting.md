@@ -11,6 +11,8 @@ This document explains common errors and how to resolve them.
 - [Storage Issues](#storage-issues)
 - [Notification Settings](#notification-settings)
 - [Diagnostic Commands](#diagnostic-commands)
+- [Getting Help](#getting-help)
+- [Quick Reference](#quick-reference)
 
 ---
 
@@ -458,15 +460,26 @@ Get-PSDrive C
 **Storage Usage:**
 - ~2KB per fetch per repository per metric
 - 4 metrics × 14 days × 11 repos = ~616KB
-- Grows linearly with time
+- Growth is bounded by retention, not linear in time
 
 **Cleanup Old Data:**
+
+Use the plugin's own retention pass rather than deleting files by hand — it
+folds aged-out clones/views days into a per-metric `_archive.json` instead
+of discarding them, and always keeps the newest referrers/paths snapshot:
+
+```vim
+:GithubStats compact dry-run   " what would be archived/deleted, and how many bytes
+:GithubStats compact           " actually do it
+```
+
+Retention also runs by itself, at most once per 24h after a fetch. See
+[Data retention](FEATURES/RETENTION.md) for the thresholds and the
+`cutoff_days` floor of 14.
+
 ```bash
 # Show storage size
 du -sh ~/.config/nvim/lua/plugins/github-stats/data/
-
-# Remove old data (keep last 30 days)
-find ~/.config/nvim/lua/plugins/github-stats/data/ -name "*.json" -mtime +30 -delete
 ```
 
 ---
@@ -622,8 +635,4 @@ If problems persist:
 | Network timeout | `curl api.github.com` | Check connectivity |
 | Storage full | `du -sh ~/.config/nvim/lua/plugins/github-stats/` | Clean old files |
 | Invalid JSON | `jq . config.json` | Validate syntax |
-
----
-
-**Last Updated:** 2025-12-21
-**Plugin Version:** v1.2.1
+| Disk growing | `:GithubStats compact dry-run` | Run retention |

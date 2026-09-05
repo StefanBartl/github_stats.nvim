@@ -23,7 +23,7 @@ function M.execute(args)
   local parts = vim.split(args.args, "%s+")
 
   if #parts < 2 then
-    config.notify("[github-stats] Usage: GithubStatsShow {repo} {metric} [start_date] [end_date]", "error")
+    config.notify("[github-stats] Usage: :GithubStats show {repo} {metric} [start_date] [end_date]", "error")
     return
   end
 

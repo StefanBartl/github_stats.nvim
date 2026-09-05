@@ -17,11 +17,11 @@ Before configuring GitHub Stats, you need to prepare your environment with the n
 
 Ensure you have the following before proceeding:
 
-1. **Neovim ≥ 0.9.0**
+1. **Neovim ≥ 0.10.0**
    ```vim
    :version
    ```
-   Look for: `NVIM v0.9.0` or higher
+   Look for: `NVIM v0.10.0` or higher
 
 2. **curl command-line tool**
    ```bash
@@ -474,6 +474,6 @@ After completing preparation:
    :GithubStats show username/repo clones
    ```
 
-For issues, see [docs/TROUBLESHOOTING.md](../TROUBLESHOOTING.md).
+For issues, see [docs/troubleshooting.md](../troubleshooting.md).
 
 ---

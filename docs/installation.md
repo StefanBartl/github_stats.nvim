@@ -2,9 +2,15 @@
 
 ## Requirements
 
-- **Neovim** >= 0.9.0
+- **Neovim** >= 0.10.0 — `vim.uv` is used unguarded in `background.lua`,
+  `dashboard/init.lua`, `dashboard/state.lua` and `health.lua`
+- **[lib.nvim](https://github.com/StefanBartl/lib.nvim)** — required, not optional: notifications, JSON I/O, the curl client, the user-command composer and the cross-platform executable check all come from it
 - **curl** (for API requests)
 - **GitHub Personal Access Token** with `repo` permission
+
+Optional: [pdfport.nvim](https://github.com/StefanBartl/pdfport.nvim) for
+`.pdf` export, and [nvzone/menu](https://github.com/nvzone/menu) for the
+dashboard's right-click menu. Both degrade to a no-op when absent.
 
 See [Preparation](configurations/PREPARATION.md) for a full walkthrough of creating a token, verifying `curl`, and testing token permissions.
 
@@ -62,5 +68,6 @@ use {
 
 ## Next Steps
 
-- [Configuration Guide](configurations/INTRO.md) — configure repositories, token source, and storage paths.
+- [Configuration guide](configurations/README.md) — the whole configuration story, in reading order.
 - [Preparation](configurations/PREPARATION.md) — create and verify your GitHub token.
+- [Configuration options](configurations/INTRO.md) — every key, its type, and its default.

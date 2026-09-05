@@ -5,6 +5,7 @@ This guide explains how to create and use custom date range presets in GitHub St
 ## Table of Contents
 
 - [Overview](#overview)
+- [Where presets actually resolve](#where-presets-actually-resolve)
 - [Configuration Structure](#configuration-structure)
 - [Built-in Presets](#built-in-presets)
 - [Creating Custom Presets](#creating-custom-presets)
@@ -25,6 +26,29 @@ Date presets allow quick access to common time ranges without typing full ISO da
 - Consistent date ranges across queries
 - Business-specific time periods (fiscal years, sprints, etc.)
 - Autocompletion support
+
+---
+
+## Where presets actually resolve
+
+Tab-completion offers preset names in more places than the code resolves
+them. Verified against the current source:
+
+| Where | Resolves a preset? |
+|---|---|
+| The dashboard's `T` prompt | **Yes**, always — it goes straight through `analytics.parse_time_range`, which falls back to `date_presets.resolve` |
+| `:GithubStats chart {repo} {metric} <here>` | **Only** if the name contains `last` or looks like `Nd`. `chart.lua` routes those to `time_range`; anything else it treats as a literal start date |
+| `:GithubStats show {repo} {metric} <here>` | **No.** `show.lua` passes the argument straight to `query_metric` as `start_date`, where `parse_date` accepts `YYYY-MM-DD` and nothing else |
+| `:GithubStats diff {repo} {metric} <p1> <p2>` | **No.** `parse_period` accepts `YYYY-MM` and `YYYY` only |
+
+The failure mode is silent, which is why it is worth knowing: a name that
+does not resolve is parsed as a date, fails to parse, and becomes *no
+filter at all* — so `:GithubStats show user/repo clones this_month` reports
+the full stored history rather than this month, and looks like it worked.
+
+Until that is fixed in code, the reliable way to use a preset outside the
+dashboard is to name it so it contains `last` and to use `chart`, or to pass
+explicit ISO dates.
 
 ---
 
@@ -72,9 +96,11 @@ Available built-in presets:
 
 **Usage:**
 ```vim
-:GithubStats show username/repo clones last_month
-:GithubStats chart username/repo views this_quarter
+:GithubStats chart username/repo clones last_month
 ```
+
+At the dashboard's `T` prompt, every name in the table above works,
+`this_quarter` included.
 
 ---
 
@@ -103,8 +129,11 @@ end
 
 **Usage:**
 ```vim
-:GithubStats show username/repo clones last_14_days
+:GithubStats chart username/repo clones last_14_days
 ```
+
+The name contains `last`, so `chart` routes it to `time_range` and it
+resolves. A name like `fortnight` would not.
 
 ---
 
@@ -131,11 +160,10 @@ end
 - Start: 2025-04-01
 - End: 2026-03-31
 
-**Usage:**
-```vim
-:GithubStats show username/repo clones fiscal_year
-:GithubStats diff username/repo views 2024-04 fiscal_year
-```
+**Usage:** `fiscal_year` contains neither `last` nor `Nd`, so it resolves
+only at the dashboard's `T` prompt — see
+[Where presets actually resolve](#where-presets-actually-resolve). Naming it
+`last_fiscal_year` would additionally make it work with `chart`.
 
 ---
 
@@ -165,11 +193,8 @@ end
 - Start: 2025-12-15 (Monday two weeks ago)
 - End: 2025-12-28 (Sunday this week)
 
-**Usage:**
-```vim
-:GithubStats show username/repo clones current_sprint
-:GithubStats chart username/repo both current_sprint
-```
+**Usage:** as with `fiscal_year`, the name resolves at the dashboard's `T`
+prompt. Rename it `last_sprint` to reach it from `:GithubStats chart` too.
 
 ---
 
@@ -338,7 +363,7 @@ end
 
 ## Further Reading
 
-- [Built-in Commands](../usercommands.md)
+- [Built-in Commands](../commands.md)
 - [Date Format Specification](https://en.wikipedia.org/wiki/ISO_8601)
 - [Lua os.date Documentation](https://www.lua.org/manual/5.1/manual.html#pdf-os.date)
 

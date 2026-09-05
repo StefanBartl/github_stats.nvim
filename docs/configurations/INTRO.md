@@ -2,7 +2,6 @@
 
 ## Table of content
 
-  - [Table of Contents](#table-of-contents)
   - [Overview](#overview)
   - [Configuration Methods](#configuration-methods)
     - [Quick Comparison](#quick-comparison)
@@ -16,10 +15,15 @@
       - [`token_env_var`](#token_env_var)
       - [`token_file`](#token_file)
       - [`fetch_interval_hours`](#fetch_interval_hours)
+      - [`max_user_repo_pages`](#max_user_repo_pages)
       - [`notification_level`](#notification_level)
+      - [`notify_fetch`](#notify_fetch)
+      - [`progress_style`](#progress_style)
     - [Advanced Options](#advanced-options)
       - [`config_dir`](#config_dir)
       - [`data_dir`](#data_dir)
+      - [`retention`](#retention)
+    - [Options With Their Own Page](#options-with-their-own-page)
   - [Token Management](#token-management)
     - [Creating a GitHub Token](#creating-a-github-token)
     - [Token Security Best Practices](#token-security-best-practices)
@@ -34,17 +38,6 @@
     - [Option B (Config File) Advantages](#option-b-config-file-advantages)
     - [The Sync Use Case](#the-sync-use-case)
   - [Next Steps](#next-steps)
-
----
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Configuration Methods](#configuration-methods)
-- [Configuration Options](#configuration-options)
-- [Token Management](#token-management)
-- [Storage Paths](#storage-paths)
-- [Why Two Configuration Methods?](#why-two-configuration-methods)
 
 ---
 
@@ -207,6 +200,30 @@ Controls notification verbosity:
 notification_level = "errors"  -- Only show problems
 ```
 
+#### `notify_fetch`
+**Type:** `boolean`
+**Default:** `true`
+
+Whether a *manual* fetch that is skipped because the interval has not
+elapsed says so ("Fetch interval not elapsed (use 'force' to bypass)") or
+stays quiet. It only affects that one message; it is not a second
+notification gate next to `notification_level`.
+
+#### `progress_style`
+**Type:** `"auto" | "notify" | "statusline" | "fidget" | "float" | "kit"`
+**Default:** `"auto"`
+
+Indicator shown while a *manual* fetch is in flight — a full fetch is four
+API calls per repository, so over a dozen repositories it can run for a
+while with nothing on screen otherwise. Drawn by `lib.nvim.progress`.
+Background cycles never show one, matching how they already suppress info
+notifications.
+
+`"auto"` prefers fidget.nvim when installed and falls back to
+`vim.notify`. `"statusline"` draws nothing and instead publishes the text
+for your own statusline to read via
+`require("lib.nvim.progress.styles.statusline").active()`.
+
 ---
 
 ### Advanced Options
@@ -246,6 +263,44 @@ data_dir = "/mnt/shared/github-stats"  -- Network storage
 - Use network-attached storage (NAS)
 - Share data across multiple systems
 - Separate data from configuration
+
+#### `retention`
+**Type:** `table`
+**Default:** `{ enabled = true, cutoff_days = 15, prune_days = 15 }`
+
+Bounds on-disk growth. `cutoff_days` is the age at which a day's
+clones/views value is folded into a per-metric `_archive.json` and its raw
+fetch files are deleted; `prune_days` is the age at which a referrers/paths
+snapshot is deleted outright (the newest is always kept). `enabled = false`
+turns the opportunistic post-fetch run off, leaving only manual
+`:GithubStats compact`.
+
+```lua
+retention = {
+  enabled = true,
+  cutoff_days = 15,  -- floor of 14 is enforced in code
+  prune_days = 15,
+}
+```
+
+**`cutoff_days` has a hard floor of 14** (`math.max(opts.cutoff_days or 15,
+14)`), because GitHub's traffic API is itself a rolling 14-day window — a
+day cannot be considered final until it has aged out of it. Configuring `5`
+behaves like `14`; `:GithubStats compact dry-run` is the fast way to see
+that before assuming otherwise.
+
+---
+
+### Options With Their Own Page
+
+Three more configuration sections exist and are documented where their
+behavior is:
+
+| Section | Page |
+|---|---|
+| `dashboard` (layout, keybindings, sort, time range, trend, auto-refresh, context menu) | [dashboard.md](../dashboard.md#configuration) |
+| `date_presets` (built-ins and custom preset functions) | [USER-DEFINED-DATE-PRESETS.md](USER-DEFINED-DATE-PRESETS.md) |
+| `background` (beyond `enabled`: `initial_delay_ms`) | [background-fetching.md](../background-fetching.md#mstart) |
 
 ---
 
@@ -469,7 +524,7 @@ Results in:
 
 **Alternative with Option A:**
 
-If config is in init.lua, it's automatically synced with your Neovim config, but data is stored separately in `stdpath('data')` which is **not** typically synced.
+If config is in `init.lua`, it is synced with your Neovim config automatically — but the *data* is a separate question either way. Traffic data lives under `data_dir`, which defaults to `config_dir/data` (that is, inside `stdpath('config')`), so whether it syncs depends entirely on whether your dotfiles repository ignores that directory. Point `data_dir` somewhere outside the Neovim config tree if you want the two decisions separated.
 
 ---
 
@@ -478,7 +533,8 @@ If config is in init.lua, it's automatically synced with your Neovim config, but
 - **[Preparation Guide](PREPARATION.md)** – Create GitHub token, prepare environment
 - **[Option A: Direct Setup](OPTION-A.md)** – Configure in init.lua
 - **[Option B: Config File](OPTION-B.md)** – Use config.json
+- **[Configuration index](README.md)** – all five pages, in reading order
 
-For troubleshooting, see [docs/TROUBLESHOOTING.md](../TROUBLESHOOTING.md).
+For troubleshooting, see [docs/troubleshooting.md](../troubleshooting.md).
 
 ---

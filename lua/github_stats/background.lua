@@ -6,10 +6,10 @@
 --- fetching fresh metrics, entirely silently unless something actually
 --- fails. This runs for the whole Neovim session (not just once on
 --- startup), so long-running sessions stay up to date without requiring a
---- restart or a manual `:GithubStatsFetch`.
+--- restart or a manual `:GithubStats fetch`.
 ---
 --- Disabled entirely via `background = { enabled = false }`, in which case
---- the user relies on manual `:GithubStatsFetch` only.
+--- the user relies on manual `:GithubStats fetch` only.
 
 local M = {}
 

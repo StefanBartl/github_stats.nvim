@@ -4,7 +4,6 @@ Configure GitHub Stats directly in your Neovim init file using the `setup()` fun
 
 ## Table of content
 
-  - [Table of Contents](#table-of-contents)
   - [Overview](#overview)
     - [Advantages](#advantages)
     - [When to Use](#when-to-use)
@@ -40,17 +39,6 @@ Configure GitHub Stats directly in your Neovim init file using the `setup()` fun
     - [Step 4: Optional Cleanup](#step-4-optional-cleanup)
   - [Configuration Template](#configuration-template)
   - [Next Steps](#next-steps)
-
----
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Basic Setup](#basic-setup)
-- [Advanced Configuration](#advanced-configuration)
-- [Use Cases](#use-cases)
-- [Validation and Debugging](#validation-and-debugging)
-- [Migration from Option B](#migration-from-option-b)
 
 ---
 
@@ -595,7 +583,7 @@ After configuration:
    :GithubStats summary clones
    ```
 
-For troubleshooting, see [docs/TROUBLESHOOTING.md](../TROUBLESHOOTING.md).
+For troubleshooting, see [docs/troubleshooting.md](../troubleshooting.md).
 
 For alternative configuration method, see [Option B: Config File](OPTION-B.md).
 

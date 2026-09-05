@@ -4,7 +4,6 @@ Configure GitHub Stats using an external JSON configuration file for persistence
 
 ## Table of content
 
-  - [Table of Contents](#table-of-contents)
   - [Overview](#overview)
     - [Advantages](#advantages)
     - [When to Use](#when-to-use)
@@ -52,17 +51,6 @@ Configure GitHub Stats using an external JSON configuration file for persistence
     - [Maintenance](#maintenance)
     - [Organization](#organization)
   - [Next Steps](#next-steps)
-
----
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Basic Setup](#basic-setup)
-- [Configuration File Structure](#configuration-file-structure)
-- [Syncing Across Systems](#syncing-across-systems)
-- [Validation and Debugging](#validation-and-debugging)
-- [Migration to Option A](#migration-to-option-a)
 
 ---
 
@@ -682,7 +670,7 @@ After configuration:
    :GithubStats summary clones
    ```
 
-For troubleshooting, see [docs/TROUBLESHOOTING.md](../TROUBLESHOOTING.md).
+For troubleshooting, see [docs/troubleshooting.md](../troubleshooting.md).
 
 For alternative configuration method, see [Option A: Direct Setup](OPTION-A.md).
 

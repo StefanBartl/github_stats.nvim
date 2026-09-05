@@ -1,7 +1,7 @@
 ---@module 'github_stats.bindings.usrcmds.fetch'
 ---@brief Manual and forced fetch trigger
 ---@description
---- Handles GithubStatsFetch command with optional force parameter.
+--- Handles `:GithubStats fetch` with its optional force parameter.
 --- Provides completion for 'force' keyword.
 
 local fetcher = require("github_stats.fetcher")

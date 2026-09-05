@@ -7,7 +7,7 @@
 ---@field custom table<string, fun(): string, string> Custom user-defined presets
 
 ---@class GHStats.BackgroundConfig
----@field enabled boolean Master switch for the silent background fetch/discovery cycle. When false, only manual `:GithubStatsFetch` (and dashboard refresh keys) ever fetch data.
+---@field enabled boolean Master switch for the silent background fetch/discovery cycle. When false, only manual `:GithubStats fetch` (and dashboard refresh keys) ever fetch data.
 ---@field initial_delay_ms integer? Delay before the first cycle, in ms (default 1000). The recurring interval derives from `fetch_interval_hours`.
 
 ---@class GHStats.RetentionConfig

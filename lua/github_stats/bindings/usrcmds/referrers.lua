@@ -19,7 +19,7 @@ function M.execute(args)
   local parts = vim.split(args.args, "%s+")
 
   if #parts < 1 then
-    config.notify("[github-stats] Usage: GithubStatsReferrers {repo} [limit]", "error")
+    config.notify("[github-stats] Usage: :GithubStats referrers {repo} [limit]", "error")
     return
   end
 

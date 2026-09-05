@@ -55,7 +55,7 @@ function M.execute(args)
   local parts = vim.split(args.args, "%s+")
 
   if #parts < 3 then
-    config.notify("[github-stats] Usage: GithubStatsExport {repo|all} {clones|views|both} {filepath}", "error")
+    config.notify("[github-stats] Usage: :GithubStats export {repo|all} {clones|views|both} {filepath}", "error")
     return
   end
 
