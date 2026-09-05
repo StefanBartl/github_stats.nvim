@@ -1,4 +1,5 @@
 *github_stats.txt*  GitHub Traffic Statistics Collector for Neovim
+                                                           *github_stats.nvim*
 
 ==============================================================================
 CONTENTS                                              *github_stats-contents*
