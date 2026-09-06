@@ -7,7 +7,7 @@
 local M = {}
 
 local fn = vim.fn
-local loop = vim.loop
+local loop = vim.uv or vim.loop
 local str_format = string.format
 
 -- No prefix: every M.notify() call site already inlines its own

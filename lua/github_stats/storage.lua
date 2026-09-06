@@ -11,7 +11,7 @@ local M = {}
 
 local fn = vim.fn
 local fs = vim.fs
-local loop = vim.loop
+local loop = vim.uv or vim.loop
 local str_format = string.format
 
 ---@internal
