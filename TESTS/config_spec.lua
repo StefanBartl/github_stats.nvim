@@ -59,4 +59,26 @@ describe("config", function()
       assert.equals(vim.fn.expand(tmp_dir), config.get_config_dir())
     end)
   end)
+
+  describe("get_repos", function()
+    -- github_stats.dashboard.state.init_state stores config.get_repos()'s
+    -- return value as state.repos, and github_stats.dashboard.render later
+    -- table.sort()s state.repos *in place* (e.g. the default sort_by =
+    -- "clones"). If get_repos() ever hands out the live config.repos array
+    -- itself instead of a copy, that in-place sort permanently reorders the
+    -- user's configured repo list for every other caller (fetcher.fetch_all,
+    -- export "all", usrcmd completion, health.lua, ...) as a side effect of
+    -- merely opening the dashboard -- not of anything the user asked to sort.
+    it("returns a list a caller can sort without reordering the stored config", function()
+      local ok = config.init({ config_dir = tmp_dir, repos = { "b/2", "a/1", "c/3" } })
+      ---@diagnostic disable-next-line: undefined-field
+      assert.is_true(ok)
+
+      local repos = config.get_repos()
+      table.sort(repos)
+
+      ---@diagnostic disable-next-line: undefined-field
+      assert.same({ "b/2", "a/1", "c/3" }, config.get_repos())
+    end)
+  end)
 end)
