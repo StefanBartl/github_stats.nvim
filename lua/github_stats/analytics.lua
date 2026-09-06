@@ -616,6 +616,8 @@ function M.get_top_paths(repo, limit)
   return results, nil
 end
 
+-- CDX: no in-repo callers (rollup_monthly is used by find_best_month, this
+-- one isn't), but it's listed as public API in docs/FEATURES/ANALYTICS.md.
 ---Get weekly rollup (Sun-Sat) - uses deduplicated data
 ---@param daily_breakdown table<string, {count: integer, uniques: integer}>
 ---@return table<string, {count: integer, uniques: integer}> # Week start date -> stats
@@ -649,7 +651,6 @@ function M.rollup_weekly(daily_breakdown)
           weekly[week_start_date] = { count = 0, uniques = 0 }
         end
 
-        -- Type-safe Zugriff auf stats
         local count_val = stats.count or 0
         local uniques_val = stats.uniques or 0
 

@@ -109,12 +109,12 @@ function M.execute(args)
       -- Reopen dashboard with delay to ensure cleanup
       vim.defer_fn(function()
         -- Use pcall to catch any errors
-        local ok, _ = pcall(function()
+        local ok, reopen_err = pcall(function()
           require("github_stats.dashboard").open()
         end)
 
         if not ok then
-          config.notify(string.format("[github-stats] Failed to reopen dashboard: %s", err), "error")
+          config.notify(string.format("[github-stats] Failed to reopen dashboard: %s", reopen_err), "error")
         end
       end, 100)
     end, { buffer = buf })

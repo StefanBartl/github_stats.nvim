@@ -120,9 +120,14 @@ tied to the customizable action set above):
 |---|---|---|---|---|
 | `VimEnter` | `GithubStatsAutoFetch` | global | [`lua/github_stats/bindings/autocmds.lua`](../lua/github_stats/bindings/autocmds.lua) | Starts the background fetch/discovery cycle; opens the dashboard 1s later if `dashboard.enabled` and `dashboard.auto_open` are both set |
 | `BufWipeout` | – | dashboard buffer | [`lua/github_stats/dashboard/init.lua`](../lua/github_stats/dashboard/init.lua) | Cleans up dashboard state/timers when the dashboard buffer is wiped |
-| `VimResized` | – | dashboard buffer | [`lua/github_stats/dashboard/layout.lua`](../lua/github_stats/dashboard/layout.lua) | Re-renders the dashboard after a terminal/window resize |
 
-The last two are buffer-scoped and created per dashboard instance at open
-time, so they live next to the code that creates that buffer rather than in
+The last one is buffer-scoped and created per dashboard instance at open
+time, so it lives next to the code that creates that buffer rather than in
 `bindings/autocmds.lua`, which only owns plugin-lifecycle (non-buffer-scoped)
-autocmds. That is also why they carry no group: they die with their buffer.
+autocmds. That is also why it carries no group: it dies with its buffer.
+
+<!-- CDX: dashboard/layout.lua (an entire unused full-tab dashboard-window
+architecture, superseded by the floating window dashboard/init.lua actually
+creates) was deleted as dead code during the 2026-09 comment sweep. It used
+to own a VimResized handler; no replacement was wired into dashboard/init.lua,
+so the dashboard currently does NOT re-render on terminal/window resize. -->

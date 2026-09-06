@@ -17,6 +17,7 @@
 ---   :GithubStats chart {repo} {metric}      - Sparkline chart
 ---   :GithubStats export {repo|all} ...      - Export to CSV/Markdown
 ---   :GithubStats diff {repo} {metric} ...   - Compare two periods
+---   :GithubStats compact [dry-run]          - Archive/prune old data
 ---   :GithubStats debug                      - Debug configuration
 ---   :GithubStats[!] dashboard               - Open dashboard (! forces refresh)
 ---

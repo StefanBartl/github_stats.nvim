@@ -124,6 +124,8 @@ function M.fetch_metric_async(repo, metric, callback)
   fetch_json(url, token, callback)
 end
 
+--- CDX: no in-repo callers (fetcher.lua fetches metrics individually); kept
+--- as public API on `github_stats.api` since a user config could call it directly.
 ---Fetch all configured metrics for a repository
 ---@param repo string Repository identifier
 ---@param callback fun(results: table<string, {data: table|nil, error: string|nil}>) Completion callback
@@ -250,6 +252,8 @@ function M.list_user_repos(username, callback)
   fetch_page(1)
 end
 
+-- CDX: no in-repo callers; kept as public API on `github_stats.api` for
+-- optional user-side monitoring.
 ---Rate limit info retrieval (optional, for monitoring)
 ---@param callback fun(data: table|nil, error: string|nil)
 function M.get_rate_limit(callback)

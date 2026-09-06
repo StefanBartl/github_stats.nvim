@@ -1,6 +1,6 @@
 # Interactive dashboard
 
-- **Module:** `dashboard/init.lua` (`open`, `close`), `dashboard/render.lua`, `dashboard/state.lua`, `dashboard/actions.lua`, `dashboard/movement.lua`, `dashboard/detail.lua`, `dashboard/layout.lua`, `dashboard/highlights.lua`
+- **Module:** `dashboard/init.lua` (`open`, `close`), `dashboard/render.lua`, `dashboard/state.lua`, `dashboard/actions.lua`, `dashboard/movement.lua`, `dashboard/detail.lua`, `dashboard/highlights.lua`
 - **Usercmds:** `:GithubStats[!] dashboard` — see [BINDINGS.md#user-commands](../BINDINGS.md#user-commands)
 - **Keymaps:** `dashboard.keybindings` — see [BINDINGS.md#dashboard-keymaps](../BINDINGS.md#dashboard-keymaps)
 - **Config:** `opts.dashboard.enabled` (default `true`), `opts.dashboard.auto_open` (default `false`), `opts.dashboard.refresh_interval_seconds` (default `300`), `opts.dashboard.sort_by` (default `"clones"`), `opts.dashboard.time_range` (default `"30d"`), `opts.dashboard.trend_window_days` (default `7`), `opts.dashboard.header_width` (default `72`), `opts.dashboard.sparkline_width` (default `24`), `opts.dashboard.render_debounce_ms` (default `50`), `opts.dashboard.menu.enable` (default `true`)
