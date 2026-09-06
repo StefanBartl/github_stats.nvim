@@ -181,7 +181,11 @@ function M.get_repos()
 
   local static_repos = config.repos or {}
   if #discovered_repos == 0 then
-    return static_repos
+    -- Shallow copy: static_repos is the live config.repos array. Handing it
+    -- out by reference lets a caller's in-place table.sort() (e.g.
+    -- github_stats.dashboard.render, which sorts state.repos on every
+    -- render) permanently reorder the stored config as a side effect.
+    return vim.list_slice(static_repos)
   end
 
   local combined = {}
