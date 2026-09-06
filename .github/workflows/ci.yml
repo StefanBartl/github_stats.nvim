@@ -16,7 +16,7 @@ jobs:
   stylua:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: JohnnyMorganz/stylua-action@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -26,7 +26,7 @@ jobs:
   luacheck:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       # PUC Lua 5.4, not LuaJIT: `std = "luajit"` in .luacheckrc pins which
       # globals/stdlib luacheck checks *against* -- independent of which
       # interpreter runs the luacheck binary itself.
@@ -34,24 +34,24 @@ jobs:
         with:
           luaVersion: "5.4"
       - uses: leafo/gh-actions-luarocks@v4
-      - run: luarocks install luacheck
+      - run: luarocks install luacheck 1.2.0
       - run: luacheck .
 
   tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       # lib.nvim is a runtime dependency (notify, fs.json, map, window,
       # usercmd, cross.executable, ...) -- a headless run has no plugin
       # manager, so it's checked out the same way scripts/minimal_init.lua's
       # `.deps/lib.nvim` fallback candidate expects.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: StefanBartl/lib.nvim
           path: .deps/lib.nvim
       # plenary.nvim: the busted-compatible test harness the specs under
       # TESTS/ are written against.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: nvim-lua/plenary.nvim
           path: .deps/plenary.nvim
