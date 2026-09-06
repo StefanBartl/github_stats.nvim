@@ -30,14 +30,14 @@ function M.init_state(repos)
     win_height = 0,
     max_scroll = 0,
     last_render_time = 0,
-    selected_index = 1, -- NEU: Initially same as current_index
+    selected_index = 1, -- initially same as current_index
     sort_by = dashboard_cfg.sort_by or DEFAULTS.dashboard.sort_by,
     time_range = dashboard_cfg.time_range or DEFAULTS.dashboard.time_range,
-    is_open = false, -- NEU: Will be set to true after window opens
-    last_refresh = os.time(), -- NEU: Current timestamp
-    auto_refresh_timer = nil, -- NEU: No auto-refresh by default
-    buffer = nil, -- NEU: Will be set by layout module
-    window = nil, -- NEU: Will be set by layout module
+    is_open = false,
+    last_refresh = os.time(),
+    auto_refresh_timer = nil,
+    buffer = nil, -- set by dashboard/init.lua's M.open() once the buffer exists
+    window = nil, -- set by dashboard/init.lua's M.open() once the window exists
   }
   return state
 end
@@ -192,15 +192,6 @@ function M.scroll_by(delta)
   M.clamp_scroll_offset()
 end
 
----Get current scroll offset
----@return integer
-function M.get_scroll_offset()
-  if not state then
-    return 0
-  end
-  return state.scroll_offset
-end
-
 ---Set scroll offset directly
 ---@param offset integer New scroll offset
 ---@return nil
@@ -285,26 +276,6 @@ function M.set_time_range(time_range)
   end
 
   state.time_range = time_range
-end
-
----Get sort criteria
----@return "clones"|"views"|"name"|"trend"
-function M.get_sort_by()
-  if not state then
-    return "name"
-  end
-
-  return state.sort_by
-end
-
----Get time range filter
----@return string
-function M.get_time_range()
-  if not state then
-    return "30d"
-  end
-
-  return state.time_range
 end
 
 return M

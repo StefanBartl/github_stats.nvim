@@ -572,12 +572,4 @@ function M.set_cursor_to_current(state)
   end
 end
 
----Calculate total lines for current dashboard
----@param state GHStats.DashboardState Current dashboard state
----@return integer # Total number of lines
-function M.calculate_total_lines(state)
-  -- Header + (entries * ENTRY_LINES lines each)
-  return M.HEADER_LINES + (#state.repos * M.ENTRY_LINES)
-end
-
 return M

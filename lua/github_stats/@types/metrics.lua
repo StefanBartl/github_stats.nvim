@@ -7,9 +7,6 @@
 ---@field success boolean Whether fetch succeeded
 ---@field error? string Error message if failed
 
----@class GHStats.LastFetchData
----@field [string] string Map of "repo:metric" to ISO timestamp
-
 ---@class GHStats.AggregatedStats
 ---@field repo string Repository identifier
 ---@field metric string Metric type
