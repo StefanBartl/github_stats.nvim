@@ -97,6 +97,15 @@ documented as part of the features they affect in
   retention types).
 
 ### Fixed
+- **Metric files were stored one directory too deep**: `storage.get_metric_dir()`
+  joined a `"data"` segment onto `config.get_storage_root()`, which already
+  resolves to `<config_dir>/data`. Every snapshot therefore landed under
+  `data/data/<user_repo>/<metric>/` instead of the `data/<user_repo>/<metric>/`
+  the docs describe and that `fetcher.lua` / `retention.lua` assume when they
+  climb `../` out of the storage root for their tracking files. The storage
+  root owns that segment; `get_metric_dir()` no longer adds it. Existing data
+  under a `data/data/` directory must be moved up one level once (`mv
+  data/data/* data/ && rmdir data/data`).
 - **`:checkhealth` rejected the documented way to disable auto-refresh**:
   `refresh_interval_seconds = 0` is the off switch, but health validation
   errored on anything `< 10`, so the one value the docs tell you to use failed
