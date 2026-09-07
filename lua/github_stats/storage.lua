@@ -29,9 +29,16 @@ end
 ---@param metric string Metric type
 ---@return string
 local function get_metric_dir(repo, metric)
+  -- config.get_storage_root() already resolves to `<config_dir>/data` (or
+  -- whatever `opts.data_dir` overrode it to). Joining a second "data" here
+  -- put every metric directory at `<data_dir>/data/<repo>/<metric>` -- one
+  -- level deeper than the docs describe (`data/<user_repo>/<metric>/`) and
+  -- than fetcher.lua / retention.lua assume when they climb `../` out of the
+  -- storage root for their tracking files. The storage root owns that
+  -- segment; this function must not add it again.
   local root = config.get_storage_root()
   local repo_safe = sanitize_repo_name(repo)
-  return fs.joinpath(root, "data", repo_safe, metric)
+  return fs.joinpath(root, repo_safe, metric)
 end
 
 ---Get metric directory path (public wrapper, used by github_stats.retention
