@@ -39,3 +39,9 @@ is the short version of all of it.
 
 > `docs/map/` is not in this repository. `:DocMap` builds it from the current
 > tree in seconds, which is why it is generated rather than shipped.
+
+## Working on it
+
+| Page | Answers |
+| --- | --- |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Ground rules, project layout, and how to add a subcommand |
