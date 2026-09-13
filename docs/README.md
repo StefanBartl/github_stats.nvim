@@ -8,6 +8,7 @@ is the short version of all of it.
 | Page | Answers |
 | --- | --- |
 | [installation.md](installation.md) | Requirements, loading strategies, and a spec per plugin manager |
+| [quickstart.md](quickstart.md) | The first thing to run after installing |
 | [configurations/README.md](configurations/README.md) | The configuration guide as a whole: preparation, every option with its default, and the two ways to set them |
 | [troubleshooting.md](troubleshooting.md) | Common failures, what to run to diagnose them, and the fixes |
 | [cross-platform.md](cross-platform.md) | What differs on Windows, macOS and Linux |
@@ -16,6 +17,7 @@ is the short version of all of it.
 
 | Page | Answers |
 | --- | --- |
+| [what-you-get.md](what-you-get.md) | The commands worth knowing on day one, once `repos`/`watch_users` is set |
 | [commands.md](commands.md) | The complete `:GithubStats <subcommand>` reference |
 | [BINDINGS.md](BINDINGS.md) | Every command, keymap and autocommand in one place |
 | [dashboard.md](dashboard.md) | The interactive dashboard: its keys, its layout, and what it can be configured to show |
@@ -36,12 +38,7 @@ is the short version of all of it.
 | Page | Answers |
 | --- | --- |
 | [CHANGELOG.md](CHANGELOG.md) | What changed, release by release |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Ground rules, project layout, and how to add a subcommand |
 
 > `docs/map/` is not in this repository. `:DocMap` builds it from the current
 > tree in seconds, which is why it is generated rather than shipped.
-
-## Working on it
-
-| Page | Answers |
-| --- | --- |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Ground rules, project layout, and how to add a subcommand |

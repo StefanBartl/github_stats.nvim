@@ -22,6 +22,10 @@ See [Preparation](configurations/PREPARATION.md) for a full walkthrough of creat
 | **`lazy = false`** | Loads immediately | Right from the start | Want the daily auto-fetch guaranteed from the first frame |
 | **`event = "VimEnter"`** | After UI init | After editor UI ready | **Recommended** — daily auto-fetch / dashboard auto-open timing, minimal startup impact |
 
+`event = "VimEnter"` is the point of the plugin: the background collector has
+to be running for there to be any history to analyse later. A `cmd` trigger
+would mean it only ever collects on days you happened to open the dashboard.
+
 ## lazy.nvim
 
 *Load after UI init (recommended, matches the plugin's own `VimEnter` auto-fetch):*
