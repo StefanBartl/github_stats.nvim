@@ -3,7 +3,7 @@
 ---@description
 --- github_stats.nvim "owns" the dashboard buffer/window it creates, so this
 --- ships both the item builder (this file) and the mouse trigger (wired in
---- dashboard/init.lua via `lib.nvim.contextmenu.bind_buffer`). Entries mirror
+--- dashboard/init.lua via `ui.contextmenu.bind_buffer`). Entries mirror
 --- the dashboard's own keymaps (dashboard/actions.lua,
 --- bindings/keymaps.lua) one-to-one, so right-click never offers anything the
 --- keyboard doesn't already provide -- it's just another way to reach the
@@ -18,7 +18,7 @@
 ---   require("menu").open(items, { mouse = true })
 --- <
 
-local contextmenu = require("lib.nvim.contextmenu")
+local contextmenu = require("ui.contextmenu")
 
 local M = {}
 
@@ -89,7 +89,7 @@ end
 ---Build the dashboard context-menu entries for the current selection.
 ---Returns an empty list when the integration (or the dashboard) is disabled,
 ---so a host can call this unconditionally.
----@return Lib.ContextMenu.Item[]
+---@return Ui.ContextMenu.Item[]
 function M.items()
   if not menu_enabled() then
     return {}
@@ -170,7 +170,7 @@ end
 ---hosts that prefer a "GitHub Stats ▸" fly-out. Returns nil when there is
 ---nothing to show (integration disabled, or no items apply).
 ---@param label? string
----@return Lib.ContextMenu.Item|nil
+---@return Ui.ContextMenu.Item|nil
 function M.submenu(label)
   local items = M.items()
   if #items == 0 then

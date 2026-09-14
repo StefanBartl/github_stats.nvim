@@ -50,6 +50,14 @@ jobs:
           repository: StefanBartl/lib.nvim
           path: .deps/lib.nvim
           ref: ci-verified
+      # ui.nvim: github_stats/init.lua's own module-top-level require pulls
+      # in ui.contextmenu the instant anything requires github_stats, and
+      # several specs require github_stats.dashboard directly -- same
+      # hard-dependency treatment as lib.nvim above.
+      - uses: actions/checkout@v5
+        with:
+          repository: StefanBartl/ui.nvim
+          path: .deps/ui.nvim
       # plenary.nvim: the busted-compatible test harness the specs under
       # TESTS/ are written against.
       - uses: actions/checkout@v5

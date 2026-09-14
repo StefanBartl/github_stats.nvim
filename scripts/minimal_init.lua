@@ -56,4 +56,9 @@ local function add_dep(env_var, deps_name, marker)
 end
 
 add_dep("LIB_NVIM_DIR", "lib.nvim", "lib.nvim.fs.read")
+-- ui.nvim: github_stats/init.lua's own module-top-level
+-- `M.dashboard = require("github_stats.dashboard")` pulls in ui.contextmenu
+-- the instant anything requires github_stats, and several specs require
+-- github_stats.dashboard directly -- same hard treatment as lib.nvim above.
+add_dep("UI_NVIM_DIR", "ui.nvim", "ui.kit")
 add_dep("PLENARY_DIR", "plenary.nvim", "plenary")

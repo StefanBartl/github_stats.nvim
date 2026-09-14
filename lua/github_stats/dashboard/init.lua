@@ -9,7 +9,7 @@ local ui_state = require("github_stats.state.ui_state")
 local dashboard_state = require("github_stats.dashboard.state")
 local render = require("github_stats.dashboard.render")
 local keymaps = require("github_stats.bindings.keymaps")
-local contextmenu = require("lib.nvim.contextmenu")
+local contextmenu = require("ui.contextmenu")
 
 local M = {}
 

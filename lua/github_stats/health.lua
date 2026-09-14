@@ -263,6 +263,19 @@ function M.check()
 
   health.start("GitHub Stats Dependencies")
 
+  -- ui.nvim: github_stats/init.lua's own module-top-level
+  -- `M.dashboard = require("github_stats.dashboard")` pulls in ui.contextmenu
+  -- the instant anything does `require("github_stats")`, even before
+  -- setup() runs -- no fallback, so a missing ui.nvim breaks the plugin at
+  -- load time rather than degrading.
+  if pcall(require, "ui.kit") then
+    health.ok("ui.nvim found (dashboard note popups, right-click context menu)")
+  else
+    health.error("ui.nvim not found -- require('github_stats') will fail to load", {
+      "Install StefanBartl/ui.nvim.",
+    })
+  end
+
   -- Check curl (cross-platform)
   local curl_ok, curl_msg = check_curl()
   if curl_ok then
