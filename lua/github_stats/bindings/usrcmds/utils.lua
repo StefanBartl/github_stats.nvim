@@ -4,14 +4,14 @@
 --- Provides common functionality used across multiple command handlers,
 --- including floating window creation and string splitting.
 ---
---- show_float delegates to lib.nvim.ui.kit.note (centered title+message
+--- show_float delegates to ui.kit.note (centered title+message
 --- float, auto-sized, q/<Esc>-to-close via nice_quit — the same default keys
 --- this module bound by hand). note.open focuses nothing by default; the
 --- wrapper restores focus so behaviour matches the original nvim_open_win(...,
 --- true, ...) call, and preserves the (buf, win) return order the one
 --- destructuring caller (bindings/usrcmds/show.lua) depends on.
 
-local note = require("lib.nvim.ui.kit.note")
+local note = require("ui.kit.note")
 local format = require("lib.lua.strings.format")
 
 local M = {}

@@ -5,6 +5,7 @@
 - **Neovim** >= 0.10.0 — `vim.uv` is used unguarded in `background.lua`,
   `dashboard/init.lua`, `dashboard/state.lua` and `health.lua`
 - **[lib.nvim](https://github.com/StefanBartl/lib.nvim)** — required, not optional: notifications, JSON I/O, the curl client, the user-command composer and the cross-platform executable check all come from it
+- **[ui.nvim](https://github.com/StefanBartl/ui.nvim)** — also required, not optional: `require("github_stats")` itself pulls in `ui.kit`/`ui.contextmenu` (the dashboard's note popups and right-click menu) at module load, before `setup()` even runs
 - **curl** (for API requests)
 - **GitHub Personal Access Token** with `repo` permission
 
@@ -32,7 +33,7 @@ would mean it only ever collects on days you happened to open the dashboard.
 ```lua
 {
   "StefanBartl/github_stats.nvim",
-  dependencies = { "StefanBartl/lib.nvim" },
+  dependencies = { "StefanBartl/lib.nvim", "StefanBartl/ui.nvim" },
   event = "VimEnter",
   config = function()
     require("github_stats").setup({
@@ -46,7 +47,7 @@ would mean it only ever collects on days you happened to open the dashboard.
 ```lua
 {
   "StefanBartl/github_stats.nvim",
-  dependencies = { "StefanBartl/lib.nvim" },
+  dependencies = { "StefanBartl/lib.nvim", "StefanBartl/ui.nvim" },
   lazy = false,
   config = function()
     require("github_stats").setup({
@@ -61,7 +62,7 @@ would mean it only ever collects on days you happened to open the dashboard.
 ```lua
 use {
   "StefanBartl/github_stats.nvim",
-  requires = { "StefanBartl/lib.nvim" },
+  requires = { "StefanBartl/lib.nvim", "StefanBartl/ui.nvim" },
   config = function()
     require("github_stats").setup({
       repos = { "user/repo1", "user/repo2" },

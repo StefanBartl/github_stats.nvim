@@ -201,6 +201,6 @@ teardown path covers it and no timer can leak.
 (`dashboard/actions.lua`), self-gated on selection state (e.g. "Show
 details"/"Export selected…" only appear with a repo selected) and on
 `dashboard.menu.enable` (default `true`). `dashboard/init.lua`'s `M.open`
-binds the trigger unconditionally via `lib.nvim.contextmenu.bind_buffer`
+binds the trigger unconditionally via `ui.contextmenu.bind_buffer`
 (`<RightMouse>`, soft-requires `menu` at trigger time) — a disabled config
 or a missing `nvzone/menu` install both degrade to a no-op, never an error.
