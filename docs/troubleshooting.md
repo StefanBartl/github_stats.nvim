@@ -282,6 +282,12 @@ cat ~/.config/nvim/lua/plugins/github-stats/config.json | jq .
 # https://jsonlint.com/
 ```
 
+Or, without leaving Neovim: if you have
+[`data.nvim`](https://github.com/StefanBartl/data.nvim) installed, open
+`config.json` and run `:JSON pretty` — a malformed file is left untouched
+with a clear decode-error notification instead of a silent partial rewrite,
+so it doubles as a validator.
+
 **Common mistakes:**
 ```json
 // WRONG:
@@ -592,6 +598,12 @@ cat ~/.config/nvim/lua/plugins/github-stats/data/username_repo/clones/*.json | t
 # List all stored data
 find ~/.config/nvim/lua/plugins/github-stats/data/ -name "*.json"
 ```
+
+If you have [`data.nvim`](https://github.com/StefanBartl/data.nvim) installed,
+opening one of these files and running `:JSON pretty` is often quicker than
+piping through `jq` — `:JSON lines` also flattens a day's metrics onto one
+`path: value` line each, useful for spotting which field actually changed
+between two fetches.
 
 ---
 
