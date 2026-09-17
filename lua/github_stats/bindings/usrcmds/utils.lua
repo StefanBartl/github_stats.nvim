@@ -16,15 +16,17 @@ local format = require("lib.lua.strings.format")
 
 local M = {}
 
----Split string into lines, handling various line endings
+---Split string into lines on `\n`, keeping empty lines.
+---
+---A trailing newline still yields a trailing empty line (`"a\nb\n"` → `a`,
+---`b`, ``), but a string without one no longer does: the previous
+---`([^\n]*)\n?` pattern always matched once more at the end of the subject and
+---so appended a blank line to every result. show_float() runs this once per
+---element of a line array, which made every multi-line report double-spaced.
 ---@param str string Input string
 ---@return string[] # Array of lines
 function M.split_lines(str)
-  local t = {}
-  for line in str:gmatch("([^\n]*)\n?") do
-    table.insert(t, line)
-  end
-  return t
+  return vim.split(str, "\n", { plain = true })
 end
 
 ---Create floating window with content

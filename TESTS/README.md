@@ -104,20 +104,22 @@ which resolves to the *user's own* `stdpath("config")` directory.
   covered; opening a menu needs `nvzone/menu` (a soft dependency that is not
   a CI checkout), and `ui.contextmenu` owns that path anyway.
 
-## Known issues pinned here rather than fixed
+## Bugs this suite found, now fixed
 
-Two assertions in this suite pin behaviour that is wrong but visible, so that
-changing it is a deliberate decision rather than an accident. Both are marked
-with a `BUG:` comment at the assertion:
+Two defects were first pinned here in their broken shape; both have since been
+fixed, and the assertions stayed on as regression guards:
 
-- `bindings_spec.lua` — `usrcmds.utils.split_lines()` always appends a
-  trailing empty line (its `([^\n]*)\n?` pattern matches once more at the end
-  of the subject). `show_float()` runs it per element of a line array, so
-  every multi-line report this plugin shows comes out double-spaced.
-- `export_spec.lua` — `export.lua`'s `write_lines()` pcalls the `writefile`
+- `bindings_spec.lua` — `usrcmds.utils.split_lines()` appended a trailing
+  empty line to every result (its `([^\n]*)\n?` pattern matched once more at
+  the end of the subject). `show_float()` runs it per element of a line array,
+  so every multi-line report came out double-spaced. It now splits with
+  `vim.split(..., { plain = true })`: a trailing newline still yields a
+  trailing empty line, a string without one no longer does.
+- `export_spec.lua` — `export.lua`'s `write_lines()` pcalled the `writefile`
   but not the `mkdir` that `ensure_parent_dir()` does first, so a parent
-  directory that cannot be created escapes as a raw `E739` instead of the
-  "Export failed: ..." message `:GithubStats export` promises.
+  directory that cannot be created escaped as a raw `E739`.
+  `ensure_parent_dir()` now returns `(ok, err)` and the failure is reported as
+  "Failed to create directory: ...", like any other export failure.
 
 Related, and noted rather than pinned: the `M.complete()` functions in
 `bindings/usrcmds/*.lua` have no caller left — `:GithubStats <sub>` completes
