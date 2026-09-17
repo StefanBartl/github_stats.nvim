@@ -106,8 +106,8 @@ which resolves to the *user's own* `stdpath("config")` directory.
 
 ## Bugs this suite found, now fixed
 
-Two defects were first pinned here in their broken shape; both have since been
-fixed, and the assertions stayed on as regression guards:
+Three defects came out of writing this suite; all are fixed, and the
+assertions stayed on as regression guards:
 
 - `bindings_spec.lua` — `usrcmds.utils.split_lines()` appended a trailing
   empty line to every result (its `([^\n]*)\n?` pattern matched once more at
@@ -120,6 +120,14 @@ fixed, and the assertions stayed on as regression guards:
   directory that cannot be created escaped as a raw `E739`.
   `ensure_parent_dir()` now returns `(ok, err)` and the failure is reported as
   "Failed to create directory: ...", like any other export failure.
+- `dashboard_lifecycle_spec.lua` — the `BufWipeout` handler ran the whole
+  teardown chain, `ui_state.delete_buffer()` included, against the very buffer
+  being wiped. A `pcall` contains the Lua error but not the Vim one, so
+  `E937: Attempt to delete a buffer that is in use` still surfaced whenever
+  the buffer was wiped while still displayed in its window — which is what
+  `nvim_buf_delete()` from another plugin's cleanup does, unlike `:q`,
+  `:bwipeout` or `:bdelete`, all of which were and are quiet. The handler now
+  calls `ui_state.forget_buffer()` first, so the redundant delete is skipped.
 
 Related, and noted rather than pinned: the `M.complete()` functions in
 `bindings/usrcmds/*.lua` have no caller left — `:GithubStats <sub>` completes
