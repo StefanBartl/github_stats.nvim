@@ -113,6 +113,19 @@ function M.delete_buffer()
   return ok
 end
 
+---Drop the buffer handle without deleting the buffer.
+---
+---For the BufWipeout path: that buffer is already on its way out, so deleting
+---it a second time from inside the handler raises `E937: Attempt to delete a
+---buffer that is in use` whenever it is still displayed in its window -- which
+---it is when something wipes it through `nvim_buf_delete()` rather than
+---`:bwipeout`. Forgetting the handle first makes the rest of the teardown
+---chain skip the redundant delete.
+---@return nil
+function M.forget_buffer()
+  state.buf = nil
+end
+
 ---Cleanup both window and buffer
 ---@return nil
 function M.cleanup_all()

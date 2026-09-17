@@ -221,11 +221,28 @@ describe("dashboard lifecycle", function()
       dashboard.open(false)
       local buf = ui_state.get_buf()
 
-      -- What :q in the dashboard window ends up doing, via bufhidden=wipe.
+      -- What another plugin's buffer cleanup does. Unlike :q/:bwipeout, this
+      -- wipes the buffer while it is still displayed in its window.
       vim.api.nvim_buf_delete(buf, { force = true })
 
       assert.is_nil(dashboard_state.get_state())
       assert.is_nil(ui_state.get_buf())
+    end)
+
+    -- Regression: the BufWipeout handler used to run the full teardown chain,
+    -- ui_state.delete_buffer() included, against the very buffer being wiped.
+    -- pcall contains the Lua error but not the Vim one, so `E937: Attempt to
+    -- delete a buffer that is in use` still reached the user (and the test
+    -- output) whenever the buffer was wiped while displayed in its window.
+    it("wipes from outside without raising E937", function()
+      setup_plugin()
+      dashboard.open(false)
+      local buf = ui_state.get_buf()
+
+      vim.v.errmsg = ""
+      vim.api.nvim_buf_delete(buf, { force = true })
+
+      assert.equals("", vim.v.errmsg)
     end)
   end)
 

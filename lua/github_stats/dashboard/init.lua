@@ -321,6 +321,12 @@ function M.open(force_refresh)
   -- and does so explicitly ahead of `pattern` -- so the wrapper is safe here
   -- and brings its error reporting along.
   require("lib.nvim.bindings.autocmd").create("BufWipeout", function()
+    -- This buffer is already being wiped, so drop the handle before the
+    -- teardown chain reaches ui_state.delete_buffer(): deleting it a second
+    -- time raises E937 while it is still displayed in its window, which is
+    -- exactly the case when something wipes it via nvim_buf_delete() rather
+    -- than :bwipeout (another plugin's buffer cleanup, a session restore).
+    ui_state.forget_buffer()
     cleanup_dashboard()
   end, {
     buffer = buf,
