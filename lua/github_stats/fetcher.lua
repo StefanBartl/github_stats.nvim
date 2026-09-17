@@ -43,9 +43,17 @@ M.last_fetch_summary = nil
 
 ---@internal
 ---Get path to last_fetch tracking file
+---
+---`config.get_config_dir()` directly, not `get_storage_root() .. "/../..."`.
+---The latter embeds a literal `..` in the string handed to
+---`lib.nvim.fs.json`'s mkdir/write/rename calls (the same construction
+---`github_stats.retention` had, and the same fix): resolving it correctly
+---depends on every layer between here and the syscall agreeing, which held
+---on this plugin's dev machine and did not on at least one CI runner.
+---`get_config_dir()` names the same directory with no traversal to resolve.
 ---@return string
 local function get_last_fetch_file()
-  return config.get_storage_root() .. "/../last_fetch.json"
+  return config.get_config_dir() .. "/last_fetch.json"
 end
 
 ---@internal

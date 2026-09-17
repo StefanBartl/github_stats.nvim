@@ -236,9 +236,18 @@ end
 ---@internal
 ---Path to the timestamp file tracking when retention last ran, so
 ---maybe_run_all can rate-limit itself independently of fetch_interval_hours.
+---
+---`config.get_config_dir()` directly, not `get_storage_root() .. "/../..."`.
+---The latter embeds a literal `..` in the string handed to
+---`lib.nvim.fs.json`'s mkdir/write/rename calls, which relies on every
+---layer between here and the syscall resolving it identically -- true on
+---this plugin's own dev machine, false on at least one CI runner, where
+---the file silently never appeared (read: 0) and every downstream
+---assertion about 24h rate-limiting failed with it. `get_config_dir()`
+---is the same directory with no traversal to resolve.
 ---@return string
 local function get_last_run_path()
-  return config.get_storage_root() .. "/../last_retention.json"
+  return config.get_config_dir() .. "/last_retention.json"
 end
 
 ---@internal
