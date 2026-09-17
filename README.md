@@ -35,7 +35,11 @@ Neovim.
 > **[insights.nvim](https://github.com/StefanBartl/insights.nvim)** — traffic is
 > the outside view of a repository; insights is the inside one.
 >
-> Both are soft: without them everything else works unchanged.
+> **[ui.nvim](https://github.com/StefanBartl/ui.nvim)** — puts this week's
+> view count for the current repository in the statusline, so the number is
+> there without opening the dashboard.
+>
+> All of the above are soft: without them everything else works unchanged.
 > [lib.nvim](https://github.com/StefanBartl/lib.nvim) and `curl` are the real
 > dependencies — see [Requirements](docs/installation.md#requirements).
 
