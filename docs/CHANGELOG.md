@@ -97,6 +97,13 @@ documented as part of the features they affect in
   retention types).
 
 ### Fixed
+- **Detail view reported every period as "(1 days)" on Windows**:
+  `dashboard/detail.lua` measured the span with `vim.fn.strptime()`, which
+  exists as a Vimscript function on every platform but only *works* where the
+  C library provides `strptime(3)` -- Neovim on Windows returns a flat `0` for
+  any input, so both dates parsed to the same instant. It now uses
+  `analytics.count_days()`, the same inclusive day count the dashboard header
+  already uses.
 - **Metric files were stored one directory too deep**: `storage.get_metric_dir()`
   joined a `"data"` segment onto `config.get_storage_root()`, which already
   resolves to `<config_dir>/data`. Every snapshot therefore landed under

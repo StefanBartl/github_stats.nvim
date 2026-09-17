@@ -198,3 +198,105 @@ describe("retention", function()
     end)
   end)
 end)
+
+---@diagnostic disable: undefined-global
+
+-- The two parts of retention.lua the suite above does not reach: the 24h rate
+-- limit that lets the fetch cycle call it on every fetch, and the byte
+-- formatter its notifications use.
+describe("retention scheduling", function()
+  local config, retention
+  local tmp_dir
+
+  ---Path of the tracking file maybe_run_all() rate-limits itself with.
+  ---@return string
+  local function last_run_path()
+    return tmp_dir .. "/last_retention.json"
+  end
+
+  before_each(function()
+    for _, name in ipairs({
+      "github_stats.config",
+      "github_stats.storage",
+      "github_stats.analytics",
+      "github_stats.retention",
+    }) do
+      package.loaded[name] = nil
+    end
+
+    tmp_dir = vim.fn.tempname()
+    vim.fn.delete(tmp_dir, "rf")
+
+    config = require("github_stats.config")
+    config.init({ config_dir = tmp_dir, repos = { "user/a" } })
+    retention = require("github_stats.retention")
+  end)
+
+  after_each(function()
+    vim.fn.delete(tmp_dir, "rf")
+  end)
+
+  describe("maybe_run_all", function()
+    it("runs on the first call and records when it did", function()
+      local summary = retention.maybe_run_all()
+
+      assert.is_not_nil(summary)
+      assert.equals(1, vim.fn.filereadable(last_run_path()))
+      local stamp = require("lib.nvim.fs.json").read(last_run_path())
+      assert.is_true(stamp.timestamp <= os.time())
+    end)
+
+    it("does nothing again inside 24 hours", function()
+      assert.is_not_nil(retention.maybe_run_all())
+
+      assert.is_nil(retention.maybe_run_all())
+    end)
+
+    it("runs again once 24 hours have passed", function()
+      require("lib.nvim.fs.json").write(last_run_path(), { timestamp = os.time() - (25 * 3600) })
+
+      assert.is_not_nil(retention.maybe_run_all())
+    end)
+
+    it("is a no-op while retention is disabled, without writing a timestamp", function()
+      config.init({ config_dir = tmp_dir, repos = { "user/a" }, retention = { enabled = false } })
+
+      assert.is_nil(retention.maybe_run_all())
+      assert.equals(0, vim.fn.filereadable(last_run_path()))
+    end)
+
+    it("uses the configured cutoff and prune windows", function()
+      config.init({
+        config_dir = tmp_dir,
+        repos = { "user/a" },
+        retention = { enabled = true, cutoff_days = 3, prune_days = 4 },
+      })
+
+      local seen
+      local real_run_all = retention.run_all
+      ---@diagnostic disable-next-line: duplicate-set-field
+      retention.run_all = function(opts)
+        seen = opts
+        return real_run_all(opts)
+      end
+
+      retention.maybe_run_all()
+
+      retention.run_all = real_run_all
+      assert.equals(3, seen.cutoff_days)
+      assert.equals(4, seen.prune_days)
+    end)
+  end)
+
+  describe("format_bytes", function()
+    it("scales from bytes through kilobytes to megabytes", function()
+      assert.equals("0 B", retention.format_bytes(0))
+      assert.equals("512 B", retention.format_bytes(512))
+      assert.equals("1023 B", retention.format_bytes(1023))
+      assert.equals("1.0 KB", retention.format_bytes(1024))
+      assert.equals("1.5 KB", retention.format_bytes(1536))
+      assert.equals("1.00 MB", retention.format_bytes(1024 * 1024))
+      assert.equals("2.50 MB", retention.format_bytes(2.5 * 1024 * 1024))
+    end)
+  end)
+end)
