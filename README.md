@@ -61,6 +61,7 @@ each page answers.
 - [What you get with the defaults](docs/what-you-get.md) — the commands worth knowing on day one.
 - [Configuration guide](docs/configurations/README.md) — token setup, every option with its default, and the two ways to set them.
 - [Command reference](docs/commands.md) / [Bindings cheatsheet](docs/BINDINGS.md)
+- [Statusline](docs/statusline.md) — this week's view count as a component, for lualine, heirline, the native statusline or ui.nvim.
 - [Dashboard guide](docs/dashboard.md) — the interactive dashboard, its keys, and what it can be configured to show.
 
 **The Rest**
