@@ -764,15 +764,13 @@ describe("usrcmds.utils", function()
       assert.same({ "a", "", "b", "" }, utils.split_lines("a\n\nb\n"))
     end)
 
-    -- BUG: the `([^\n]*)\n?` pattern always matches once more at the end of
-    -- the subject, so every call appends a trailing empty line -- even for a
-    -- string that contains no newline at all. Harmless for a single string
-    -- (one blank line at the bottom of the float), but show_float() runs this
-    -- per element of a line array, which double-spaces the whole report; see
-    -- the show_float spec below. Pinned, not fixed: fixing it changes the
-    -- rendering of every float this plugin opens.
+    -- Regression: the old `([^\n]*)\n?` pattern matched once more at the end
+    -- of the subject and appended a trailing empty line to every result, even
+    -- for a string with no newline at all -- which show_float() then multiplied
+    -- across every element of a line array (see its spec below).
     it("returns a single entry for a string without newlines", function()
-      assert.same({ "one", "" }, utils.split_lines("one"))
+      assert.same({ "one" }, utils.split_lines("one"))
+      assert.same({ "" }, utils.split_lines(""))
     end)
   end)
 
@@ -797,17 +795,13 @@ describe("usrcmds.utils", function()
       end
     end)
 
-    -- BUG: a line array is flattened through split_lines() per element, and
-    -- split_lines() appends a trailing empty line to every element (see its
-    -- spec above) -- so every entry of the array gets a blank line inserted
-    -- after it, and every multi-line report this plugin shows comes out
-    -- double-spaced. Pinned in the shape it currently has rather than fixed,
-    -- since the fix changes the rendering of every float.
-    it("flattens embedded newlines inside a line array, but double-spaces it", function()
+    -- Regression: each element used to pick up split_lines()' spurious
+    -- trailing empty line, so every multi-line report came out double-spaced.
+    it("flattens embedded newlines inside a line array without double-spacing", function()
       local buf, win = utils.show_float({ "a", "b\nc" }, "Title")
 
       local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-      assert.same({ "a", "", "b", "c", "" }, lines)
+      assert.same({ "a", "b", "c" }, lines)
 
       if win and vim.api.nvim_win_is_valid(win) then
         vim.api.nvim_win_close(win, true)

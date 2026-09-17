@@ -33,13 +33,26 @@ end
 ---get it created for them, matching how the rest of the plugin (e.g.
 ---`config` writing config.json) already treats output directories as
 ---create-on-demand.
+---
+---mkdir() itself throws (`E739: Cannot create directory`) when the path cannot
+---be made -- a component that already exists as a file, a read-only parent --
+---so it is caught here and reported like any other export failure, rather than
+---escaping as the raw error this function exists to prevent.
 ---@param filepath string Already-expanded output file path
----@return nil
+---@return boolean ok
+---@return string? err Error message when the directory could not be created
 local function ensure_parent_dir(filepath)
   local dir = fn.fnamemodify(filepath, ":h")
-  if dir ~= "" and fn.isdirectory(dir) == 0 then
-    fn.mkdir(dir, "p")
+  if dir == "" or fn.isdirectory(dir) == 1 then
+    return true, nil
   end
+
+  local ok, err = pcall(fn.mkdir, dir, "p")
+  if not ok then
+    return false, str_format("Failed to create directory: %s", err)
+  end
+
+  return true, nil
 end
 
 ---@internal
@@ -49,7 +62,11 @@ end
 ---@return boolean, string? # Success flag, error message
 local function write_lines(filepath, lines)
   local resolved = expand(filepath)
-  ensure_parent_dir(resolved)
+
+  local dir_ok, dir_err = ensure_parent_dir(resolved)
+  if not dir_ok then
+    return false, dir_err
+  end
 
   local content = tbl_concat(lines, "\n") .. "\n"
   local ok, err = pcall(fn.writefile, vim.split(content, "\n"), resolved)

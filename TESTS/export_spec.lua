@@ -390,27 +390,20 @@ describe("export writers", function()
   end)
 
   describe("write failures", function()
-    -- BUG: write_lines() pcalls the writefile but not the mkdir that
+    -- Regression: write_lines() used to pcall the writefile but not the mkdir
     -- ensure_parent_dir() does first, so a parent directory that cannot be
-    -- created (here: the path already exists as a file) escapes as a raw
-    -- `E739: Cannot create directory` instead of the "Export failed: ..."
-    -- message :GithubStats export promises -- the very kind of raw error
-    -- ensure_parent_dir was added to stop leaking to the user. Pinned in its
-    -- current shape rather than fixed.
-    it("lets a parent directory it cannot create escape as a raw E739", function()
+    -- created (here: the path already exists as a file) escaped as a raw
+    -- `E739: Cannot create directory` -- exactly the kind of raw error
+    -- ensure_parent_dir exists to stop leaking to the user.
+    it("reports a parent directory it cannot create instead of raising", function()
       local blocker = tmp_dir .. "/blocker"
       vim.fn.writefile({ "i am a file" }, blocker)
 
-      local ok, err = pcall(
-        export.export_daily_csv,
-        "test/repo",
-        "clones",
-        { ["2025-01-01"] = { count = 1, uniques = 1 } },
-        blocker .. "/nested.csv"
-      )
+      local ok, err =
+        export.export_daily_csv("test/repo", "clones", { ["2025-01-01"] = { count = 1, uniques = 1 } }, blocker .. "/nested.csv")
 
       assert.is_false(ok)
-      assert.is_truthy(tostring(err):find("E739", 1, true))
+      assert.is_truthy(err:find("Failed to create directory", 1, true))
     end)
 
     it("reports an unwritable target path instead of raising", function()
