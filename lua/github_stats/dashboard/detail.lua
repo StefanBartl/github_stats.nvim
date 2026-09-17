@@ -168,13 +168,17 @@ function M.show_detail(repo)
     period_end = views_stats.period_end
   end
 
-  -- Calculate total days
+  -- Calculate total days.
+  --
+  -- Through analytics.count_days, not vim.fn.strptime: strptime() exists as a
+  -- Vimscript function on every platform but only *works* where the C library
+  -- provides strptime(3), and Neovim on Windows returns a flat 0 for any input
+  -- instead. Both dates therefore parsed to the same instant and this header
+  -- read "(1 days)" for every span, however long. count_days() is the same
+  -- inclusive day count built on os.time(), already used by the dashboard
+  -- header and covered by analytics_spec.
   if period_start ~= "N/A" and period_end ~= "N/A" then
-    local start_date = vim.fn.strptime("%Y-%m-%d", period_start)
-    local end_date = vim.fn.strptime("%Y-%m-%d", period_end)
-    if start_date and end_date then
-      total_days = math.floor((end_date - start_date) / 86400) + 1
-    end
+    total_days = analytics.count_days(period_start, period_end) or 0
   end
 
   -- Build content

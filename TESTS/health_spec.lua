@@ -1,0 +1,464 @@
+---@diagnostic disable: undefined-global
+
+-- Specs for github_stats.health -- the :checkhealth report.
+--
+-- `vim.health` is replaced by a recorder, so the report is read back as data
+-- instead of as terminal output, and the config module is replaced wholesale:
+-- the real check_config() calls `config.init()` with no arguments, which
+-- resolves to the *user's own* ~/.config/nvim config directory. The API probe
+-- goes through a stubbed `lib.nvim.net.curl`, so no request leaves the
+-- machine here either.
+
+describe("health", function()
+  local health_mod
+  local tmp_dir
+  local report
+  local real_health, real_curl, real_config, real_health_mod
+  local cfg, token, token_err, init_ok, init_err
+  local curl_responder
+
+  ---Every message of the given kind, in order.
+  ---@param kind "ok"|"info"|"warn"|"error"
+  ---@return string[]
+  local function messages(kind)
+    local out = {}
+    for _, entry in ipairs(report) do
+      if entry.kind == kind then
+        out[#out + 1] = entry.message
+      end
+    end
+    return out
+  end
+
+  ---Whether any message of `kind` contains `needle`.
+  ---@param kind "ok"|"info"|"warn"|"error"
+  ---@param needle string
+  ---@return boolean
+  local function reported(kind, needle)
+    for _, message in ipairs(messages(kind)) do
+      if message:find(needle, 1, true) then
+        return true
+      end
+    end
+    return false
+  end
+
+  before_each(function()
+    report = {}
+    tmp_dir = vim.fn.tempname()
+    vim.fn.delete(tmp_dir, "rf")
+
+    init_ok, init_err = true, nil
+    token, token_err = "ghp_0123456789abcdef", nil
+    cfg = {
+      repos = { "user/alpha" },
+      watch_users = {},
+      token_source = "env",
+      background = { enabled = true },
+      dashboard = {
+        enabled = true,
+        refresh_interval_seconds = 300,
+        trend_window_days = 7,
+        keybindings = { navigate_down = "j", navigate_up = "k", quit = "q" },
+      },
+    }
+    curl_responder = function()
+      return true, { status = 200, body = '{"count":1}' }
+    end
+
+    real_health = vim.health
+    ---@diagnostic disable-next-line: duplicate-set-field
+    vim.health = {
+      start = function(name)
+        report[#report + 1] = { kind = "start", message = name }
+      end,
+      ok = function(message)
+        report[#report + 1] = { kind = "ok", message = message }
+      end,
+      info = function(message)
+        report[#report + 1] = { kind = "info", message = message }
+      end,
+      warn = function(message)
+        report[#report + 1] = { kind = "warn", message = message }
+      end,
+      error = function(message)
+        report[#report + 1] = { kind = "error", message = message }
+      end,
+    }
+
+    real_curl = package.loaded["lib.nvim.net.curl"]
+    package.loaded["lib.nvim.net.curl"] = {
+      fetch_raw_blocking = function(url, opts)
+        return curl_responder(url, opts)
+      end,
+    }
+
+    real_config = package.loaded["github_stats.config"]
+    package.loaded["github_stats.config"] = {
+      init = function()
+        return init_ok, init_err
+      end,
+      get = function()
+        return cfg
+      end,
+      get_repos = function()
+        return cfg and cfg.repos or {}
+      end,
+      get_token = function()
+        -- Mirrors the real module: with no loaded config there is no token
+        -- either, which is what keeps check_token() off the nil config.
+        if not cfg then
+          return nil, "Configuration not loaded"
+        end
+        return token, token_err
+      end,
+      get_storage_root = function()
+        return tmp_dir .. "/data"
+      end,
+      notify = function() end,
+    }
+
+    real_health_mod = package.loaded["github_stats.health"]
+    package.loaded["github_stats.health"] = nil
+    health_mod = require("github_stats.health")
+  end)
+
+  after_each(function()
+    vim.health = real_health
+    package.loaded["lib.nvim.net.curl"] = real_curl
+    package.loaded["github_stats.config"] = real_config
+    package.loaded["github_stats.health"] = real_health_mod
+    if tmp_dir then
+      vim.fn.delete(tmp_dir, "rf")
+      tmp_dir = nil
+    end
+  end)
+
+  describe("configuration", function()
+    it("reports a healthy configuration", function()
+      health_mod.check()
+
+      assert.is_true(reported("ok", "Configuration valid (1 repos)"))
+    end)
+
+    it("reports a failed init", function()
+      init_ok, init_err = false, "config.json is not JSON"
+
+      health_mod.check()
+
+      assert.is_true(reported("error", "Configuration error: config.json is not JSON"))
+    end)
+
+    it("reports a config that loaded as nil", function()
+      cfg = nil
+
+      health_mod.check()
+
+      assert.is_true(reported("error", "Failed to load configuration"))
+      assert.is_true(reported("error", "Token error: Configuration not loaded"))
+      assert.is_true(reported("warn", "Skipping API test due to previous errors"))
+    end)
+
+    it("insists on repos or watch_users", function()
+      cfg.repos = {}
+
+      health_mod.check()
+
+      assert.is_true(reported("error", "No repositories configured"))
+    end)
+
+    it("accepts watch_users alone, and names the users", function()
+      cfg.repos = {}
+      cfg.watch_users = { "acme", "globex" }
+
+      health_mod.check()
+
+      assert.is_true(reported("ok", "watching users: acme, globex"))
+      assert.is_true(reported("ok", "Auto-discovering repos for: acme, globex"))
+    end)
+
+    it("rejects a repo that is not in owner/repo form", function()
+      cfg.repos = { "user/alpha", "just-a-name" }
+
+      health_mod.check()
+
+      assert.is_true(reported("error", "Invalid repo[2] 'just-a-name': Must be in 'owner/repo' format"))
+    end)
+
+    it("says so when no users are watched", function()
+      health_mod.check()
+
+      assert.is_true(reported("info", "No watch_users configured"))
+    end)
+  end)
+
+  describe("token", function()
+    it("reports length and source, never the token itself", function()
+      health_mod.check()
+
+      assert.is_true(reported("ok", "Token available (20 chars, source: env)"))
+      assert.is_false(reported("ok", token))
+    end)
+
+    it("reports a missing token", function()
+      token, token_err = nil, "Environment variable GITHUB_TOKEN not set or empty"
+
+      health_mod.check()
+
+      assert.is_true(reported("error", "Token error: Environment variable GITHUB_TOKEN not set"))
+    end)
+
+    it("rejects an implausibly short token", function()
+      token, token_err = "abc", nil
+
+      health_mod.check()
+
+      assert.is_true(reported("error", "Token appears invalid (too short)"))
+    end)
+  end)
+
+  describe("background", function()
+    it("reports the cycle as enabled by default", function()
+      health_mod.check()
+
+      assert.is_true(reported("ok", "Background fetch enabled"))
+    end)
+
+    it("reports it as disabled when switched off", function()
+      cfg.background = { enabled = false }
+
+      health_mod.check()
+
+      assert.is_true(reported("info", "Background fetch disabled"))
+    end)
+  end)
+
+  describe("storage", function()
+    it("creates the storage directory when it is missing", function()
+      health_mod.check()
+
+      assert.is_true(reported("ok", "Storage directory created"))
+      assert.equals(1, vim.fn.isdirectory(tmp_dir .. "/data"))
+    end)
+
+    it("accepts an existing storage directory", function()
+      vim.fn.mkdir(tmp_dir .. "/data", "p")
+
+      health_mod.check()
+
+      assert.is_true(reported("ok", "Storage directory accessible"))
+    end)
+
+    it("rejects a storage path that is a file", function()
+      vim.fn.mkdir(tmp_dir, "p")
+      vim.fn.writefile({ "not a directory" }, tmp_dir .. "/data")
+
+      health_mod.check()
+
+      assert.is_true(reported("error", "Storage path exists but is not a directory"))
+    end)
+  end)
+
+  describe("dependencies", function()
+    it("finds ui.nvim, which the plugin cannot load without", function()
+      health_mod.check()
+
+      assert.is_true(reported("ok", "ui.nvim found"))
+    end)
+
+    it("names the curl version it found", function()
+      health_mod.check()
+
+      -- `curl --version` is a local subprocess, not a request; the version
+      -- string itself is whatever the machine has.
+      assert.is_true(reported("ok", "curl available"))
+    end)
+
+    it("reports curl missing from PATH", function()
+      local cross = require("lib.nvim.cross.executable")
+      local real_exists = cross.exists
+      ---@diagnostic disable-next-line: duplicate-set-field
+      cross.exists = function(cmd)
+        if cmd == "curl" then
+          return false
+        end
+        return real_exists(cmd)
+      end
+
+      health_mod.check()
+
+      cross.exists = real_exists
+      assert.is_true(reported("error", "curl not found in PATH"))
+    end)
+  end)
+
+  describe("API connectivity", function()
+    it("confirms a 200 with a decodable body", function()
+      health_mod.check()
+
+      assert.is_true(reported("ok", "API connectivity confirmed (tested user/alpha)"))
+    end)
+
+    it("rejects a 200 whose body is not JSON", function()
+      curl_responder = function()
+        return true, { status = 200, body = "<html>nope</html>" }
+      end
+
+      health_mod.check()
+
+      assert.is_true(reported("error", "API returned invalid JSON"))
+    end)
+
+    it("rejects a 200 with an empty body", function()
+      curl_responder = function()
+        return true, { status = 200, body = "" }
+      end
+
+      health_mod.check()
+
+      assert.is_true(reported("error", "API returned empty response"))
+    end)
+
+    it("names the well-known failure codes", function()
+      local expected = {
+        [401] = "401 Unauthorized",
+        [403] = "403 Forbidden",
+        [404] = "404 Not Found",
+        [500] = "HTTP 500",
+      }
+
+      for status, needle in pairs(expected) do
+        report = {}
+        curl_responder = function()
+          return true, { status = status, body = "" }
+        end
+
+        health_mod.check()
+
+        assert.is_true(reported("error", needle), "no report for status " .. status)
+      end
+    end)
+
+    it("reports a curl-level failure", function()
+      curl_responder = function()
+        return false, "could not resolve host"
+      end
+
+      health_mod.check()
+
+      assert.is_true(reported("error", "curl failed: could not resolve host"))
+    end)
+
+    it("skips the probe entirely when an earlier check failed", function()
+      token, token_err = nil, "no token"
+      curl_responder = function()
+        error("the API must not be probed without a token")
+      end
+
+      health_mod.check()
+
+      assert.is_true(reported("warn", "Skipping API test due to previous errors"))
+    end)
+  end)
+
+  describe("dashboard section", function()
+    it("reports the refresh interval and trend window", function()
+      health_mod.check()
+
+      assert.is_true(reported("ok", "Dashboard enabled"))
+      assert.is_true(reported("ok", "Auto-refresh: every 300 seconds"))
+      assert.is_true(reported("ok", "Trend window: last 7 day(s) vs the 7 before"))
+    end)
+
+    it("warns when the dashboard section is missing altogether", function()
+      cfg.dashboard = nil
+
+      health_mod.check()
+
+      assert.is_true(reported("warn", "Dashboard configuration not found"))
+    end)
+
+    it("insists that enabled is a boolean", function()
+      cfg.dashboard.enabled = "yes"
+
+      health_mod.check()
+
+      assert.is_true(reported("error", "dashboard.enabled must be boolean"))
+    end)
+
+    it("says so when the dashboard is switched off", function()
+      cfg.dashboard.enabled = false
+
+      health_mod.check()
+
+      assert.is_true(reported("info", "Dashboard disabled by configuration"))
+    end)
+
+    it("treats a refresh interval of 0 as the documented off switch, not an error", function()
+      cfg.dashboard.refresh_interval_seconds = 0
+
+      health_mod.check()
+
+      assert.is_true(reported("info", "Auto-refresh disabled by configuration"))
+      assert.is_false(reported("error", "refresh_interval_seconds"))
+    end)
+
+    it("rejects a refresh interval below 10 that is not 0", function()
+      cfg.dashboard.refresh_interval_seconds = 5
+
+      health_mod.check()
+
+      assert.is_true(reported("error", "must be 0 (disabled) or >= 10"))
+    end)
+
+    it("rejects a non-numeric refresh interval", function()
+      cfg.dashboard.refresh_interval_seconds = "often"
+
+      health_mod.check()
+
+      assert.is_true(reported("error", "dashboard.refresh_interval_seconds must be number"))
+    end)
+
+    it("falls back to the shipped default when the interval is unset", function()
+      cfg.dashboard.refresh_interval_seconds = nil
+      local default = require("github_stats.config.DEFAULTS").dashboard.refresh_interval_seconds
+
+      health_mod.check()
+
+      assert.is_true(reported("ok", string.format("Auto-refresh: every %d seconds", default)))
+    end)
+
+    it("rejects a trend window below one day", function()
+      cfg.dashboard.trend_window_days = 0
+
+      health_mod.check()
+
+      assert.is_true(reported("error", "dashboard.trend_window_days must be a number >= 1"))
+    end)
+
+    it("insists on a keybindings table", function()
+      cfg.dashboard.keybindings = nil
+      health_mod.check()
+      assert.is_true(reported("error", "Dashboard keybindings not configured"))
+
+      report = {}
+      cfg.dashboard.keybindings = "j/k"
+      health_mod.check()
+      assert.is_true(reported("error", "dashboard.keybindings must be table"))
+    end)
+
+    it("names the essential keybindings that are missing", function()
+      cfg.dashboard.keybindings = { navigate_down = "j" }
+
+      health_mod.check()
+
+      assert.is_true(reported("warn", "Missing keybindings: navigate_up, quit"))
+    end)
+
+    it("is happy once all essential keybindings exist", function()
+      health_mod.check()
+
+      assert.is_true(reported("ok", "All essential keybindings configured"))
+    end)
+  end)
+end)

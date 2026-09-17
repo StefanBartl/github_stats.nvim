@@ -125,3 +125,146 @@ describe("storage read memo", function()
     vim.fn.delete(other_dir, "rf")
   end)
 end)
+
+-- The rest of storage.lua: where a record ends up on disk, what the directory
+-- listing reports back, and what each entry point does when there is nothing
+-- to read or nothing to delete.
+describe("storage layout and listing", function()
+  local storage
+  local tmp_dir
+
+  local function record(date)
+    return { clones = { { timestamp = date .. "T00:00:00Z", count = 1, uniques = 1 } } }
+  end
+
+  before_each(function()
+    for _, name in ipairs({ "github_stats.config", "github_stats.storage", "github_stats.analytics" }) do
+      package.loaded[name] = nil
+    end
+
+    tmp_dir = vim.fn.tempname()
+    vim.fn.delete(tmp_dir, "rf")
+    require("github_stats.config").init({ config_dir = tmp_dir, repos = { "user/a" } })
+    storage = require("github_stats.storage")
+  end)
+
+  after_each(function()
+    vim.fn.delete(tmp_dir, "rf")
+  end)
+
+  describe("get_metric_dir", function()
+    it("puts a repo's metric directly under the storage root, not one level deeper", function()
+      local root = require("github_stats.config").get_storage_root()
+
+      assert.equals(vim.fs.joinpath(root, "user_a", "clones"), storage.get_metric_dir("user/a", "clones"))
+    end)
+
+    it("replaces the owner/repo separator so the name is one path segment", function()
+      assert.is_truthy(storage.get_metric_dir("Owner-X/repo.name", "views"):find("Owner%-X_repo%.name"))
+    end)
+  end)
+
+  describe("write_metric", function()
+    it("creates the directory tree and wraps the payload with a fetch timestamp", function()
+      local ok, err = storage.write_metric("user/a", "clones", record("2026-01-01"))
+
+      assert.is_true(ok, tostring(err))
+      assert.equals(1, vim.fn.isdirectory(storage.get_metric_dir("user/a", "clones")))
+
+      local stored = storage.read_metric_history("user/a", "clones")[1]
+      assert.is_truthy(stored.timestamp:match("^%d%d%d%d%-%d%d%-%d%dT%d%d:%d%d:%d%dZ$"))
+      assert.equals("2026-01-01T00:00:00Z", stored.data.clones[1].timestamp)
+    end)
+
+    it("names the file after the fetch date, so retention can read it from the listing alone", function()
+      storage.write_metric("user/a", "clones", record("2026-01-01"))
+
+      local files = storage.list_metric_files("user/a", "clones")
+      assert.equals(1, #files)
+      assert.is_truthy(files[1].name:match("^%d%d%d%d%-%d%d%-%d%dT%d%d%-%d%d%-%d%d%.json$"))
+      assert.equals(os.date("!%Y-%m-%d"), files[1].date)
+      assert.is_true(files[1].size > 0)
+    end)
+  end)
+
+  describe("read_metric_history", function()
+    it("returns an empty list for a directory that does not exist", function()
+      local history, err = storage.read_metric_history("user/never-fetched", "clones")
+
+      assert.same({}, history)
+      assert.is_nil(err)
+    end)
+
+    it("sorts records oldest first, whatever order the directory lists them in", function()
+      local dir = storage.get_metric_dir("user/a", "clones")
+      vim.fn.mkdir(dir, "p")
+      local json = require("lib.nvim.fs.json")
+      json.write(dir .. "/2026-03-05T09-00-00.json", { timestamp = "2026-03-05T09:00:00Z", data = record("2026-03-05") })
+      json.write(dir .. "/2026-03-01T09-00-00.json", { timestamp = "2026-03-01T09:00:00Z", data = record("2026-03-01") })
+      storage.invalidate()
+
+      local history = storage.read_metric_history("user/a", "clones")
+
+      assert.equals(2, #history)
+      assert.equals("2026-03-01T09:00:00Z", history[1].timestamp)
+      assert.equals("2026-03-05T09:00:00Z", history[2].timestamp)
+    end)
+
+    it("ignores files that are not .json and undecodable ones", function()
+      local dir = storage.get_metric_dir("user/a", "clones")
+      vim.fn.mkdir(dir, "p")
+      require("lib.nvim.fs.json").write(
+        dir .. "/2026-03-01T09-00-00.json",
+        { timestamp = "2026-03-01T09:00:00Z", data = record("2026-03-01") }
+      )
+      vim.fn.writefile({ "not json at all" }, dir .. "/2026-03-02T09-00-00.json")
+      vim.fn.writefile({ "ignored" }, dir .. "/README.txt")
+      storage.invalidate()
+
+      assert.equals(1, #storage.read_metric_history("user/a", "clones"))
+    end)
+  end)
+
+  describe("list_metric_files", function()
+    it("returns an empty list for a directory that does not exist", function()
+      local files, err = storage.list_metric_files("user/never-fetched", "clones")
+
+      assert.same({}, files)
+      assert.is_nil(err)
+    end)
+
+    it("lists only timestamp-named JSON files", function()
+      local dir = storage.get_metric_dir("user/a", "clones")
+      vim.fn.mkdir(dir, "p")
+      vim.fn.writefile({ "{}" }, dir .. "/2026-03-01T09-00-00.json")
+      vim.fn.writefile({ "{}" }, dir .. "/archive.json")
+      vim.fn.writefile({ "{}" }, dir .. "/notes.txt")
+
+      local files = storage.list_metric_files("user/a", "clones")
+
+      assert.equals(1, #files)
+      assert.equals("2026-03-01T09-00-00.json", files[1].name)
+      assert.equals("2026-03-01", files[1].date)
+    end)
+  end)
+
+  describe("delete_metric_file", function()
+    it("removes the file and reports success", function()
+      storage.write_metric("user/a", "clones", record("2026-01-01"))
+      local path = storage.list_metric_files("user/a", "clones")[1].path
+
+      local ok, err = storage.delete_metric_file(path)
+
+      assert.is_true(ok)
+      assert.is_nil(err)
+      assert.equals(0, vim.fn.filereadable(path))
+    end)
+
+    it("reports a failure instead of raising", function()
+      local ok, err = storage.delete_metric_file(tmp_dir .. "/no/such/file.json")
+
+      assert.is_false(ok)
+      assert.is_string(err)
+    end)
+  end)
+end)
