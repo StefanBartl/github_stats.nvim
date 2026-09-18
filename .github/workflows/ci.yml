@@ -38,7 +38,19 @@ jobs:
       - run: luacheck .
 
   tests:
-    runs-on: ubuntu-latest
+    name: tests (${{ matrix.os }})
+    runs-on: ${{{{ matrix.os }}}}
+    strategy:
+      # One platform failing must not cancel the others: which of the three
+      # broke is the whole information content of this job.
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    defaults:
+      run:
+        # Windows runners default to PowerShell; one shell on all three keeps
+        # the run step itself from being what differs between platforms.
+        shell: bash
     steps:
       - uses: actions/checkout@v5
       # lib.nvim is a runtime dependency (notify, fs.json, map, window,
