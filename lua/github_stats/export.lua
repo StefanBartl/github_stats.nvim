@@ -105,7 +105,11 @@ function M.create_pdf(lines, filepath, callback)
   end
 
   local resolved = expand(filepath)
-  ensure_parent_dir(resolved)
+  local dir_ok, dir_err = ensure_parent_dir(resolved)
+  if not dir_ok then
+    callback(false, dir_err)
+    return
+  end
 
   pdfport.create({
     text = tbl_concat(lines, "\n") .. "\n",

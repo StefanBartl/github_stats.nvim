@@ -414,5 +414,44 @@ describe("export writers", function()
       assert.is_false(ok)
       assert.is_truthy(err:find("Failed to write file", 1, true))
     end)
+
+    -- Regression: create_pdf() (shared by every *_pdf export) called
+    -- ensure_parent_dir() but discarded its (ok, err) return, so the same
+    -- uncreatable-parent-directory case write_lines() reports cleanly above
+    -- instead reached pdfport.create() against a directory that was never
+    -- created, surfacing whatever error pdfport happened to produce instead
+    -- of this module's own "Failed to create directory" message.
+    it("reports a parent directory it cannot create instead of asking pdfport to write into it", function()
+      local prev = package.loaded["pdfport"]
+      local create_called = false
+      package.loaded["pdfport"] = {
+        can_create = function(kind)
+          return kind == "markdown"
+        end,
+        create = function(_opts)
+          create_called = true
+        end,
+      }
+
+      local blocker = tmp_dir .. "/blocker"
+      vim.fn.writefile({ "i am a file" }, blocker)
+
+      local result_ok, result_err
+      export.export_markdown_pdf(
+        "test/repo",
+        "clones",
+        stats({ ["2025-01-01"] = { count = 1, uniques = 1 } }),
+        blocker .. "/nested.pdf",
+        function(ok, err)
+          result_ok, result_err = ok, err
+        end
+      )
+
+      package.loaded["pdfport"] = prev
+
+      assert.is_false(create_called, "pdfport.create() must not run against an uncreatable directory")
+      assert.is_false(result_ok)
+      assert.is_truthy(result_err:find("Failed to create directory", 1, true))
+    end)
   end)
 end)
