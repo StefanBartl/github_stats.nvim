@@ -47,8 +47,11 @@ module under test is required:
   (`dashboard_actions_spec.lua`, `dashboard_lifecycle_spec.lua`,
   `bindings_spec.lua`).
 
-The only subprocess any spec starts is `curl --version`, from `health.lua`'s
-dependency check — a local version probe, not a request.
+The only subprocesses any spec starts are local, not requests: `curl
+--version` from `health.lua`'s dependency check, and `git remote get-url
+origin` from `statusline.lua`'s directory→slug resolution (`statusline_spec.lua`
+runs it for real, against this checkout's own origin, skipping the case
+outright wherever that isn't a `github.com` remote).
 
 `health_spec.lua` additionally replaces `github_stats.config` wholesale,
 because the real `check_config()` calls `config.init()` with no arguments,
@@ -75,6 +78,7 @@ which resolves to the *user's own* `stdpath("config")` directory.
 | `fetcher_spec.lua` | `fetcher`: per-repo fan-out, the fetch-interval gate and `last_fetch.json`, the success/error summary, and which notifications a background cycle suppresses |
 | `health_spec.lua` | `health`: every branch of the `:checkhealth` report, read back through a stubbed `vim.health` |
 | `retention_spec.lua` | `retention`: compact/prune/`run_all`, plus the 24h `maybe_run_all` rate limit and `format_bytes` |
+| `statusline_spec.lua` | `statusline`: directory→slug resolution via `git remote` (cached, including the negative "not a repo" answer), the views-this-week TTL cache (hit and cold-after-`invalidate()`), every "renders empty" branch, and the `lualine_component` alias |
 | `storage_spec.lua` | `storage`: the read memo and its invalidation, the on-disk layout, the directory listing, deletion |
 | `ui_state_spec.lua` | `state/ui_state`: setters against real buffers/windows, validity, teardown |
 | `usrcmds_spec.lua` | every `bindings/usrcmds/*` subcommand's `execute()`/`complete()`, plus the composer verb (`:GithubStats` registration, subcommand completion, argument routing, the bang) |
@@ -106,8 +110,8 @@ which resolves to the *user's own* `stdpath("config")` directory.
 
 ## Bugs this suite found, now fixed
 
-Three defects came out of writing this suite; all are fixed, and the
-assertions stayed on as regression guards:
+Four defects came out of writing and re-auditing this suite; all are fixed,
+and the assertions stayed on as regression guards:
 
 - `bindings_spec.lua` — `usrcmds.utils.split_lines()` appended a trailing
   empty line to every result (its `([^\n]*)\n?` pattern matched once more at
@@ -128,6 +132,16 @@ assertions stayed on as regression guards:
   `nvim_buf_delete()` from another plugin's cleanup does, unlike `:q`,
   `:bwipeout` or `:bdelete`, all of which were and are quiet. The handler now
   calls `ui_state.forget_buffer()` first, so the redundant delete is skipped.
+- `fetcher.lua`'s `get_last_fetch_file()` and `retention.lua`'s
+  `get_last_run_path()` both built their tracking-file path as
+  `config.get_storage_root() .. "/../<name>.json"` — a literal `..` handed to
+  `lib.nvim.fs.json`'s mkdir/write/rename calls to reach the directory one
+  level above `data/`, instead of naming that directory directly via
+  `config.get_config_dir()`. Resolving the traversal correctly depends on
+  every layer between there and the syscall agreeing, which held on one
+  machine and not on at least one CI runner, where the file the write had
+  just produced came back unreadable to the very next call. Both now call
+  `get_config_dir()` directly; no traversal is left to resolve inconsistently.
 
 Related, and noted rather than pinned: the `M.complete()` functions in
 `bindings/usrcmds/*.lua` have no caller left — `:GithubStats <sub>` completes
@@ -135,3 +149,41 @@ through composer's registered `GH_REPO`/`GH_DATE_OR_PRESET`/`GH_PERIOD` types
 instead — and their slot arithmetic still counts from the pre-composer flat
 `:GithubStatsShow ...` command line. `usrcmds_spec.lua` exercises them in that
 legacy shape, since they remain reachable as public API.
+
+## A bug this suite found, pinned rather than fixed
+
+- `dashboard_render_spec.lua`'s `"BUG: a multibyte dashboard.time_range
+  breaks the header's fixed display width"` — `dashboard/render.lua`'s
+  `fit_width()` pads and truncates the header's status line by *byte*
+  length (`#str`), not display width (`vim.fn.strdisplaywidth`). That is
+  invisible for the fixed 7d/30d/90d/max cycle and for anything
+  `analytics.parse_time_range` accepts through the interactive prompt (all
+  ASCII by construction), but `dashboard.time_range` is not actually
+  restricted to those: `dashboard/state.lua`'s `init_state()` takes
+  whatever string a config sets with no format check at all, so a
+  multi-byte value (a custom preset name, say) throws the byte-vs-column
+  arithmetic off and the status line comes out a different display width
+  than the rest of the header box, silently. Fixing `fit_width()` properly
+  needs display-width-aware truncation and padding (tracking column width
+  per character, including double-width ones) rather than a one-line
+  change, so this is pinned against the current (buggy) behaviour instead
+  of fixed in place — a real fix is a deliberate, visible change to make on
+  its own.
+
+## A test-suite-only bug fixed along the way
+
+- `retention_spec.lua`'s own `today_midnight()` helper read UTC calendar
+  fields with `os.date("!*t")`, then fed that table straight into
+  `os.time(parts)` — and `os.time(table)` always interprets its argument as
+  *local* time, so this silently re-added the local UTC offset on top of
+  values that were already UTC. That is a no-op for most of the day,
+  but for any local zone ahead of UTC it walks the
+  result back across midnight for the first few hours of the UTC day,
+  computing "today" as UTC-yesterday and shifting every fixture date in the
+  file by one day. It surfaced as `compact_metric`'s cutoff test flipping
+  between 11 and 12 deleted files depending on what time of day the suite
+  happened to run — reproducible, not flaky, for whoever ran it inside that
+  window. `today_midnight()` now uses `os.time()` directly (no argument),
+  the same value `retention.lua`'s own `cutoff_date()` already builds on,
+  with no local-time reinterpretation to introduce the offset in the first
+  place.

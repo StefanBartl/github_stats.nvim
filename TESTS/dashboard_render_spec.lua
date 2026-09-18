@@ -184,6 +184,27 @@ describe("dashboard render", function()
       assert.is_truthy(with:find("2026-01-02 -> 2026-01-10", 1, true))
       assert.is_truthy(with:find("9d", 1, true))
     end)
+
+    it("BUG: a multibyte dashboard.time_range breaks the header's fixed display width", function()
+      -- render.lua's fit_width() pads and truncates by *byte* length
+      -- (`#str`), not display width (`vim.fn.strdisplaywidth`) -- unlike
+      -- the ASCII-only case asserted just above ("draws every header line
+      -- to the same display width"). `dashboard.time_range` reaches the
+      -- status line unsanitized: dashboard/state.lua's init_state() takes
+      -- whatever `dashboard.time_range` a config sets with no format check
+      -- at all (only prompt_custom_time_range's *interactive* path runs it
+      -- through analytics.parse_time_range first). A multi-byte value
+      -- throws the byte-vs-column arithmetic off -- each such character
+      -- counts for more bytes than display columns -- so the line comes
+      -- out shorter on screen than its neighbours instead of matching the
+      -- box border, silently, with no error anywhere.
+      local lines = render_lines({ "user/a" }, { time_range = string.rep("日", 10) })
+
+      local border_width = vim.fn.strdisplaywidth(lines[1])
+      local status_width = vim.fn.strdisplaywidth(lines[4])
+
+      assert.are_not.equal(border_width, status_width)
+    end)
   end)
 
   describe("trend", function()
@@ -438,6 +459,60 @@ describe("dashboard render", function()
       seed_trend("user/down", 5, 20)
       dashboard.schedule_render(true)
       assert.is_true(groups_on(dashboard_state.get_repo_line(1) - 1).GithubStatsTrendDown)
+    end)
+
+    it("colours a flat trend differently from up and down", function()
+      render_lines({ "user/flat" }, { time_range = "max" })
+      seed_trend("user/flat", 10, 10)
+      dashboard.schedule_render(true)
+
+      local groups = groups_on(dashboard_state.get_repo_line(1) - 1)
+      assert.is_true(groups.GithubStatsTrendFlat)
+      assert.is_falsy(groups.GithubStatsTrendUp)
+      assert.is_falsy(groups.GithubStatsTrendDown)
+    end)
+
+    it("splits label from value on the Clones and Views lines", function()
+      render_lines({ "user/a" })
+
+      -- highlight_entry's offset loop: the entry's 1-based title-line number
+      -- is the Clones line's 0-based one, and Views is the line right below.
+      local clones_line = dashboard_state.get_repo_line(1)
+      local views_line = clones_line + 1
+
+      assert.is_true(groups_on(clones_line).GithubStatsLabel)
+      assert.is_true(groups_on(clones_line).GithubStatsValue)
+      assert.is_true(groups_on(views_line).GithubStatsLabel)
+      assert.is_true(groups_on(views_line).GithubStatsValue)
+    end)
+
+    it("highlights the sparkline tail on the Period line and dims the label", function()
+      render_lines({ "user/a" }, { time_range = "max" })
+      seed_trend("user/a", 10, 5)
+      dashboard.schedule_render(true)
+
+      local period_line = dashboard_state.get_repo_line(1) + 2
+      local groups = groups_on(period_line)
+
+      assert.is_true(groups.GithubStatsLabel)
+      assert.is_true(groups.GithubStatsSparkline)
+    end)
+
+    it("leaves the Period line dimmed with no sparkline group when there is no data", function()
+      render_lines({ "user/a" })
+
+      local period_line = dashboard_state.get_repo_line(1) + 2
+      local groups = groups_on(period_line)
+
+      assert.is_true(groups.GithubStatsLabel)
+      assert.is_falsy(groups.GithubStatsSparkline)
+    end)
+
+    it("marks the separator line below each entry", function()
+      render_lines({ "user/a", "user/b" })
+
+      local separator_line = dashboard_state.get_repo_line(1) + 3
+      assert.is_true(groups_on(separator_line).GithubStatsSeparator)
     end)
 
     it("does not leave marks behind across re-renders", function()

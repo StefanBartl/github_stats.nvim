@@ -114,6 +114,39 @@ describe("github_stats.statusline", function()
     assert.is_true(text:find("42 views this week", 1, true) ~= nil, text)
   end)
 
+  it("keeps serving the cached count for the TTL window instead of re-querying", function()
+    -- The whole point of `count_cache` (keyed by slug, 60s TTL): a
+    -- statusline redraws many times a second, and `views_this_week` must
+    -- not turn that into a query per redraw. Nothing here exercised the
+    -- cache-hit branch before -- `before_each`/`after_each` both call
+    -- `invalidate()`, so every other case only ever sees a cold cache.
+    local out = vim.fn.systemlist({ "git", "-C", vim.fn.getcwd(), "remote", "get-url", "origin" })
+    local owner, repo = (out[1] or ""):match("github%.com[:/]([^/]+)/(.+)$")
+    if not owner then
+      -- No GitHub remote in this environment; the case cannot be staged.
+      return
+    end
+
+    config.set_discovered_repos({ owner .. "/" .. repo:gsub("%.git$", "") })
+    local buf = buf_in(vim.fn.getcwd())
+
+    stub_query(42)
+    local first = statusline.status(buf)
+    assert.is_true(first:find("42 views this week", 1, true) ~= nil, first)
+
+    -- Same slug, same TTL window: a changed answer must not show up yet.
+    stub_query(999)
+    local second = statusline.status(buf)
+    assert.is_true(second:find("42 views this week", 1, true) ~= nil, second)
+
+    -- invalidate() clears it, so the fresh stub answer becomes visible.
+    statusline.invalidate()
+    local third = statusline.status(buf)
+    assert.is_true(third:find("999 views this week", 1, true) ~= nil, third)
+
+    config.set_discovered_repos({})
+  end)
+
   it("renders empty when the query reports no data", function()
     stub_query(nil)
     assert.equals("", statusline.status(buf_in(vim.fn.getcwd())))

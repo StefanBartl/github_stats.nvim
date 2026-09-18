@@ -6,9 +6,19 @@ describe("retention", function()
   local DAY_SECONDS = 86400
 
   local function today_midnight()
-    local parts = os.date("!*t")
-    ---@cast parts osdate
-    local now = os.time(parts)
+    -- `os.time()` alone, not `os.time(os.date("!*t"))`: the latter reads
+    -- back *UTC* calendar fields but `os.time(table)` interprets whatever
+    -- table it is given as *local* time, so it silently re-adds the local
+    -- UTC offset on top of a value that was already UTC. That is a no-op
+    -- most of the day, but for any local zone ahead of UTC (this machine
+    -- included) it walks the result back across midnight for the first
+    -- few hours of the UTC day, computing "today" as UTC-yesterday and
+    -- shifting every fixture date here by one day -- which is exactly what
+    -- made `compact_metric`'s cutoff test flip between 11 and 12 deleted
+    -- files depending on what time of day the suite happened to run.
+    -- `os.time()` with no argument already returns the current UTC epoch
+    -- directly, the same value `retention.lua`'s own `cutoff_date()` uses.
+    local now = os.time()
     return now - (now % DAY_SECONDS)
   end
 
