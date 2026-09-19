@@ -172,9 +172,18 @@ function M.read_metric_history(repo, metric)
     end
   end
 
-  -- Sort by timestamp (oldest first)
+  -- Sort by timestamp (oldest first). A record that decoded as *some* table
+  -- is still untrusted (SEC-33): a hand edit or truncated write can produce
+  -- one with a missing or non-string `timestamp`, and comparing that against
+  -- a real ISO string raises "attempt to compare ... with string" -- taking
+  -- every other, well-formed record in the directory down with it. Treat a
+  -- non-string timestamp as sorting first rather than crashing; analytics'
+  -- own record-level validation drops it from aggregation regardless of
+  -- where it lands here.
   table.sort(results, function(a, b)
-    return a.timestamp < b.timestamp
+    local a_ts = type(a.timestamp) == "string" and a.timestamp or ""
+    local b_ts = type(b.timestamp) == "string" and b.timestamp or ""
+    return a_ts < b_ts
   end)
 
   if #unreadable > 0 then

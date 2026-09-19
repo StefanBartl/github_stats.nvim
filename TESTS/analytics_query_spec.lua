@@ -233,6 +233,88 @@ describe("analytics queries", function()
     end)
   end)
 
+  -- SEC-33: storage.read_metric_history only checks `type(parsed) == "table"`
+  -- before trusting a decoded file, so a stored record reaching analytics is
+  -- untrusted input -- a hand edit, a JSON `null` decoded as a sentinel, a
+  -- truncated write must be skipped, not crash the whole query with an
+  -- uncaught Lua error.
+  describe("query_metric with a malformed stored record", function()
+    ---Write a stored file verbatim, bypassing write_fetch/clones_payload so
+    ---the shape can be deliberately wrong.
+    ---@param repo string
+    ---@param metric string
+    ---@param name string filename (without directory)
+    ---@param contents table
+    local function write_raw(repo, metric, name, contents)
+      local dir = storage.get_metric_dir(repo, metric)
+      vim.fn.mkdir(dir, "p")
+      local ok, err = require("lib.nvim.fs.json").write(dir .. "/" .. name, contents)
+      assert.is_true(ok, tostring(err))
+      storage.invalidate()
+    end
+
+    it("skips a record with no data field instead of erroring", function()
+      write_raw(REPO, "clones", "2026-03-01T09-00-00.json", { timestamp = "2026-03-01T09:00:00Z" })
+      write_fetch(REPO, "clones", "2026-03-02T09:00:00Z", clones_payload({ { "2026-03-02", 5, 2 } }))
+
+      local stats, err = analytics.query_metric({ repo = REPO, metric = "clones", time_range = "all" })
+
+      assert.is_nil(err)
+      assert.equals(5, stats.total_count)
+    end)
+
+    it("skips a record whose data field is the wrong type", function()
+      write_raw(REPO, "clones", "2026-03-01T09-00-00.json", { timestamp = "2026-03-01T09:00:00Z", data = "not a table" })
+      write_fetch(REPO, "clones", "2026-03-02T09:00:00Z", clones_payload({ { "2026-03-02", 5, 2 } }))
+
+      local stats, err = analytics.query_metric({ repo = REPO, metric = "clones", time_range = "all" })
+
+      assert.is_nil(err)
+      assert.equals(5, stats.total_count)
+    end)
+
+    it("skips individual items that are not tables, keeping the rest", function()
+      write_raw(REPO, "clones", "2026-03-01T09-00-00.json", {
+        timestamp = "2026-03-01T09:00:00Z",
+        data = { clones = { "not an item", { timestamp = "2026-03-01T00:00:00Z", count = 3, uniques = 1 } } },
+      })
+
+      local stats, err = analytics.query_metric({ repo = REPO, metric = "clones", time_range = "all" })
+
+      assert.is_nil(err)
+      assert.equals(3, stats.total_count)
+    end)
+
+    it("skips an item whose timestamp is missing or not a string", function()
+      write_raw(REPO, "clones", "2026-03-01T09-00-00.json", {
+        timestamp = "2026-03-01T09:00:00Z",
+        data = {
+          clones = {
+            { count = 99, uniques = 99 }, -- no timestamp
+            { timestamp = "2026-03-01T00:00:00Z", count = 3, uniques = 1 },
+          },
+        },
+      })
+
+      local stats, err = analytics.query_metric({ repo = REPO, metric = "clones", time_range = "all" })
+
+      assert.is_nil(err)
+      assert.equals(3, stats.total_count)
+    end)
+
+    it("skips a record whose own timestamp is missing or not a string", function()
+      write_raw(REPO, "clones", "2026-03-01T09-00-00.json", {
+        data = { clones = { { timestamp = "2026-03-01T00:00:00Z", count = 99, uniques = 99 } } },
+      })
+      write_fetch(REPO, "clones", "2026-03-02T09:00:00Z", clones_payload({ { "2026-03-02", 5, 2 } }))
+
+      local stats, err = analytics.query_metric({ repo = REPO, metric = "clones", time_range = "all" })
+
+      assert.is_nil(err)
+      assert.equals(5, stats.total_count)
+    end)
+  end)
+
   describe("query_all_repos", function()
     it("returns one entry per configured repository", function()
       write_fetch(REPO, "clones", "2026-03-05T09:00:00Z", clones_payload({ { "2026-03-01", 4, 2 } }))

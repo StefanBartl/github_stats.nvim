@@ -9,6 +9,12 @@ local storage = require("github_stats.storage")
 
 local M = {}
 
+-- GitHub's traffic API reports at most a rolling 14-day window per fetch;
+-- this is a defensive bound on a single stored record's item array, not a
+-- realistic expectation, so a corrupted or hand-edited file with a huge
+-- array cannot make every render aggregate it in full (SEC-33).
+local MAX_ITEMS_PER_RECORD = 1000
+
 ---@internal
 ---Parse ISO date string to timestamp
 ---@param date_str string ISO date (YYYY-MM-DD)
@@ -66,23 +72,35 @@ local function deduplicate_by_date(history)
   ---@type table<string, {timestamp: string, count: integer, uniques: integer}>
   local by_date = {}
 
-  -- Group by date, keeping track of fetch timestamp
+  -- Group by date, keeping track of fetch timestamp. `history` comes from
+  -- storage.read_metric_history, which only checks `type(parsed) == "table"`
+  -- before trusting a decoded file -- a persisted snapshot is untrusted
+  -- input (SEC-33): every field accessed below is re-validated by type
+  -- rather than assumed, so a malformed record (a hand edit, a JSON `null`
+  -- lib.nvim's decoder turns into a sentinel rather than Lua nil, a
+  -- truncated write) is skipped instead of raising an uncaught error that
+  -- would take the whole aggregation down with it.
   for _, record in ipairs(history) do
-    local data = record.data
+    if type(record) == "table" and type(record.timestamp) == "string" then
+      local data = record.data
 
-    -- Process clones/views format
-    local items = data.clones or data.views
-    if items then
-      for _, item in ipairs(items) do
-        local date = extract_date(item.timestamp)
+      -- Process clones/views format
+      local items = type(data) == "table" and (data.clones or data.views) or nil
+      if type(items) == "table" then
+        for i = 1, math.min(#items, MAX_ITEMS_PER_RECORD) do
+          local item = items[i]
+          if type(item) == "table" and type(item.timestamp) == "string" then
+            local date = extract_date(item.timestamp)
 
-        -- Keep only latest fetch for this date
-        if not by_date[date] or record.timestamp > by_date[date].timestamp then
-          by_date[date] = {
-            timestamp = record.timestamp,
-            count = item.count or 0,
-            uniques = item.uniques or 0,
-          }
+            -- Keep only latest fetch for this date
+            if not by_date[date] or record.timestamp > by_date[date].timestamp then
+              by_date[date] = {
+                timestamp = record.timestamp,
+                count = tonumber(item.count) or 0,
+                uniques = tonumber(item.uniques) or 0,
+              }
+            end
+          end
         end
       end
     end
