@@ -169,6 +169,13 @@ describe("storage layout and listing", function()
     -- control characters, a leading "~" and drive-letter prefixes all went
     -- straight through. The fix whitelists instead of blacklisting.
     --
+    -- The whitelist itself then collapsed every disallowed byte onto
+    -- the same "_" replacement, which is many-to-one -- two different
+    -- disallowed characters produced the same output, so two distinct,
+    -- individually valid repo names could sanitize to the same directory.
+    -- Disallowed bytes are now percent-encoded (their own hex value) instead,
+    -- which is injective.
+    --
     -- Expected names are computed by hand (not by re-deriving the same
     -- gsub the implementation uses) so these pin the sanitizer's actual
     -- output, and each result is checked against vim.fs.joinpath(root, ...,
@@ -184,7 +191,7 @@ describe("storage layout and listing", function()
 
       it("neutralizes a backslash so it cannot act as a path separator on Windows", function()
         local dir = storage.get_metric_dir("owner\\..\\..\\x", "clones")
-        assert.equals(vim.fs.joinpath(root, "owner_.._.._x", "clones"), dir)
+        assert.equals(vim.fs.joinpath(root, "owner%5C..%5C..%5Cx", "clones"), dir)
       end)
 
       it("neutralizes a bare '..' repo name instead of escaping the storage root", function()
@@ -193,18 +200,44 @@ describe("storage layout and listing", function()
       end)
 
       it("neutralizes a leading '~' and a drive-letter prefix", function()
-        assert.equals(vim.fs.joinpath(root, "_root_x", "clones"), storage.get_metric_dir("~root/x", "clones"))
-        assert.equals(vim.fs.joinpath(root, "C_evil_x", "clones"), storage.get_metric_dir("C:evil/x", "clones"))
+        assert.equals(vim.fs.joinpath(root, "%7Eroot_x", "clones"), storage.get_metric_dir("~root/x", "clones"))
+        assert.equals(vim.fs.joinpath(root, "C%3Aevil_x", "clones"), storage.get_metric_dir("C:evil/x", "clones"))
       end)
 
       it("neutralizes control characters", function()
         local dir = storage.get_metric_dir("owner/repo\0\27[x", "clones")
-        assert.equals(vim.fs.joinpath(root, "owner_repo___x", "clones"), dir)
+        assert.equals(vim.fs.joinpath(root, "owner_repo%00%1B%5Bx", "clones"), dir)
       end)
 
       it("still keeps the plain owner/repo case as one readable segment", function()
         local dir = storage.get_metric_dir("StefanBartl/github_stats.nvim", "clones")
         assert.equals(vim.fs.joinpath(root, "StefanBartl_github_stats.nvim", "clones"), dir)
+      end)
+
+      -- Regression: both pass health.lua's "^[^/]+/[^/]+$" format check,
+      -- and under the pre-fix whitelist (every disallowed byte -> the
+      -- same "_") both sanitized to the identical "acme_proj-a_test"
+      -- directory, silently commingling one repo's stored history with the
+      -- other's.
+      it("does not collapse two distinct repo names that differ only in which disallowed byte they carry", function()
+        local dir_a = storage.get_metric_dir("acme/proj-a:test", "clones")
+        local dir_b = storage.get_metric_dir("acme/proj-a_test", "clones")
+
+        assert.are_not.equal(dir_a, dir_b)
+        assert.equals(vim.fs.joinpath(root, "acme_proj-a%3Atest", "clones"), dir_a)
+        assert.equals(vim.fs.joinpath(root, "acme_proj-a_test", "clones"), dir_b)
+      end)
+
+      -- A literal "%" in the repo name must itself be encoded ("%25"), so it
+      -- can never be read back as the start of another byte's escape triplet
+      -- -- otherwise a name containing literal "%3A" text would collide with
+      -- a name containing an actual ":" character.
+      it("encodes a literal '%' so it cannot be mistaken for an escape sequence", function()
+        local dir_percent = storage.get_metric_dir("acme/proj-a%3Atest", "clones")
+        local dir_colon = storage.get_metric_dir("acme/proj-a:test", "clones")
+
+        assert.are_not.equal(dir_percent, dir_colon)
+        assert.equals(vim.fs.joinpath(root, "acme_proj-a%253Atest", "clones"), dir_percent)
       end)
     end)
   end)
