@@ -162,6 +162,51 @@ describe("storage layout and listing", function()
     it("replaces the owner/repo separator so the name is one path segment", function()
       assert.is_truthy(storage.get_metric_dir("Owner-X/repo.name", "views"):find("Owner%-X_repo%.name"))
     end)
+
+    -- SEC-42: `repo` is user-controlled config (or remote-controlled via
+    -- watch_users' GitHub full_name), and the previous sanitizer was a
+    -- one-character blacklist (just "/") -- backslashes, ".." segments,
+    -- control characters, a leading "~" and drive-letter prefixes all went
+    -- straight through. The fix whitelists instead of blacklisting.
+    --
+    -- Expected names are computed by hand (not by re-deriving the same
+    -- gsub the implementation uses) so these pin the sanitizer's actual
+    -- output, and each result is checked against vim.fs.joinpath(root, ...,
+    -- metric) directly -- exactly two segments below root -- rather than by
+    -- looking for ".." as a substring, which would misfire on a sanitized
+    -- name that legitimately contains literal dots.
+    describe("sanitizes a hostile repo name", function()
+      local root
+
+      before_each(function()
+        root = require("github_stats.config").get_storage_root()
+      end)
+
+      it("neutralizes a backslash so it cannot act as a path separator on Windows", function()
+        local dir = storage.get_metric_dir("owner\\..\\..\\x", "clones")
+        assert.equals(vim.fs.joinpath(root, "owner_.._.._x", "clones"), dir)
+      end)
+
+      it("neutralizes a bare '..' repo name instead of escaping the storage root", function()
+        local dir = storage.get_metric_dir("..", "clones")
+        assert.equals(vim.fs.joinpath(root, "_", "clones"), dir)
+      end)
+
+      it("neutralizes a leading '~' and a drive-letter prefix", function()
+        assert.equals(vim.fs.joinpath(root, "_root_x", "clones"), storage.get_metric_dir("~root/x", "clones"))
+        assert.equals(vim.fs.joinpath(root, "C_evil_x", "clones"), storage.get_metric_dir("C:evil/x", "clones"))
+      end)
+
+      it("neutralizes control characters", function()
+        local dir = storage.get_metric_dir("owner/repo\0\27[x", "clones")
+        assert.equals(vim.fs.joinpath(root, "owner_repo___x", "clones"), dir)
+      end)
+
+      it("still keeps the plain owner/repo case as one readable segment", function()
+        local dir = storage.get_metric_dir("StefanBartl/github_stats.nvim", "clones")
+        assert.equals(vim.fs.joinpath(root, "StefanBartl_github_stats.nvim", "clones"), dir)
+      end)
+    end)
   end)
 
   describe("write_metric", function()
