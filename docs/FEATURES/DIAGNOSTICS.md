@@ -9,7 +9,9 @@ one of `repos`/`watch_users` set), token presence/source, background-cycle
 status, `curl` availability (cross-platform, via
 `lib.nvim.cross.executable`), storage directory writability, dashboard
 config shape, and a synchronous live API connectivity test (10s timeout,
-distinguishing 401/403/404 from a generic failure).
+distinguishing 401/403/404 from a generic failure). It reads back the
+configuration `setup()` already loaded rather than re-initializing it, so it
+reports "Configuration not loaded" if run before `setup()` has ever run.
 
 `:GithubStats debug` covers overlapping ground non-interactively: repo
 counts (explicit vs. discovered), token source/length,
