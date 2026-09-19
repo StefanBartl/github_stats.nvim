@@ -16,11 +16,28 @@ local str_format = string.format
 
 ---@internal
 ---Sanitize repository name for filesystem
+---@description
+--- `repo` is user-controlled (the `repos` list in config.json/setup()) and
+--- partly remote-controlled (`full_name` from the GitHub API via
+--- `watch_users`). "/" is flattened to "_" first, preserving the
+--- "owner_repo" directory naming every existing store already uses; what is
+--- left is then whitelisted to a safe charset rather than blacklisted
+--- (SEC-42) -- a blacklist of just "/" let backslashes, control characters,
+--- a leading "~" or a drive-letter prefix straight through, and on Windows a
+--- backslash is as much a path separator as "/" is. Once every separator is
+--- gone the result is a single flat path component, so an embedded ".." is
+--- inert -- except when the *whole* sanitized name collapses to "." or
+--- ".." (e.g. repo == ".."), which is guarded separately.
 ---@param repo string Repository in "owner/repo" format
 ---@return string # Sanitized name (owner_repo)
 local function sanitize_repo_name(repo)
-  local s, _ = repo:gsub("/", "_")
-  return s
+  local safe = repo:gsub("/", "_"):gsub("[^%w%-%._]", "_")
+
+  if safe == "" or safe == "." or safe == ".." then
+    safe = "_"
+  end
+
+  return safe
 end
 
 ---@internal
