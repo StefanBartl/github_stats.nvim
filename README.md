@@ -39,9 +39,12 @@ Neovim.
 > view count for the current repository in the statusline, so the number is
 > there without opening the dashboard.
 >
-> All of the above are soft: without them everything else works unchanged.
-> [lib.nvim](https://github.com/StefanBartl/lib.nvim) and `curl` are the real
-> dependencies — see [Requirements](docs/installation.md#requirements).
+> reposcope and insights above are soft: without them everything else works
+> unchanged. ui.nvim is not — `require("github_stats")` itself pulls in
+> `ui.kit`/`ui.contextmenu` (the dashboard's note popups and right-click
+> menu) at module load, before `setup()` even runs. It is a real dependency
+> alongside [lib.nvim](https://github.com/StefanBartl/lib.nvim) and `curl` —
+> see [Requirements](docs/installation.md#requirements).
 
 ---
 
