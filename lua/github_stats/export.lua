@@ -10,7 +10,12 @@
 local M = {}
 
 local fn = vim.fn
-local expand = fn.expand
+-- Not vim.fn.expand(): the filepath is user/buffer text (a typed command
+-- argument, or a right-click prompt that bypasses composer's own PATH
+-- argtype expansion), and vim.fn.expand() runs a backtick span through
+-- &shell and resolves Vim specials (%, #, <cfile>, ...) besides. Only ~/env
+-- expansion is wanted here (SEC-34).
+local expand = require("lib.nvim.cross.fs.expand_path")
 local str_format = string.format
 local tbl_insert, tbl_concat = table.insert, table.concat
 
