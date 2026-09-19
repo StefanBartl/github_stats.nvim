@@ -38,6 +38,29 @@ function M.execute(args)
     return
   end
 
+  -- A start_date that is neither ISO nor a known preset must not silently
+  -- collapse onto "no date given" (ERR-10): it and end_date filter nothing
+  -- once they fail analytics.parse_date's ^YYYY-MM-DD$ match.
+  if start_date then
+    if date_presets.is_preset(start_date) then
+      local preset_start, preset_end, preset_err = date_presets.resolve(start_date)
+      if preset_err then
+        config.notify(string.format("[github-stats] %s", preset_err), "error")
+        return
+      end
+      start_date, end_date = preset_start, preset_end
+    elseif not start_date:match("^%d%d%d%d%-%d%d%-%d%d$") then
+      config.notify(
+        string.format("[github-stats] Invalid start_date '%s': expected YYYY-MM-DD or a known preset", start_date),
+        "error"
+      )
+      return
+    elseif end_date and not end_date:match("^%d%d%d%d%-%d%d%-%d%d$") then
+      config.notify(string.format("[github-stats] Invalid end_date '%s': expected YYYY-MM-DD", end_date), "error")
+      return
+    end
+  end
+
   local stats, err = analytics.query_metric({
     repo = repo,
     metric = metric,
