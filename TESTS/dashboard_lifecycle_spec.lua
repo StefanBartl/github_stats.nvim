@@ -190,6 +190,56 @@ describe("dashboard lifecycle", function()
     end)
   end)
 
+  -- PERF-92: geometry was only ever computed at open time, so a terminal/
+  -- tmux-pane resize left the float at its original size/position for the
+  -- rest of the session.
+  describe("VimResized", function()
+    it("recomputes the float's geometry to match the new editor size", function()
+      setup_plugin()
+      dashboard.open(false)
+      local _, win = ui_state.get_buf_win()
+
+      local original_columns, original_lines = vim.o.columns, vim.o.lines
+      vim.o.columns = original_columns + 40
+      vim.o.lines = original_lines + 20
+
+      vim.api.nvim_exec_autocmds("VimResized", {})
+
+      local expected_width = math.min(80, vim.o.columns - 10)
+      local expected_height = math.min(30, vim.o.lines - 10)
+      local cfg = vim.api.nvim_win_get_config(win)
+      assert.equals(expected_width, cfg.width)
+      assert.equals(expected_height, cfg.height)
+      assert.equals(math.floor((vim.o.lines - expected_height) / 2), cfg.row)
+      assert.equals(math.floor((vim.o.columns - expected_width) / 2), cfg.col)
+
+      vim.o.columns, vim.o.lines = original_columns, original_lines
+    end)
+
+    it("does nothing when no dashboard is open", function()
+      setup_plugin()
+
+      assert.has_no.errors(function()
+        vim.api.nvim_exec_autocmds("VimResized", {})
+      end)
+    end)
+
+    it("is torn down along with the dashboard buffer, not left running globally", function()
+      setup_plugin()
+      dashboard.open(false)
+      dashboard.close()
+
+      -- Nothing left open to recompute geometry for; must not error just
+      -- because a resize still fires after the buffer that owned this
+      -- autocmd is gone.
+      assert.has_no.errors(function()
+        vim.o.columns = vim.o.columns + 5
+        vim.api.nvim_exec_autocmds("VimResized", {})
+        vim.o.columns = vim.o.columns - 5
+      end)
+    end)
+  end)
+
   describe("close", function()
     it("closes the window, wipes the buffer and drops the state", function()
       setup_plugin()
