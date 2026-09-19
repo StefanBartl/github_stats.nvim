@@ -303,6 +303,64 @@ describe("dashboard lifecycle", function()
         dashboard.schedule_render(false)
       end)
     end)
+
+    -- PERF-62: a debounce timer that is only stopped, never closed, leaks
+    -- its libuv handle on the event loop -- superseding a pending one (a
+    -- fresh schedule_render call) and tearing one down on close() must both
+    -- release the handle, not just stop it.
+    it("closes a pending debounce timer's handle, not just stops it", function()
+      setup_plugin({ dashboard = { refresh_interval_seconds = 0, render_debounce_ms = 5000 } })
+      dashboard.open(false)
+
+      ---A stand-in for a uv timer handle: records stop()/close() calls
+      ---rather than actually scheduling anything, mirroring background_spec's
+      ---fake_timer helper.
+      local function fake_timer()
+        local handle = { started = nil, stopped = false, closed = false }
+        function handle:start(timeout, repeat_ms, cb)
+          self.started = { timeout = timeout, repeat_ms = repeat_ms, cb = cb }
+        end
+        function handle:stop()
+          self.stopped = true
+        end
+        function handle:close()
+          self.closed = true
+        end
+        function handle:is_closing()
+          return self.closed
+        end
+        return handle
+      end
+
+      local real_new_timer = vim.uv.new_timer
+      local timers = {}
+      ---@diagnostic disable-next-line: duplicate-set-field
+      vim.uv.new_timer = function()
+        local handle = fake_timer()
+        timers[#timers + 1] = handle
+        return handle
+      end
+
+      local ok, err = pcall(function()
+        -- Too soon after open()'s render: schedules a pending debounce timer.
+        dashboard.schedule_render(false)
+        assert.equals(1, #timers)
+
+        -- Superseded before it ever fires.
+        dashboard.schedule_render(false)
+        assert.equals(2, #timers)
+        assert.is_true(timers[1].stopped)
+        assert.is_true(timers[1].closed)
+
+        -- Closing the dashboard tears down the still-pending second timer.
+        dashboard.close()
+        assert.is_true(timers[2].stopped)
+        assert.is_true(timers[2].closed)
+      end)
+
+      vim.uv.new_timer = real_new_timer
+      assert.is_true(ok, tostring(err))
+    end)
   end)
 
   describe("auto-refresh timer", function()

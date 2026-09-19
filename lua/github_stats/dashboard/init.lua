@@ -34,15 +34,30 @@ end
 ---Dashboard buffer name constant
 local DASHBOARD_BUF_NAME = "GitHub Stats Dashboard"
 
+---@internal
+---Stop and close the render debounce timer, if one exists.
+---@description
+--- `close()`, not just `stop()`, is what actually releases the libuv handle
+--- (PERF-62) -- a stopped-but-open handle sits on the event loop until libuv's
+--- own GC finalizer eventually reclaims it, at a moment nothing here
+--- controls. Guarded against a handle that is already closing/closed, since
+--- this runs from three places (a fresh debounce superseding a pending one,
+--- the timer's own callback, and cleanup_dashboard) that could otherwise
+--- race on the same timer.
+---@return nil
+local function stop_render_timer()
+  if render_timer and not render_timer:is_closing() then
+    render_timer:stop()
+    render_timer:close()
+  end
+  render_timer = nil
+end
+
 ---Schedule a dashboard render with debouncing
 ---@param force boolean If true, bypass debouncing and render immediately
 ---@return nil
 function M.schedule_render(force)
-  -- Stop existing timer
-  if render_timer then
-    render_timer:stop()
-    render_timer = nil
-  end
+  stop_render_timer()
 
   -- Force immediate render
   if force then
@@ -60,10 +75,7 @@ function M.schedule_render(force)
         debounce,
         0,
         vim.schedule_wrap(function()
-          if render_timer then
-            render_timer:stop()
-            render_timer = nil
-          end
+          stop_render_timer()
           render.render_dashboard()
         end)
       )
@@ -236,11 +248,8 @@ end
 ---open.
 ---@return nil
 local function cleanup_dashboard()
-  -- Stop render timer
-  if render_timer then
-    render_timer:stop()
-    render_timer = nil
-  end
+  -- Stop and close the render timer
+  stop_render_timer()
 
   -- Mark dashboard as closed
   dashboard_state.mark_closed()
