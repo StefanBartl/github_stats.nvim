@@ -210,7 +210,7 @@ describe("storage layout and listing", function()
       assert.equals("2026-03-05T09:00:00Z", history[2].timestamp)
     end)
 
-    it("ignores files that are not .json and undecodable ones", function()
+    it("drops non-.json and undecodable files from the result but reports them via err", function()
       local dir = storage.get_metric_dir("user/a", "clones")
       vim.fn.mkdir(dir, "p")
       require("lib.nvim.fs.json").write(
@@ -221,7 +221,33 @@ describe("storage layout and listing", function()
       vim.fn.writefile({ "ignored" }, dir .. "/README.txt")
       storage.invalidate()
 
-      assert.equals(1, #storage.read_metric_history("user/a", "clones"))
+      local history, err = storage.read_metric_history("user/a", "clones")
+
+      -- The one good, readable file still comes through...
+      assert.equals(1, #history)
+      -- ...but a directory that dropped a file is not the same as one with
+      -- nothing wrong in it (ERR-11): the caller must be able to tell.
+      assert.is_not_nil(err)
+      assert.is_true(err:find("2026-03-02T09-00-00.json", 1, true) ~= nil)
+    end)
+
+    it("does not cache a partial read, so a fixed file is picked up on the next call", function()
+      local dir = storage.get_metric_dir("user/a", "clones")
+      vim.fn.mkdir(dir, "p")
+      vim.fn.writefile({ "not json at all" }, dir .. "/2026-03-02T09-00-00.json")
+      storage.invalidate()
+
+      local _, err = storage.read_metric_history("user/a", "clones")
+      assert.is_not_nil(err)
+
+      require("lib.nvim.fs.json").write(
+        dir .. "/2026-03-02T09-00-00.json",
+        { timestamp = "2026-03-02T09:00:00Z", data = record("2026-03-02") }
+      )
+
+      local history, fixed_err = storage.read_metric_history("user/a", "clones")
+      assert.is_nil(fixed_err)
+      assert.equals(1, #history)
     end)
   end)
 

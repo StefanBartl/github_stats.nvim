@@ -44,22 +44,66 @@ local function date_of(timestamp)
 end
 
 ---@internal
+---@return table # Fresh archive skeleton shaped like a raw API response
+local function empty_archive(metric)
+  return {
+    timestamp = tostring(os.date("!%Y-%m-%dT%H:%M:%SZ")),
+    data = { [metric] = {} },
+  }
+end
+
+---@internal
 ---Load the archive file for repo/metric, or a fresh skeleton shaped like a
 ---raw API response so it merges into the same code path as any other fetch.
+---
+---The archive is the only remaining copy of every day older than
+---`cutoff_days` (compact_metric deletes the raw fetch files that produced
+---it once archived), so a missing file and a corrupt one must not collapse
+---onto the same "start from empty" result (ERR-11): the caller archives
+---from whatever it gets back and then overwrites this file with it, and an
+---empty skeleton mistaken for "no archive yet" would silently erase every
+---already-archived day on the very next save.
 ---@param dir string Metric directory (from storage.get_metric_dir)
 ---@param metric "clones"|"views"
 ---@return table archive
 ---@return string path
+---@return string? err Set only when a file exists but could not be read/decoded
 local function load_archive(dir, metric)
   local path = dir .. "/" .. ARCHIVE_FILENAME
-  local parsed = require("lib.nvim.fs.json").read(path)
-  if type(parsed) == "table" and type(parsed.data) == "table" and type(parsed.data[metric]) == "table" then
-    return parsed, path
+  local uv = vim.uv or vim.loop
+
+  if uv.fs_stat(path) == nil then
+    return empty_archive(metric), path, nil
   end
-  return {
-    timestamp = tostring(os.date("!%Y-%m-%dT%H:%M:%SZ")),
-    data = { [metric] = {} },
-  }, path
+
+  local parsed, read_err = require("lib.nvim.fs.json").read(path)
+  if type(parsed) == "table" and type(parsed.data) == "table" and type(parsed.data[metric]) == "table" then
+    return parsed, path, nil
+  end
+
+  -- File exists but is unreadable or malformed: back up the original bytes
+  -- once (never overwritten by a later failed load) so a corrupt-but-present
+  -- file is not silently repointed to an empty skeleton with no trace of
+  -- what it held.
+  local backup_path = path .. ".corrupt"
+  if uv.fs_stat(backup_path) == nil then
+    local file = io.open(path, "rb")
+    if file then
+      local content = file:read("*a")
+      file:close()
+      if content and content ~= "" then
+        local backup = io.open(backup_path, "wb")
+        if backup then
+          backup:write(content)
+          backup:close()
+        end
+      end
+    end
+  end
+
+  return empty_archive(metric),
+    path,
+    str_format("archive %s unreadable or malformed: %s (original kept at %s)", path, tostring(read_err), backup_path)
 end
 
 ---Compact one repo/metric pair. Only meaningful for "clones"/"views" --
@@ -81,7 +125,13 @@ function M.compact_metric(repo, metric, opts)
   end
 
   local dir = storage.get_metric_dir(repo, metric)
-  local archive, archive_path = load_archive(dir, metric)
+  local archive, archive_path, archive_err = load_archive(dir, metric)
+  if archive_err then
+    -- Refuse to compact (and therefore to delete any raw fetch file) while
+    -- the archive is unreadable: proceeding from the empty skeleton would
+    -- overwrite the backed-up original with it on the very next save.
+    return { archived = 0, deleted = 0, freed_bytes = 0 }, archive_err
+  end
 
   -- Index what's already archived so re-runs don't duplicate entries.
   local archived_dates = {}

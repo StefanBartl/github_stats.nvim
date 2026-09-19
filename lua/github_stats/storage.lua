@@ -150,15 +150,24 @@ function M.read_metric_history(repo, metric)
     return {}, str_format("Failed to read directory: %s", files)
   end
 
-  -- Read and parse each file
+  -- Read and parse each file. A file that fails to read/decode is dropped
+  -- from `results` rather than aborting the whole scan (one truncated fetch
+  -- file must not hide every other, readable one) -- but that drop is
+  -- tracked and surfaced as `err` below rather than silently collapsing
+  -- onto the same "nothing here" that an empty-but-intact directory
+  -- returns (ERR-11): every caller branches on `err`, so a partially
+  -- unreadable directory must not look like a complete, if small, one.
   local json = require("lib.nvim.fs.json")
   local results = {}
+  local unreadable = {}
   for _, file in ipairs(files) do
     if file:match("%.json$") and not file:match("%.tmp$") then
       local filepath = fs.joinpath(dir, file)
-      local parsed = json.read(filepath)
+      local parsed, read_err = json.read(filepath)
       if type(parsed) == "table" then
         table.insert(results, parsed)
+      else
+        table.insert(unreadable, str_format("%s (%s)", file, tostring(read_err)))
       end
     end
   end
@@ -167,6 +176,14 @@ function M.read_metric_history(repo, metric)
   table.sort(results, function(a, b)
     return a.timestamp < b.timestamp
   end)
+
+  if #unreadable > 0 then
+    -- Not cached: caching a partial view would keep hiding the dropped
+    -- files' data even after a fix (a re-fetch overwriting a bad file, a
+    -- hand repair) removed the problem.
+    return vim.list_slice(results),
+      str_format("%d of %d file(s) unreadable: %s", #unreadable, #results + #unreadable, table.concat(unreadable, ", "))
+  end
 
   history_cache[dir] = results
 

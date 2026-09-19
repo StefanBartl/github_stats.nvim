@@ -22,3 +22,13 @@ window.
 by its own timer. `:GithubStats compact dry-run` reports would-be
 archived/deleted counts and freed bytes without touching disk, which is the
 fast way to see what a changed `cutoff_days`/`prune_days` would actually do.
+
+## Corrupt or unreadable `_archive.json`
+
+`_archive.json` is the only remaining copy of every already-archived day —
+once archived, the raw fetch files behind those days are deleted. If it
+cannot be read or decoded, or a raw fetch file in the same directory can't
+be, `compact_metric` refuses to compact that repo/metric (no archiving, no
+deletion) and returns an error instead of silently starting over from an
+empty archive. The original bytes are preserved once as `_archive.json.corrupt`
+next to it. Compaction resumes on its own once the file is fixed or removed.
