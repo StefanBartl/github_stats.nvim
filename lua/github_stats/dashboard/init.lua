@@ -140,24 +140,36 @@ local function create_dashboard_buffer()
 end
 
 ---@internal
+---Compute the dashboard float's geometry from the current editor size.
+---Shared by create_dashboard_window (open time) and recompute_window_geometry
+---(every VimResized) so the two never drift apart (PERF-92).
+---@return { width: integer, height: integer, row: integer, col: integer }
+local function compute_geometry()
+  local width = math.min(80, vim.o.columns - 10)
+  local height = math.min(30, vim.o.lines - 10)
+
+  return {
+    width = width,
+    height = height,
+    row = math.floor((vim.o.lines - height) / 2),
+    col = math.floor((vim.o.columns - width) / 2),
+  }
+end
+
+---@internal
 ---Create and configure dashboard window
 ---@param buf integer Buffer handle
 ---@return integer? # Window handle or nil on failure
 local function create_dashboard_window(buf)
-  -- Calculate dimensions
-  local width = math.min(80, vim.o.columns - 10)
-  local height = math.min(30, vim.o.lines - 10)
-
-  local row = math.floor((vim.o.lines - height) / 2)
-  local col = math.floor((vim.o.columns - width) / 2)
+  local geometry = compute_geometry()
 
   -- Window options
   local opts = {
     relative = "editor",
-    width = width,
-    height = height,
-    row = row,
-    col = col,
+    width = geometry.width,
+    height = geometry.height,
+    row = geometry.row,
+    col = geometry.col,
     style = "minimal",
     border = "rounded",
     title = " GitHub Stats Dashboard ",
@@ -178,6 +190,38 @@ local function create_dashboard_window(buf)
   vim.api.nvim_set_option_value("relativenumber", false, { win = win })
 
   return win
+end
+
+---@internal
+---Recompute the dashboard float's geometry and apply it to the live window.
+---@description
+--- Geometry was only ever computed at open time: nothing recomputed it
+--- afterwards, so a terminal/tmux-pane resize left the float at its
+--- original width/height/centering for the rest of the session (PERF-92).
+--- Called from the VimResized autocmd M.open() registers below.
+---
+--- Content is laid out against dashboard.header_width/sparkline_width, not
+--- the live window width, and render_dashboard's scroll-limit recalculation
+--- (render.lua) only runs on a render -- which a plain resize never
+--- triggers on its own -- so a re-render is forced here too, not just a
+--- resize of the window shell.
+---@return nil
+local function recompute_window_geometry()
+  local _, win = ui_state.get_buf_win()
+  if not win then
+    return
+  end
+
+  local geometry = compute_geometry()
+  pcall(vim.api.nvim_win_set_config, win, {
+    relative = "editor",
+    width = geometry.width,
+    height = geometry.height,
+    row = geometry.row,
+    col = geometry.col,
+  })
+
+  M.schedule_render(true)
 end
 
 ---@internal
@@ -341,6 +385,15 @@ function M.open(force_refresh)
     buffer = buf,
     once = true,
     desc = "GitHub Stats: clean up dashboard state on buffer wipeout",
+  })
+
+  -- Re-center/resize the float on a terminal/tmux-pane resize (PERF-92).
+  -- `buffer` ties this autocmd's lifetime to the dashboard buffer the same
+  -- way the BufWipeout one above does, even though VimResized itself is not
+  -- a buffer event -- it dies with the buffer, no separate teardown needed.
+  require("lib.nvim.bindings.autocmd").create("VimResized", recompute_window_geometry, {
+    buffer = buf,
+    desc = "GitHub Stats: recompute dashboard geometry on resize",
   })
 
   -- Initial render (shows cached data immediately, even if a force-fetch
