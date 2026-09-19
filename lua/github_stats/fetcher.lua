@@ -93,6 +93,17 @@ local function should_fetch()
   return elapsed >= interval_seconds
 end
 
+---@internal
+---An empty completion summary for M.fetch_all's early-return paths below:
+---nothing was fetched, but a passed `callback` must still be told the
+---attempt is over rather than left waiting forever (ERR-03) -- distinct
+---from M.last_fetch_summary, which stays untouched here since neither path
+---is an actual fetch attempt.
+---@return GHStats.FetchSummary
+local function empty_summary()
+  return { success = {}, errors = {}, timestamp = os.date("%Y-%m-%dT%H:%M:%S") }
+end
+
 ---Fetch all repositories and metrics
 ---@param force boolean Whether to bypass interval check
 ---@param callback? fun(summary: GHStats.FetchSummary) Optional completion callback
@@ -111,6 +122,9 @@ function M.fetch_all(force, callback, opts)
     if not background then
       config.notify("[github-stats] No repositories configured", "warn")
     end
+    if callback then
+      callback(empty_summary())
+    end
     return
   end
 
@@ -120,6 +134,9 @@ function M.fetch_all(force, callback, opts)
   if not force and not should_fetch() then
     if notify_fetch == true and not background then
       config.notify("[github-stats] Fetch interval not elapsed (use 'force' to bypass)", "info")
+    end
+    if callback then
+      callback(empty_summary())
     end
     return
   end
