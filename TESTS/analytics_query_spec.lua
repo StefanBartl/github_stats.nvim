@@ -330,6 +330,27 @@ describe("analytics queries", function()
       assert.equals(1, #referrers)
       assert.equals("new.example", referrers[1].referrer)
     end)
+
+    -- ERR-54: storage.read_metric_history documents its records as shared
+    -- and read-only. Sorting latest.data in place used to reorder that
+    -- cached record for the rest of the session and every other reader --
+    -- verified here by reading the record straight back through storage
+    -- afterwards and checking it still has its original, unsorted order.
+    it("does not reorder the cached record it reads from", function()
+      write_referrers({
+        { referrer = "google.com", count = 5, uniques = 2 },
+        { referrer = "github.com", count = 50, uniques = 20 },
+        { referrer = "reddit.com", count = 15, uniques = 7 },
+      })
+
+      analytics.get_top_referrers(REPO)
+
+      local history = storage.read_metric_history(REPO, "referrers")
+      local raw = history[#history].data
+      assert.equals("google.com", raw[1].referrer)
+      assert.equals("github.com", raw[2].referrer)
+      assert.equals("reddit.com", raw[3].referrer)
+    end)
   end)
 
   describe("get_top_paths", function()
@@ -355,6 +376,29 @@ describe("analytics queries", function()
       assert.equals(2, #paths)
       assert.equals("/c", paths[1].path)
       assert.equals("/b", paths[2].path)
+    end)
+
+    -- Same shared-record caveat as get_top_referrers above (ERR-54).
+    it("does not reorder the cached record it reads from", function()
+      local dir = storage.get_metric_dir(REPO, "paths")
+      vim.fn.mkdir(dir, "p")
+      require("lib.nvim.fs.json").write(dir .. "/2026-03-05T09-00-00.json", {
+        timestamp = "2026-03-05T09:00:00Z",
+        data = {
+          { path = "/a", title = "A", count = 3, uniques = 1 },
+          { path = "/b", title = "B", count = 300, uniques = 100 },
+          { path = "/c", title = "C", count = 30, uniques = 10 },
+        },
+      })
+      storage.invalidate()
+
+      analytics.get_top_paths(REPO)
+
+      local history = storage.read_metric_history(REPO, "paths")
+      local raw = history[#history].data
+      assert.equals("/a", raw[1].path)
+      assert.equals("/b", raw[2].path)
+      assert.equals("/c", raw[3].path)
     end)
   end)
 

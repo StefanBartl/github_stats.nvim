@@ -564,9 +564,12 @@ function M.get_top_referrers(repo, limit)
     return {}, nil
   end
 
-  -- Use latest data
+  -- Use latest data. `latest` is storage's cached record, documented as
+  -- shared/read-only (storage.lua:read_metric_history) -- sort a copy, not
+  -- latest.data itself, or this reorders the cached record in place for the
+  -- rest of the session and every other reader (ERR-54).
   local latest = history[#history]
-  local referrers = latest.data or {}
+  local referrers = vim.list_slice(latest.data or {})
 
   -- Sort by count descending
   table.sort(referrers, function(a, b)
@@ -598,9 +601,10 @@ function M.get_top_paths(repo, limit)
     return {}, nil
   end
 
-  -- Use latest data
+  -- Use latest data. Same shared-record caveat as get_top_referrers above:
+  -- sort a copy, not latest.data itself (ERR-54).
   local latest = history[#history]
-  local paths = latest.data or {}
+  local paths = vim.list_slice(latest.data or {})
 
   -- Sort by count descending
   table.sort(paths, function(a, b)
