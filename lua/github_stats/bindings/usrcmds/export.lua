@@ -9,6 +9,9 @@
 local config = require("github_stats.config")
 local analytics = require("github_stats.analytics")
 local export = require("github_stats.export")
+-- Not vim.fn.expand(): filepath is user/buffer text, see export.lua's own
+-- `local expand = require("lib.nvim.cross.fs.expand_path")` for why (SEC-34).
+local expand_path = require("lib.nvim.cross.fs.expand_path")
 
 local M = {}
 
@@ -87,7 +90,7 @@ function M.execute(args)
   ---@param export_err string?
   local function report(ok, export_err)
     if ok then
-      config.notify(str_format("[github-stats] Exported to: %s", vim.fn.expand(filepath)), "info")
+      config.notify(str_format("[github-stats] Exported to: %s", expand_path(filepath)), "info")
     else
       config.notify(str_format("[github-stats] Export failed: %s", export_err), "error")
     end

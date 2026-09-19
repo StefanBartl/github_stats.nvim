@@ -60,6 +60,23 @@ describe("export", function()
       ---@diagnostic disable-next-line: undefined-field
       assert.is_true(ok)
     end)
+
+    -- SEC-34: vim.fn.expand() runs a backtick span in its argument through
+    -- &shell before returning. filepath is user/buffer text (a typed command
+    -- argument, or a right-click prompt that bypasses the composer's own
+    -- expansion), so a payload here must survive untouched into the actual
+    -- write path rather than being substituted -- lib.nvim.cross.fs.expand_path
+    -- does pure ~/env string substitution only, no shell, no globbing.
+    it("does not run a shell command embedded via backticks in the path", function()
+      local target = tmp_dir .. "/`echo pwned`.csv"
+
+      local ok, err = export.export_daily_csv("test/repo", "clones", { ["2025-01-01"] = { count = 1, uniques = 1 } }, target)
+
+      ---@diagnostic disable-next-line: undefined-field
+      assert.is_true(ok, err)
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals(1, vim.fn.filereadable(target))
+    end)
   end)
 
   describe("combined clones+views export", function()
@@ -211,8 +228,10 @@ describe("export", function()
       assert.is_true(got.ok, got.err)
       ---@diagnostic disable-next-line: undefined-field
       assert.equals("markdown", create_opts.from)
+      -- SEC-34: the output path is expanded via lib.nvim.cross.fs.expand_path
+      -- (~/env only, no shell, no separator normalization), not vim.fn.expand().
       ---@diagnostic disable-next-line: undefined-field
-      assert.equals(vim.fn.expand(target), create_opts.output)
+      assert.equals(require("lib.nvim.cross.fs.expand_path")(target), create_opts.output)
       ---@diagnostic disable-next-line: undefined-field
       assert.is_not_nil(create_opts.text:find("GitHub Stats Report: test/repo"))
     end)
