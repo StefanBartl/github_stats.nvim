@@ -167,6 +167,30 @@ describe("fetcher", function()
       assert.equals(1, notice_count("No repositories configured"))
     end)
 
+    -- ERR-03: a passed callback documents completion, so it must fire even
+    -- when there is nothing to fetch -- otherwise a caller waiting on it
+    -- (dashboard/actions.refresh_all's on_done, the right-click menu's
+    -- force_refresh wrapper) hangs forever with no way to tell "still
+    -- running" from "decided not to run".
+    it("still invokes the callback when there are no repositories to fetch", function()
+      config.init({ config_dir = tmp_dir, repos = {} })
+
+      local summary
+      fetcher.fetch_all(true, function(s)
+        summary = s
+      end)
+      wait_for(function()
+        return summary ~= nil
+      end)
+
+      assert.same({}, summary.success)
+      assert.same({}, summary.errors)
+      assert.is_not_nil(summary.timestamp)
+      -- Not an actual fetch attempt, so the real last_fetch_summary (if any)
+      -- must not be overwritten by this no-op.
+      assert.is_nil(fetcher.last_fetch_summary)
+    end)
+
     it("fetches every configured repository and summarises the result", function()
       local summary
       fetcher.fetch_all(true, function(s)
@@ -206,6 +230,23 @@ describe("fetcher", function()
 
       assert.equals(0, #api_calls)
       assert.equals(1, notice_count("Fetch interval not elapsed"))
+    end)
+
+    -- Same ERR-03 callback-completion guarantee as the "no repositories"
+    -- case above, for the other early-return path.
+    it("still invokes the callback when the interval has not elapsed", function()
+      require("lib.nvim.fs.json").write(tmp_dir .. "/last_fetch.json", { timestamp = os.time() })
+
+      local summary
+      fetcher.fetch_all(false, function(s)
+        summary = s
+      end)
+      wait_for(function()
+        return summary ~= nil
+      end)
+
+      assert.same({}, summary.success)
+      assert.same({}, summary.errors)
     end)
 
     it("runs an unforced fetch once the interval has elapsed", function()
