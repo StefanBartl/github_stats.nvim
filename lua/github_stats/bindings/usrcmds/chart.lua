@@ -30,17 +30,33 @@ function M.execute(args)
   local arg3 = parts[3]
   local arg4 = parts[4]
 
-  -- Determine if arg3 is a date or time range
-  local start_date, end_date, time_range
+  -- Determine if arg3 is a date or time range. An unrecognized arg3 must
+  -- error out rather than silently become "no filter" (ERR-10): the old
+  -- `arg3:match("last") or arg3:match("%d+d")` heuristic let preset names
+  -- like "this_month" fall through to start_date, where parse_date rejects
+  -- anything that isn't YYYY-MM-DD and drops the filter with no signal.
+  local start_date, end_date
 
   if arg3 then
-    -- Check if it's a time range keyword
-    if arg3:match("last") or arg3:match("%d+d") then
-      time_range = arg3
+    if arg4 then
+      -- Two explicit positions: both must be plain ISO dates, no time-range
+      -- shorthand here (that only makes sense as a single expression).
+      if not arg3:match("^%d%d%d%d%-%d%d%-%d%d$") then
+        config.notify(string.format("[github-stats] Invalid start_date '%s': expected YYYY-MM-DD", arg3), "error")
+        return
+      end
+      if not arg4:match("^%d%d%d%d%-%d%d%-%d%d$") then
+        config.notify(string.format("[github-stats] Invalid end_date '%s': expected YYYY-MM-DD", arg4), "error")
+        return
+      end
+      start_date, end_date = arg3, arg4
     else
-      -- Assume it's a start date
-      start_date = arg3
-      end_date = arg4
+      local recognized
+      start_date, end_date, recognized = analytics.parse_time_range(arg3)
+      if not recognized then
+        config.notify(string.format("[github-stats] Invalid date/range/preset '%s'", arg3), "error")
+        return
+      end
     end
   end
 
@@ -57,7 +73,6 @@ function M.execute(args)
       metric = "clones",
       start_date = start_date,
       end_date = end_date,
-      time_range = time_range,
     })
 
     if err or not stats then
@@ -77,7 +92,6 @@ function M.execute(args)
     metric = metric,
     start_date = start_date,
     end_date = end_date,
-    time_range = time_range,
   })
 
   if err or not stats then

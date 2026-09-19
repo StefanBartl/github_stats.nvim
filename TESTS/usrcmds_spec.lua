@@ -81,6 +81,11 @@ describe("usrcmds", function()
       end,
     })
 
+    -- chart.execute() resolves date/preset/range arguments itself before
+    -- calling query_metric (ERR-10), so parse_time_range must stay the real
+    -- implementation rather than a mock -- it is what turns "14d" or
+    -- "this_month" into concrete dates.
+    local real_parse_time_range = require("github_stats.analytics").parse_time_range
     stub("github_stats.analytics", {
       query_metric = function(query)
         return MODULES.query_metric(query)
@@ -94,6 +99,7 @@ describe("usrcmds", function()
       get_top_paths = function(repo, limit)
         return MODULES.get_top_paths(repo, limit)
       end,
+      parse_time_range = real_parse_time_range,
     })
 
     stub("github_stats.diff", {
@@ -320,6 +326,39 @@ describe("usrcmds", function()
       assert.is_true(has_bs)
     end)
 
+    -- ERR-10: a typo'd ISO date or an unrecognized preset must error out
+    -- rather than silently becoming "no filter" -- the old code handed
+    -- start_date/end_date straight to analytics.query_metric, where a
+    -- non-ISO value fails parse_date and the filter is dropped with no
+    -- signal, even though the command's own completion (M.complete above)
+    -- suggests preset names for that exact slot.
+    it("rejects a start_date that is neither ISO nor a known preset", function()
+      local seen_query = false
+      MODULES.query_metric = function()
+        seen_query = true
+        return { daily_breakdown = {} }, nil
+      end
+
+      show.execute({ args = "user/alpha clones 2026-o1-01" })
+
+      assert.is_false(seen_query)
+      assert.is_true(notified("Invalid start_date '2026-o1-01'"))
+    end)
+
+    it("resolves a preset start_date into concrete dates", function()
+      local seen
+      local real_query_metric = MODULES.query_metric
+      MODULES.query_metric = function(query)
+        seen = query
+        return real_query_metric(query)
+      end
+
+      show.execute({ args = "user/alpha clones today" })
+
+      assert.is_string(seen.start_date)
+      assert.equals(seen.start_date, seen.end_date)
+    end)
+
     -- M.complete() is a leftover from the pre-composer flat `:GithubStatsShow`
     -- command: nothing in this repo calls it any more (the `:GithubStats show`
     -- verb completes through composer's registered GH_REPO/GH_DATE_OR_PRESET
@@ -507,7 +546,7 @@ describe("usrcmds", function()
       assert.is_truthy(table.concat(floats[1].lines, "\n"):find("Count (Total):", 1, true))
     end)
 
-    it("reads a third argument as a time range when it looks like one", function()
+    it("resolves a lone third argument that looks like a time range into concrete dates", function()
       local seen
       MODULES.query_metric = function(query)
         seen = query
@@ -515,11 +554,14 @@ describe("usrcmds", function()
       end
 
       chart.execute({ args = "user/alpha clones 14d" })
-      assert.equals("14d", seen.time_range)
-      assert.is_nil(seen.start_date)
+      assert.is_nil(seen.time_range)
+      assert.is_string(seen.start_date)
+      assert.is_string(seen.end_date)
 
+      seen = nil
       chart.execute({ args = "user/alpha clones last_week" })
-      assert.equals("last_week", seen.time_range)
+      assert.is_string(seen.start_date)
+      assert.is_string(seen.end_date)
     end)
 
     it("reads it as a start date otherwise, with the fourth as the end", function()
@@ -534,6 +576,36 @@ describe("usrcmds", function()
       assert.equals("2026-03-01", seen.start_date)
       assert.equals("2026-03-09", seen.end_date)
       assert.is_nil(seen.time_range)
+    end)
+
+    -- ERR-10: a typo'd date or an unrecognized preset must error out rather
+    -- than silently becoming "no filter" (the old `arg3:match("last")`
+    -- heuristic let this fall through to start_date, where parse_date
+    -- rejects it and drops the filter with no signal).
+    it("rejects a third argument that is neither a date, range nor known preset", function()
+      local seen_query = false
+      MODULES.query_metric = function()
+        seen_query = true
+        return { daily_breakdown = {} }, nil
+      end
+
+      chart.execute({ args = "user/alpha clones not-a-real-range" })
+
+      assert.is_false(seen_query)
+      assert.is_true(notified("Invalid date/range/preset 'not-a-real-range'"))
+    end)
+
+    it("rejects a typo'd ISO date given alongside an end date", function()
+      local seen_query = false
+      MODULES.query_metric = function()
+        seen_query = true
+        return { daily_breakdown = {} }, nil
+      end
+
+      chart.execute({ args = "user/alpha clones 2026-o1-01 2026-02-01" })
+
+      assert.is_false(seen_query)
+      assert.is_true(notified("Invalid start_date '2026-o1-01'"))
     end)
 
     it("reports a query error", function()
