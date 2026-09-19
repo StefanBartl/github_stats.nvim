@@ -3,18 +3,18 @@
 -- Specs for github_stats.health -- the :checkhealth report.
 --
 -- `vim.health` is replaced by a recorder, so the report is read back as data
--- instead of as terminal output, and the config module is replaced wholesale:
--- the real check_config() calls `config.init()` with no arguments, which
--- resolves to the *user's own* ~/.config/nvim config directory. The API probe
--- goes through a stubbed `lib.nvim.net.curl`, so no request leaves the
--- machine here either.
+-- instead of as terminal output, and the config module is replaced wholesale
+-- for deterministic get()/get_repos()/get_token() responses and a storage
+-- root under tmp_dir, independent of whatever setup() a real session ran.
+-- The API probe goes through a stubbed `lib.nvim.net.curl`, so no request
+-- leaves the machine here either.
 
 describe("health", function()
   local health_mod
   local tmp_dir
   local report
   local real_health, real_curl, real_config, real_health_mod
-  local cfg, token, token_err, init_ok, init_err
+  local cfg, token, token_err
   local curl_responder
 
   ---Every message of the given kind, in order.
@@ -48,7 +48,6 @@ describe("health", function()
     tmp_dir = vim.fn.tempname()
     vim.fn.delete(tmp_dir, "rf")
 
-    init_ok, init_err = true, nil
     token, token_err = "ghp_0123456789abcdef", nil
     cfg = {
       repos = { "user/alpha" },
@@ -95,9 +94,6 @@ describe("health", function()
 
     real_config = package.loaded["github_stats.config"]
     package.loaded["github_stats.config"] = {
-      init = function()
-        return init_ok, init_err
-      end,
       get = function()
         return cfg
       end,
@@ -141,20 +137,16 @@ describe("health", function()
       assert.is_true(reported("ok", "Configuration valid (1 repos)"))
     end)
 
-    it("reports a failed init", function()
-      init_ok, init_err = false, "config.json is not JSON"
-
-      health_mod.check()
-
-      assert.is_true(reported("error", "Configuration error: config.json is not JSON"))
-    end)
-
+    -- LUA-87: check_config() must read back whatever setup() already loaded
+    -- rather than calling config.init() again with no arguments -- that used
+    -- to re-resolve PATHS from scratch and silently drop setup()'s opts, so
+    -- there is no longer an init_ok/init_err path here for it to report.
     it("reports a config that loaded as nil", function()
       cfg = nil
 
       health_mod.check()
 
-      assert.is_true(reported("error", "Failed to load configuration"))
+      assert.is_true(reported("error", "Configuration not loaded"))
       assert.is_true(reported("error", "Token error: Configuration not loaded"))
       assert.is_true(reported("warn", "Skipping API test due to previous errors"))
     end)

@@ -41,16 +41,19 @@ end
 
 ---@internal
 ---Check configuration file
+---@description
+--- Reads back whatever `setup()` already loaded via `config.init(opts)`,
+--- rather than calling `config.init()` again here with no arguments: that
+--- second, opts-less call used to re-resolve PATHS from scratch (dropping
+--- any `config_dir`/`data_dir` override) and only re-applies setup options
+--- when `next(opts) ~= nil` -- which is never true for an empty call -- so
+--- running `:checkhealth` silently reverted the session to config.json-over-
+--- defaults for its remaining lifetime.
 ---@return boolean, string # Success flag, message
 local function check_config()
-  local ok, err = config.init()
-  if not ok then
-    return false, str_format("Configuration error: %s", err)
-  end
-
   local cfg = config.get()
   if not cfg then
-    return false, "Failed to load configuration"
+    return false, "Configuration not loaded -- call require('github_stats').setup() first"
   end
 
   local has_static_repos = #(cfg.repos or {}) > 0
