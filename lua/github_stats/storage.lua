@@ -28,10 +28,26 @@ local str_format = string.format
 --- gone the result is a single flat path component, so an embedded ".." is
 --- inert -- except when the *whole* sanitized name collapses to "." or
 --- ".." (e.g. repo == ".."), which is guarded separately.
+---
+--- Every disallowed byte is percent-encoded (`%XX`, its own hex value)
+--- rather than collapsed onto a single shared replacement character.
+--- A blanket "replace with _" whitelist is many-to-one: two
+--- distinct, individually valid "owner/repo" strings that differ only in
+--- *which* disallowed character they contain -- e.g. "a/b:c" and "a/b_c" --
+--- both sanitize to "a_b_c" and silently share one storage directory,
+--- commingling (and, via retention's os.remove, destructively overwriting)
+--- one repo's history with the other's. Percent-encoding is injective: "%"
+--- itself is not in the whitelist charset, so every literal "%" in `repo` is
+--- itself encoded to "%25" and can therefore never be mistaken for the start
+--- of an escape triplet, which is what lets a left-to-right scan recover the
+--- original bytes uniquely. "/" keeps its own literal "_" substitution (not
+--- percent-encoded) purely for the readable "owner_repo" directory name.
 ---@param repo string Repository in "owner/repo" format
 ---@return string # Sanitized name (owner_repo)
 local function sanitize_repo_name(repo)
-  local safe = repo:gsub("/", "_"):gsub("[^%w%-%._]", "_")
+  local safe = repo:gsub("/", "_"):gsub("[^%w%-%._]", function(c)
+    return str_format("%%%02X", c:byte())
+  end)
 
   if safe == "" or safe == "." or safe == ".." then
     safe = "_"
