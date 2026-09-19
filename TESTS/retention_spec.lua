@@ -141,6 +141,79 @@ describe("retention", function()
       assert.equals(0, result.deleted)
     end)
 
+    -- ERR-11: the archive is the only remaining copy of every already-
+    -- archived day (compact_metric deletes the raw fetch files that
+    -- produced it), so a corrupt archive file must not be treated the same
+    -- as "no archive yet" -- that would silently overwrite it with a fresh,
+    -- near-empty skeleton on this very run.
+    --
+    -- Undecodable JSON is caught even earlier here, by storage's own
+    -- read_metric_history (it scans the same directory _archive.json lives
+    -- in, ERR-11-fixed separately) -- compact_metric's analytics.query_metric
+    -- call surfaces that as `err` before load_archive is ever reached.
+    it("refuses to compact when the archive fails to decode, without deleting raw files", function()
+      for offset = 0, 20 do
+        write_views_fetch(offset)
+      end
+      retention.compact_metric(REPO, "views", { cutoff_days = 15 })
+
+      local archive_path = storage.get_metric_dir(REPO, "views") .. "/_archive.json"
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals(1, vim.fn.filereadable(archive_path))
+      vim.fn.writefile({ "{ not valid json" }, archive_path)
+
+      local files_before = storage.list_metric_files(REPO, "views")
+
+      local result, err = retention.compact_metric(REPO, "views", { cutoff_days = 15 })
+      ---@diagnostic disable-next-line: undefined-field
+      assert.is_not_nil(err)
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals(0, result.archived)
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals(0, result.deleted)
+
+      -- Nothing deleted: refusing to compact leaves the raw fetch files alone.
+      local files_after = storage.list_metric_files(REPO, "views")
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals(#files_before, #files_after)
+    end)
+
+    -- A shape load_archive's own check catches that storage's fix does not:
+    -- valid, decodable JSON that simply isn't shaped like an archive (no
+    -- `data[metric]` table). storage.read_metric_history happily accepts any
+    -- table, so this reaches load_archive itself, which must back up the
+    -- original before ever overwriting it with a fresh skeleton.
+    it("refuses to compact and backs up the original when the archive is valid JSON but the wrong shape", function()
+      for offset = 0, 20 do
+        write_views_fetch(offset)
+      end
+      retention.compact_metric(REPO, "views", { cutoff_days = 15 })
+
+      local archive_path = storage.get_metric_dir(REPO, "views") .. "/_archive.json"
+      require("lib.nvim.fs.json").write(archive_path, { timestamp = "x", data = {} })
+      local wrong_shape = vim.fn.readfile(archive_path)
+
+      local files_before = storage.list_metric_files(REPO, "views")
+
+      local result, err = retention.compact_metric(REPO, "views", { cutoff_days = 15 })
+      ---@diagnostic disable-next-line: undefined-field
+      assert.is_not_nil(err)
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals(0, result.archived)
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals(0, result.deleted)
+
+      local files_after = storage.list_metric_files(REPO, "views")
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals(#files_before, #files_after)
+
+      ---@diagnostic disable-next-line: undefined-field
+      assert.equals(1, vim.fn.filereadable(archive_path .. ".corrupt"))
+      local backed_up = vim.fn.readfile(archive_path .. ".corrupt")
+      ---@diagnostic disable-next-line: undefined-field
+      assert.same(wrong_shape, backed_up)
+    end)
+
     it("dry_run reports what would happen without touching the filesystem", function()
       for offset = 0, 20 do
         write_views_fetch(offset)
