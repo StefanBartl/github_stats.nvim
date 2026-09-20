@@ -53,13 +53,13 @@ Neovim.
 Start at [docs/README.md](docs/README.md) — what's where, and which question
 each page answers.
 
-**The Basics**
+### The Basics
 
 - [Requirements](docs/installation.md#requirements) — Neovim version, the `lib.nvim` dependency, `curl`, and the GitHub token.
 - [Installation](docs/installation.md) — loading strategies and every plugin manager.
 - [Quickstart](docs/quickstart.md) — the first thing to run after installing.
 
-**Configuration**
+### Configuration
 
 - [What you get with the defaults](docs/what-you-get.md) — the commands worth knowing on day one.
 - [Configuration guide](docs/configurations/README.md) — token setup, every option with its default, and the two ways to set them.
@@ -67,7 +67,7 @@ each page answers.
 - [Statusline](docs/statusline.md) — this week's view count as a component, for lualine, heirline, the native statusline or ui.nvim.
 - [Dashboard guide](docs/dashboard.md) — the interactive dashboard, its keys, and what it can be configured to show.
 
-**The Rest**
+### The Rest
 
 - [Features](docs/FEATURES/README.md) — the catalog: one page per area, each naming its modules, commands and config keys.
 - [Background fetching](docs/background-fetching.md) — when it fetches, and what it costs.

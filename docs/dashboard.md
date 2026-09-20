@@ -43,7 +43,7 @@ dashboard — they have their own commands, `:GithubStats referrers` and
 :GithubStats! dashboard
 ```
 
-**Auto-Open on Startup:**
+### Auto-Open on Startup:
 ```lua
 require("github_stats").setup({
   dashboard = {
@@ -282,7 +282,7 @@ The timer is stopped and closed when the dashboard closes, on the same
 teardown path as everything else (`q`, `<Esc>`, `:GithubStats! dashboard`'s
 re-open cycle, wiping the buffer).
 
-**Disable auto-refresh:**
+#### Disable auto-refresh:
 ```lua
 refresh_interval_seconds = 0
 ```
@@ -415,7 +415,7 @@ rapid re-renders — repeated `j`/`k`, a held key — don't each trigger a full
 redraw. Raise it over a slow SSH connection, where fewer and larger redraws
 read better.
 
-**Recommendations:**
+#### Recommendations:
 - Use longer refresh intervals (`refresh_interval_seconds = 600` for 10 minutes)
 - Disable auto-refresh and refresh manually as needed
 - Consider splitting repositories across multiple configurations
@@ -424,7 +424,7 @@ read better.
 
 Initial render may be slow if no data is cached locally.
 
-**Solutions:**
+#### Solutions:
 - Run `:GithubStats fetch` before opening dashboard
 - Enable auto-fetch on startup
 - Use `auto_open = false` to prevent startup delay
@@ -435,9 +435,9 @@ Initial render may be slow if no data is cached locally.
 
 ### Dashboard Won't Open
 
-**Error: "Dashboard is disabled in configuration"**
+#### Error: "Dashboard is disabled in configuration"
 
-**Solution:**
+#### Solution:
 
 ```lua
 dashboard = {
@@ -449,8 +449,8 @@ dashboard = {
 
 ### No Repositories Visible
 
-**Error: "No repositories configured"**
-**Solution:**
+#### Error: "No repositories configured"
+#### Solution:
 
 ```lua
 repos = {
@@ -461,13 +461,13 @@ repos = {
 
 ### Repository Shows "No Data"
 
-**Possible Causes:**
+#### Possible Causes:
 
 1. Data not yet fetched
 2. Repository name incorrect
 3. Token lacks permissions
 
-**Solutions:**
+#### Solutions:
 
 1. Press `f` to force-fetch the selected repository from GitHub (plain `r` only re-renders cached data, it won't fetch anything new)
 2. Verify repository name in config.json

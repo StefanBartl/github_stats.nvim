@@ -66,17 +66,17 @@ Both methods support the same configuration options and can be used interchangea
 
 ### Decision Guide
 
-**Use Option A (Direct Setup) if:**
+#### Use Option A (Direct Setup) if:
 - You manage all configuration in Neovim init file
 - You want to use Lua logic for dynamic configuration
 - You prefer everything in one place
 
-**Use Option B (Config File) if:**
+#### Use Option B (Config File) if:
 - You sync Neovim config across multiple systems
 - You want to version control repository lists separately
 - You prefer JSON for portability
 
-**Use Both if:**
+#### Use Both if:
 - You want system-specific overrides (Option A) with a shared base (Option B)
 - Priority: `setup()` > `config.json`
 
@@ -121,7 +121,7 @@ Specifies where the GitHub token should be loaded from:
 - `"env"` – Read from environment variable
 - `"file"` – Read from file (specified by `token_file`)
 
-**Example:**
+##### Example:
 ```lua
 token_source = "env"  -- Uses environment variable
 ```
@@ -133,7 +133,7 @@ token_source = "env"  -- Uses environment variable
 
 Name of the environment variable containing the GitHub token.
 
-**Example:**
+##### Example:
 ```lua
 token_env_var = "GH_TOKEN"  -- Custom variable name
 ```
@@ -145,7 +145,7 @@ token_env_var = "GH_TOKEN"  -- Custom variable name
 
 Path to file containing the GitHub token. Supports tilde expansion (`~`).
 
-**Example:**
+##### Example:
 ```lua
 token_file = "~/.github_token"
 ```
@@ -162,7 +162,7 @@ chmod 600 ~/.github_token
 
 Hours between automatic data fetches. Prevents excessive API usage.
 
-**Examples:**
+##### Examples:
 ```lua
 fetch_interval_hours = 24   -- Daily (default)
 fetch_interval_hours = 12   -- Twice daily
@@ -195,7 +195,7 @@ Controls notification verbosity:
 | `"errors"` | Only show warnings and errors | Reduce noise |
 | `"silent"` | No notifications (check `:GithubStats debug` manually) | Minimal distraction |
 
-**Example:**
+##### Example:
 ```lua
 notification_level = "errors"  -- Only show problems
 ```
@@ -231,18 +231,18 @@ for your own statusline to read via
 #### `config_dir`
 **Type:** `string | nil`
 **Default:** `stdpath('config') .. '/lua/plugins/github-stats'`
-**Platform-specific defaults:**
+##### Platform-specific defaults:
 - Linux/macOS: `~/.config/nvim/lua/plugins/github-stats`
 - Windows: `%LOCALAPPDATA%\nvim\lua\plugins\github-stats`
 
 Custom directory for configuration file (`config.json`) storage.
 
-**Example:**
+##### Example:
 ```lua
 config_dir = "~/my-github-stats"
 ```
 
-**When to customize:**
+##### When to customize:
 - Store configuration outside Neovim's config directory
 - Use shared location across multiple editors
 - Organize plugin data separately
@@ -253,12 +253,12 @@ config_dir = "~/my-github-stats"
 
 Custom directory for traffic data storage. If not specified, data is stored relative to `config_dir`.
 
-**Example:**
+##### Example:
 ```lua
 data_dir = "/mnt/shared/github-stats"  -- Network storage
 ```
 
-**Use cases:**
+##### Use cases:
 - Store large datasets on separate partition
 - Use network-attached storage (NAS)
 - Share data across multiple systems
@@ -314,7 +314,7 @@ behavior is:
 4. Set expiration date (or "No expiration" for long-term use)
 5. Generate and **save token securely**
 
-**Required Permissions:**
+#### Required Permissions:
 - `repo` (full control of private repositories)
 
 This includes:
@@ -326,14 +326,14 @@ This includes:
 
 ### Token Security Best Practices
 
-**DO:**
+#### DO:
 - Use environment variables when possible
 - Restrict file permissions (`chmod 600`) for token files
 - Use separate tokens for different projects
 - Set expiration dates on tokens
 - Rotate tokens periodically
 
-**DON'T:**
+#### DON'T:
 - Commit tokens to version control
 - Share tokens between users
 - Use tokens with broader permissions than needed
@@ -341,7 +341,7 @@ This includes:
 
 ### Environment Variable Setup
 
-**Linux/macOS (bash/zsh):**
+#### Linux/macOS (bash/zsh):
 ```bash
 # In ~/.bashrc or ~/.zshrc
 export GITHUB_TOKEN="ghp_your_token_here"
@@ -350,7 +350,7 @@ export GITHUB_TOKEN="ghp_your_token_here"
 source ~/.bashrc
 ```
 
-**Windows (PowerShell):**
+#### Windows (PowerShell):
 ```powershell
 # Temporary (current session)
 $env:GITHUB_TOKEN = "ghp_your_token_here"
@@ -363,7 +363,7 @@ $env:GITHUB_TOKEN = "ghp_your_token_here"
 )
 ```
 
-**Verification:**
+#### Verification:
 ```bash
 # Linux/macOS
 echo $GITHUB_TOKEN
@@ -408,7 +408,7 @@ ls -la ~/.github_token
 
 ### Custom Storage Paths
 
-**Example 1: Separate Data Location**
+#### Example 1: Separate Data Location
 ```lua
 require("github_stats").setup({
   repos = { "user/repo" },
@@ -429,7 +429,7 @@ Results in:
     └── ...
 ```
 
-**Example 2: Completely Custom Paths**
+#### Example 2: Completely Custom Paths
 ```lua
 require("github_stats").setup({
   repos = { "user/repo" },
@@ -451,12 +451,12 @@ Results in:
 
 ### Storage Size Estimation
 
-**Per Repository:**
+#### Per Repository:
 - ~2KB per data point (daily)
 - 4 metrics × 14 days = ~112KB per repository per 2 weeks
 - With history: ~1.5MB per repository per year
 
-**Example Calculation:**
+#### Example Calculation:
 - 10 repositories
 - 1 year of daily data
 - ~15MB total storage
@@ -498,14 +498,14 @@ Results in:
 
 **Scenario:** You use Neovim on multiple systems (work laptop, home desktop, remote server) and want consistent GitHub Stats across all machines.
 
-**Solution with Option B:**
+#### Solution with Option B:
 
 1. **Structure:**
    ```
    ~/.config/nvim/lua/plugins/github-stats/
-   ├── config.json        # ✅ Sync this
-   ├── last_fetch.json    # ❌ Don't sync (system-specific)
-   └── data/              # ✅ Sync this (if you want shared history)
+   ├── config.json        # Sync this
+   ├── last_fetch.json    # Don't sync (system-specific)
+   └── data/              # Sync this (if you want shared history)
    ```
 
 2. **In .gitignore:**
@@ -522,7 +522,7 @@ Results in:
    - Shared historical data (if data/ synced)
    - System-specific fetch intervals (last_fetch.json not synced)
 
-**Alternative with Option A:**
+#### Alternative with Option A:
 
 If config is in `init.lua`, it is synced with your Neovim config automatically — but the *data* is a separate question either way. Traffic data lives under `data_dir`, which defaults to `config_dir/data` (that is, inside `stdpath('config')`), so whether it syncs depends entirely on whether your dotfiles repository ignores that directory. Point `data_dir` somewhere outside the Neovim config tree if you want the two decisions separated.
 

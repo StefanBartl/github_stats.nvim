@@ -81,12 +81,12 @@ Configure GitHub Stats using an external JSON configuration file for persistence
 
 In your Neovim init file (`init.lua` or `init.vim`):
 
-**Lua:**
+#### Lua:
 ```lua
 require("github_stats").setup()
 ```
 
-**VimScript:**
+#### VimScript:
 ```vim
 lua << EOF
 require("github_stats").setup()
@@ -97,12 +97,12 @@ EOF
 
 The plugin automatically creates a default configuration file at:
 
-**Linux/macOS:**
+#### Linux/macOS:
 ```
 ~/.config/nvim/lua/plugins/github-stats/config.json
 ```
 
-**Windows:**
+#### Windows:
 ```
 %LOCALAPPDATA%\nvim\lua\plugins\github-stats\config.json
 ```
@@ -194,9 +194,9 @@ If you use Neovim on multiple systems (work laptop, home desktop, remote server)
 
 ```
 ~/.config/nvim/lua/plugins/github-stats/
-├── config.json        # ✅ Sync this
-├── last_fetch.json    # ❌ Don't sync (system-specific)
-└── data/              # ⚠️  Optional (can sync for shared history)
+├── config.json        # Sync this
+├── last_fetch.json    # Don't sync (system-specific)
+└── data/              # Optional (can sync for shared history)
     └── username_repo/
         ├── clones/
         ├── views/
@@ -230,19 +230,19 @@ github-stats/last_fetch.json
 EOF
 ```
 
-**Decision: Sync data or not?**
+##### Decision: Sync data or not?
 
-**Sync data (shared history):**
-- ✅ Same statistics on all systems
-- ✅ Full historical view everywhere
-- ❌ Larger repository size
-- ❌ Potential merge conflicts
+##### Sync data (shared history):
+- Pro: Same statistics on all systems
+- Pro: Full historical view everywhere
+- Con: Larger repository size
+- Con: Potential merge conflicts
 
-**Don't sync data (system-specific):**
-- ✅ Smaller repository
-- ✅ No merge conflicts
-- ❌ Different history per system
-- ❌ Fresh start on new systems
+##### Don't sync data (system-specific):
+- Pro: Smaller repository
+- Pro: No merge conflicts
+- Con: Different history per system
+- Con: Fresh start on new systems
 
 #### Step 3: Commit and Push
 
@@ -320,28 +320,28 @@ cat ~/.config/nvim/lua/plugins/github-stats/config.json | jq .
 
 **Expected:** Valid JSON output without errors
 
-**Common JSON Errors:**
+#### Common JSON Errors:
 
 ```json
-// ❌ Wrong: Trailing comma
+// Wrong: Trailing comma
 {
   "repos": ["user/repo1", "user/repo2",],
 }
 
-// ✅ Correct: No trailing comma
+// Correct: No trailing comma
 {
   "repos": ["user/repo1", "user/repo2"]
 }
 ```
 
 ```json
-// ❌ Wrong: Comments (not allowed in JSON)
+// Wrong: Comments (not allowed in JSON)
 {
   // This is my repo list
   "repos": ["user/repo"]
 }
 
-// ✅ Correct: No comments
+// Correct: No comments
 {
   "repos": ["user/repo"]
 }
@@ -353,7 +353,7 @@ cat ~/.config/nvim/lua/plugins/github-stats/config.json | jq .
 :lua print(vim.inspect(require("github_stats").config.get()))
 ```
 
-**Expected output:**
+#### Expected output:
 ```lua
 {
   repos = { "username/repo1", "username/repo2" },
@@ -395,7 +395,7 @@ Shows:
 
 **Cause:** Invalid JSON syntax
 
-**Solutions:**
+##### Solutions:
 
 1. Validate JSON:
    ```bash
@@ -414,7 +414,7 @@ Shows:
 
 **Cause:** Empty `repos` array and no `watch_users` either
 
-**Solution:**
+##### Solution:
 
 Edit config.json:
 ```json
@@ -437,7 +437,7 @@ Restart Neovim.
 
 #### "Failed to read config file: Permission denied"
 
-**Linux/macOS:**
+##### Linux/macOS:
 ```bash
 # Fix permissions
 chmod 644 ~/.config/nvim/lua/plugins/github-stats/config.json
@@ -446,7 +446,7 @@ chmod 644 ~/.config/nvim/lua/plugins/github-stats/config.json
 ls -la ~/.config/nvim/lua/plugins/github-stats/config.json
 ```
 
-**Windows:**
+##### Windows:
 ```powershell
 # Check file exists and is readable
 Get-Content "$env:LOCALAPPDATA\nvim\lua\plugins\github-stats\config.json"
@@ -466,7 +466,7 @@ cat ~/.config/nvim/lua/plugins/github-stats/config.json
 
 ### Step 2: Convert to Lua Setup
 
-**From config.json:**
+#### From config.json:
 ```json
 {
   "repos": ["user/repo1", "user/repo2"],
@@ -477,7 +477,7 @@ cat ~/.config/nvim/lua/plugins/github-stats/config.json
 }
 ```
 
-**To init.lua:**
+#### To init.lua:
 ```lua
 require("github_stats").setup({
   repos = { "user/repo1", "user/repo2" },
@@ -496,13 +496,13 @@ require("github_stats").setup({
 
 ### Step 4: Optional Cleanup
 
-**Keep config.json (backup):**
+#### Keep config.json (backup):
 ```bash
 mv ~/.config/nvim/lua/plugins/github-stats/config.json \
    ~/.config/nvim/lua/plugins/github-stats/config.json.backup
 ```
 
-**Remove config.json:**
+#### Remove config.json:
 ```bash
 rm ~/.config/nvim/lua/plugins/github-stats/config.json
 ```
@@ -618,7 +618,7 @@ rm ~/.config/nvim/lua/plugins/github-stats/config.json
 
 For many repositories, organize by category (using comments in a separate file):
 
-**In ~/.config/nvim/lua/plugins/github-stats/repos.txt:**
+#### In ~/.config/nvim/lua/plugins/github-stats/repos.txt:
 ```
 # Personal Projects
 personal/project1
@@ -632,7 +632,7 @@ company/frontend
 organization/public-lib
 ```
 
-**Convert to JSON:**
+#### Convert to JSON:
 ```bash
 # Extract non-comment, non-empty lines
 grep -v '^#' repos.txt | grep -v '^$' | \
