@@ -46,28 +46,28 @@ configuration.
 
 ## GithubStats fetch
 
-**Usage:**
+### Usage:
 ```vim
 :GithubStats fetch [force]
 ```
 
-**Description:**
+### Description:
 
 Triggers a manual fetch of GitHub traffic statistics for all configured repositories. By default, respects the configured fetch interval (`fetch_interval_hours`). Use `force` to bypass the interval check.
 
-**Arguments:**
+### Arguments:
 - `force` (optional) – Forces immediate fetch regardless of last fetch time
 
-**Autocompletion:**
+### Autocompletion:
 - `force` keyword
 
-**Behavior:**
+### Behavior:
 - Fetches data asynchronously (non-blocking)
 - Updates internal caches for all commands
 - Shows notification on completion (respects `notification_level`)
 - Stores last fetch timestamp to track interval
 
-**Examples:**
+### Examples:
 ```vim
 " Respects 24-hour interval (default)
 :GithubStats fetch
@@ -76,7 +76,7 @@ Triggers a manual fetch of GitHub traffic statistics for all configured reposito
 :GithubStats fetch force
 ```
 
-**Output:**
+### Output:
 ```
 [github-stats] Starting fetch: 5 repos, force=false
 [github-stats] Successfully fetched 20 metrics
@@ -89,7 +89,7 @@ Or with errors:
 
 Check `:GithubStats debug` for error details.
 
-**Related:**
+### Related:
 - See [Configuration Guide](configurations/INTRO.md) for `fetch_interval_hours`
 - See [Troubleshooting](troubleshooting.md#understanding-error-messages) for error resolution
 
@@ -97,22 +97,22 @@ Check `:GithubStats debug` for error details.
 
 ## GithubStats show
 
-**Usage:**
+### Usage:
 ```vim
 :GithubStats show {repo} {metric} [start_date] [end_date]
 ```
 
-**Description:**
+### Description:
 
 Displays detailed statistics for a single repository and metric, including total counts, uniques, and daily breakdown in a floating window.
 
-**Arguments:**
+### Arguments:
 - `{repo}` – Repository identifier (`owner/repo`), must be configured
 - `{metric}` – Either `clones` or `views`
 - `[start_date]` (optional) – Start date in ISO format (`YYYY-MM-DD`)
 - `[end_date]` (optional) – End date in ISO format (`YYYY-MM-DD`)
 
-**Autocompletion:**
+### Autocompletion:
 - Repository names from configuration
 - Metric types: `clones`, `views`
 - Date preset names at both date slots — but see the warning below
@@ -125,11 +125,11 @@ Displays detailed statistics for a single repository and metric, including total
 > `:GithubStats chart` / the dashboard's `T` prompt for presets — see
 > [Where presets actually resolve](configurations/USER-DEFINED-DATE-PRESETS.md#where-presets-actually-resolve).
 
-**Smart Defaults:**
+### Smart Defaults:
 - No `start_date` → Shows all available data
 - No `end_date` → Defaults to today's date
 
-**Examples:**
+### Examples:
 ```vim
 " All available data (no date filters)
 :GithubStats show username/repo clones
@@ -145,7 +145,7 @@ Displays detailed statistics for a single repository and metric, including total
 :GithubStats show username/repo <Tab>  " Suggests: clones, views
 ```
 
-**Output Example:**
+### Output Example:
 ```
 Repository: username/repo
 Metric: clones
@@ -163,18 +163,18 @@ Daily Breakdown:
   2025-12-20:    67 count,    23 uniques
 ```
 
-**Notifications:**
+### Notifications:
 ```
 [github-stats] No start_date specified, showing data from 2025-11-20 onwards
 ```
 
-**Error Messages:**
+### Error Messages:
 ```
 [github-stats] Invalid metric 'clone'. Use 'clones' or 'views'
 [github-stats] No data found for username/repo. Check repository name and ensure data has been fetched.
 ```
 
-**Related:**
+### Related:
 - `:GithubStats chart` for visual representation
 - `:GithubStats export` to save data
 - `:GithubStats diff` for period comparison
@@ -183,28 +183,28 @@ Daily Breakdown:
 
 ## GithubStats summary
 
-**Usage:**
+### Usage:
 ```vim
 :GithubStats summary {metric}
 ```
 
-**Description:**
+### Description:
 
 Shows aggregated statistics across all configured repositories for the specified metric. Each repository is listed with its time period, total count, and total uniques.
 
-**Arguments:**
+### Arguments:
 - `{metric}` – Either `clones` or `views`
 
-**Autocompletion:**
+### Autocompletion:
 - Metric types: `clones`, `views`
 
-**Behavior:**
+### Behavior:
 - Queries all repositories in configuration
 - Shows complete available time range per repository
 - Displays errors for failed repositories (if any)
 - Results shown in floating window
 
-**Examples:**
+### Examples:
 ```vim
 :GithubStats summary clones
 :GithubStats summary views
@@ -213,7 +213,7 @@ Shows aggregated statistics across all configured repositories for the specified
 :GithubStats summary <Tab>  " Suggests: clones, views
 ```
 
-**Output Example:**
+### Output Example:
 ```
 Summary: clones across all repositories
 ============================================================
@@ -234,12 +234,12 @@ Repository: organization/repo3
   Total Uniques: 789
 ```
 
-**Notes:**
+### Notes:
 - This command does not accept date parameters
 - Shows entire available history for each repository
 - Useful for quick overview of all projects
 
-**Related:**
+### Related:
 - `:GithubStats show` for detailed single-repository view
 - `:GithubStats export all` for exporting summary
 
@@ -247,23 +247,23 @@ Repository: organization/repo3
 
 ## GithubStats referrers
 
-**Usage:**
+### Usage:
 ```vim
 :GithubStats referrers {repo} [limit]
 ```
 
-**Description:**
+### Description:
 
 Displays the top referring domains or sources for a repository, sorted by traffic count. Shows referrer name, total count, and unique visitors.
 
-**Arguments:**
+### Arguments:
 - `{repo}` – Repository identifier (`owner/repo`)
 - `[limit]` (optional) – Maximum number of results (default: 10)
 
-**Autocompletion:**
+### Autocompletion:
 - Repository names from configuration
 
-**Examples:**
+### Examples:
 ```vim
 " Top 10 referrers (default)
 :GithubStats referrers username/repo
@@ -275,7 +275,7 @@ Displays the top referring domains or sources for a repository, sorted by traffi
 :GithubStats referrers <Tab>  " Lists repositories
 ```
 
-**Output Example:**
+### Output Example:
 ```
 Top Referrers: username/repo
 ============================================================
@@ -292,40 +292,40 @@ Top Referrers: username/repo
     Count: 123, Uniques: 45
 ```
 
-**Notes:**
+### Notes:
 - Data shows latest available snapshot from GitHub
 - Referrers are tracked by GitHub for 14 days
 - Empty results mean no referrer data available yet
 
-**Use Cases:**
+### Use Cases:
 - Identify traffic sources
 - Evaluate marketing effectiveness
 - Discover unexpected popularity sources
 
-**Related:**
+### Related:
 - `:GithubStats paths` for most visited repository paths
 
 ---
 
 ## GithubStats paths
 
-**Usage:**
+### Usage:
 ```vim
 :GithubStats paths {repo} [limit]
 ```
 
-**Description:**
+### Description:
 
 Displays the most visited paths within a repository, showing which files, directories, or pages receive the most traffic.
 
-**Arguments:**
+### Arguments:
 - `{repo}` – Repository identifier (`owner/repo`)
 - `[limit]` (optional) – Maximum number of results (default: 10)
 
-**Autocompletion:**
+### Autocompletion:
 - Repository names from configuration
 
-**Examples:**
+### Examples:
 ```vim
 " Top 10 paths (default)
 :GithubStats paths username/repo
@@ -337,7 +337,7 @@ Displays the most visited paths within a repository, showing which files, direct
 :GithubStats paths <Tab>  " Lists repositories
 ```
 
-**Output Example:**
+### Output Example:
 ```
 Top Paths: username/repo
 ============================================================
@@ -359,33 +359,33 @@ Top Paths: username/repo
     Count: 345, Uniques: 89
 ```
 
-**Notes:**
+### Notes:
 - Data shows latest available snapshot from GitHub
 - Paths are tracked by GitHub for 14 days
 - Useful for understanding what content is most popular
 
-**Use Cases:**
+### Use Cases:
 - Identify popular documentation pages
 - Understand user navigation patterns
 - Prioritize content improvements
 
-**Related:**
+### Related:
 - `:GithubStats referrers` for traffic source analysis
 
 ---
 
 ## GithubStats chart
 
-**Usage:**
+### Usage:
 ```vim
 :GithubStats chart {repo} {metric} [start_date|time_range] [end_date]
 ```
 
-**Description:**
+### Description:
 
 Renders GitHub traffic data as ASCII sparklines or comparison charts. Provides visual trend analysis rather than raw numbers.
 
-**Arguments:**
+### Arguments:
 - `{repo}` – Repository identifier (`owner/repo`)
 - `{metric}` – `clones`, `views`, or `both` (comparison)
 - `[start_date|time_range]` (optional) – Either a start date (`YYYY-MM-DD`) **or** a relative time range
@@ -404,16 +404,16 @@ place presets are resolved. `last_quarter` works; `this_quarter` is treated
 as a start date, fails to parse, and silently filters nothing. See
 [Where presets actually resolve](configurations/USER-DEFINED-DATE-PRESETS.md#where-presets-actually-resolve).
 
-**Autocompletion:**
+### Autocompletion:
 - Repository names
 - Metric types: `clones`, `views`, `both`
 - Date presets at both date slots
 
-**Smart Defaults:**
+### Smart Defaults:
 - No third argument → All available data
 - Third argument is a date, no `[end_date]` → Today's date
 
-**Examples:**
+### Examples:
 ```vim
 " Single metric sparkline (all data)
 :GithubStats chart username/repo clones
@@ -435,7 +435,7 @@ as a start date, fails to parse, and silently filters nothing. See
 :GithubStats chart username/repo <Tab> " Suggests: clones, views, both
 ```
 
-**Output Example (Single Metric):**
+### Output Example (Single Metric):
 ```
 GitHub Stats: username/repo/clones
 ────────────────────────────────────────────────────────────────
@@ -451,7 +451,7 @@ Recent Values:
   2025-12-20: 901
 ```
 
-**Output Example (Comparison):**
+### Output Example (Comparison):
 ```
 GitHub Stats: username/repo/clones
 ════════════════════════════════════════════════════════════════
@@ -465,15 +465,15 @@ Uniques:          ▂▃▄▅▆▅▄▃▂▁▂▃▄▅▆▅▄▃▂▁�
 Period: 2025-11-20 to 2025-12-20 (30 days)
 ```
 
-**Sparkline Characters:**
+### Sparkline Characters:
 - `▁▂▃▄▅▆▇█` – Unicode block elements (8 levels)
 - Normalized to data range (min → `▁`, max → `█`)
 
-**Navigation:**
+### Navigation:
 - `q` or `<Esc>` – Close window
 - Arrow keys – Scroll (if content exceeds window size)
 
-**Related:**
+### Related:
 - `:GithubStats show` for numerical breakdown
 - `:GithubStats export` to save data
 
@@ -481,38 +481,38 @@ Period: 2025-11-20 to 2025-12-20 (30 days)
 
 ## GithubStats export
 
-**Usage:**
+### Usage:
 ```vim
 :GithubStats export {repo|all} {metric} {filepath}
 ```
 
-**Description:**
+### Description:
 
 Exports GitHub traffic statistics to a file. Supported formats are CSV (single repository only), Markdown (single repository or all repositories), and PDF (single repository or all repositories, via [pdfport.nvim](https://github.com/StefanBartl/pdfport.nvim), optional dependency).
 
-**Arguments:**
+### Arguments:
 - `{repo|all}` – Repository identifier or `all` for multi-repository export
 - `{metric}` – `clones`, `views`, or `both` (combined clones+views report)
 - `{filepath}` – Output file path (extension determines format: `.csv`, `.md`, or `.pdf`)
 
-**Autocompletion:**
+### Autocompletion:
 - Repository names (including `all` option)
 - Metric types: `clones`, `views`, `both`
 - File paths (uses Neovim's built-in file completion)
 
-**Supported Formats:**
+### Supported Formats:
 
 | Format | Extension | Single Repo | All Repos |
 |--------|-----------|-------------|-----------|
-| CSV | `.csv` | ✅ | ❌ |
-| Markdown | `.md` | ✅ | ✅ |
-| PDF | `.pdf` | ✅ | ✅ |
+| CSV | `.csv` | Yes | No |
+| Markdown | `.md` | Yes | Yes |
+| PDF | `.pdf` | Yes | Yes |
 
-**PDF export (optional dependency):**
+### PDF export (optional dependency):
 
 Routes through [pdfport.nvim](https://github.com/StefanBartl/pdfport.nvim) — soft dependency, `pcall`-guarded. The exact same report the Markdown export would write to a `.md` file is instead handed to `pdfport.create()` as text (no intermediate `.md` file). Requires pdfport.nvim installed with an available Markdown producer (`pandoc` + a PDF engine — `pdfport.can_create("markdown")`); without it the export fails with a clear error rather than silently falling back to another format.
 
-**Extension Defaulting:**
+### Extension Defaulting:
 
 If `{filepath}` has no extension at all, one is appended automatically —
 `.md` for the `all` target (the only format it supports), `.csv`
@@ -520,12 +520,12 @@ otherwise. A path that already has a *different* extension (e.g. `.txt`)
 is left alone and still errors, since silently rewriting a deliberately-named
 path would be more surprising than helpful.
 
-**Parent Directories:**
+### Parent Directories:
 
 Created automatically if they don't exist yet (previously this failed with a
 raw `E482: Can't open file ... for writing: no such file or directory`).
 
-**Examples:**
+### Examples:
 ```vim
 " Export single repository to CSV
 :GithubStats export username/repo clones ~/data.csv
@@ -557,7 +557,7 @@ raw `E482: Can't open file ... for writing: no such file or directory`).
 :GithubStats export username/repo clones <Tab>  " File path completion
 ```
 
-**CSV Format Example:**
+### CSV Format Example:
 ```csv
 repository,metric,date,count,uniques
 username/repo,clones,2025-12-20,45,12
@@ -565,14 +565,14 @@ username/repo,clones,2025-12-21,52,15
 username/repo,clones,2025-12-22,38,10
 ```
 
-**Combined CSV Format Example (`both`):**
+### Combined CSV Format Example (`both`):
 ```csv
 repository,date,clones_count,clones_uniques,views_count,views_uniques
 username/repo,2025-12-20,45,12,8,3
 username/repo,2025-12-21,52,15,11,5
 ```
 
-**Markdown Format Example:**
+### Markdown Format Example:
 ```markdown
 # GitHub Stats Report: username/repo
 
@@ -595,7 +595,7 @@ username/repo,2025-12-21,52,15,11,5
 ...
 ```
 
-**Markdown Summary Format (all repos):**
+### Markdown Summary Format (all repos):
 ```markdown
 # GitHub Stats Summary: clones
 
@@ -627,19 +627,19 @@ Every summary export (single-repo or `all`, either metric) includes a
 month, and the best single day. `all` + `both` produces one combined summary
 with both clones and views highlights, instead of two separate reports.
 
-**Notes:**
+### Notes:
 - Files are overwritten if they exist
 - Tilde (`~`) expansion is supported
 - Parent directories are created automatically if missing
 
-**Error Messages:**
+### Error Messages:
 ```
 [github-stats] 'all' target only supports Markdown/PDF format
 [github-stats] Export failed: Permission denied
 [github-stats] File must have .csv, .md or .pdf extension
 ```
 
-**Related:**
+### Related:
 - `:GithubStats show` to view data before exporting
 - See [Export to CSV, Markdown, and PDF](FEATURES/EXPORT.md) for more details
 
@@ -647,26 +647,26 @@ with both clones and views highlights, instead of two separate reports.
 
 ## GithubStats diff
 
-**Usage:**
+### Usage:
 ```vim
 :GithubStats diff {repo} {metric} {period1} {period2}
 ```
 
-**Description:**
+### Description:
 
 Compares traffic metrics between two time periods, showing absolute values and percentage changes. Useful for month-over-month or year-over-year analysis.
 
-**Arguments:**
+### Arguments:
 - `{repo}` – Repository identifier (`owner/repo`)
 - `{metric}` – Either `clones` or `views`
 - `{period1}` – First period (`YYYY-MM` or `YYYY`)
 - `{period2}` – Second period (`YYYY-MM` or `YYYY`)
 
-**Period Formats:**
+### Period Formats:
 - `YYYY-MM` – Single month (e.g., `2025-01` = January 2025)
 - `YYYY` – Full year (e.g., `2025` = Jan 1 - Dec 31, 2025)
 
-**Autocompletion:**
+### Autocompletion:
 - Repository names
 - Metric types: `clones`, `views`
 - Period suggestions (current month, last month, current year, last year)
@@ -676,7 +676,7 @@ Compares traffic metrics between two time periods, showing absolute values and p
 > only, and anything else fails with `Invalid period1/2`. Presets work at
 > the date slots of `show` and `chart`, and at the dashboard's `T` prompt.
 
-**Examples:**
+### Examples:
 ```vim
 " Compare two months
 :GithubStats diff username/repo clones 2025-01 2025-02
@@ -693,7 +693,7 @@ Compares traffic metrics between two time periods, showing absolute values and p
 :GithubStats diff username/repo clones <Tab>  " Suggests periods
 ```
 
-**Output Example:**
+### Output Example:
 ```
 Period Comparison: username/repo - clones
 ══════════════════════════════════════════════════════════════════
@@ -716,31 +716,31 @@ Changes:
   Uniques: +13.8%
 ```
 
-**Metrics Explained:**
+### Metrics Explained:
 - **Total Count** – Sum of all traffic in period
 - **Total Uniques** – Sum of unique visitors in period
 - **Days** – Number of days with data in period
 - **Avg/Day** – Average per day (Total / Days)
 - **Changes** – Percentage change from Period 1 to Period 2
 
-**Change Indicators:**
+### Change Indicators:
 - Positive change: `+X%` (growth)
 - Negative change: `-X%` (decline)
 - No change: `±0.0%`
 - Infinite change: `+∞` (Period 1 had zero traffic)
 
-**Notes:**
+### Notes:
 - Both periods must have data available
 - Comparison is fair even if periods have different lengths (uses Avg/Day)
 - Useful for identifying trends and seasonal patterns
 
-**Error Messages:**
+### Error Messages:
 ```
 [github-stats] Invalid period1: 2025-13 (must be YYYY-MM or YYYY)
 [github-stats] No data available for period: 2025-01
 ```
 
-**Related:**
+### Related:
 - `:GithubStats show` to check available date ranges
 - `:GithubStats chart` for visual trend analysis
 
@@ -748,12 +748,12 @@ Changes:
 
 ## GithubStats compact
 
-**Usage:**
+### Usage:
 ```vim
 :GithubStats compact [dry-run]
 ```
 
-**Description:**
+### Description:
 
 Bounds on-disk storage growth. For `clones`/`views`, once a calendar day
 falls outside the retention window (`opts.retention.cutoff_days`, default
@@ -766,13 +766,13 @@ always keeping the newest. Runs automatically at most once per 24h after a
 fetch (`opts.retention.enabled`, default `true`); this command runs it
 on demand.
 
-**Arguments:**
+### Arguments:
 - `dry-run` (optional) – Reports would-be archived/deleted counts and freed bytes without touching disk
 
-**Autocompletion:**
+### Autocompletion:
 - `dry-run` keyword
 
-**Examples:**
+### Examples:
 ```vim
 " Preview what would be archived/pruned
 :GithubStats compact dry-run
@@ -781,7 +781,7 @@ on demand.
 :GithubStats compact
 ```
 
-**Related:**
+### Related:
 - See [Configuration Guide](configurations/INTRO.md) for `opts.retention`
 - See [Data retention](FEATURES/RETENTION.md) for the full retention model
 
@@ -789,19 +789,19 @@ on demand.
 
 ## GithubStats debug
 
-**Usage:**
+### Usage:
 ```vim
 :GithubStats debug
 ```
 
-**Description:**
+### Description:
 
 Displays comprehensive diagnostic information to help troubleshoot configuration and API issues. Shows current configuration, token status, last fetch results, and performs a test API call.
 
-**Arguments:**
+### Arguments:
 None
 
-**Output Sections:**
+### Output Sections:
 
 1. **Configuration Status**
    - Number of tracked repositories (explicit + auto-discovered breakdown)
@@ -826,12 +826,12 @@ None
    - Shows success/error message
    - Sample data on success
 
-**Examples:**
+### Examples:
 ```vim
 :GithubStats debug
 ```
 
-**Output Example:**
+### Output Example:
 ```
 GitHub Stats Debug Info
 ============================================================
@@ -863,14 +863,14 @@ Success! Sample data:
 }
 ```
 
-**When to Use:**
+### When to Use:
 
 - After initial setup to verify configuration
 - When commands return unexpected errors
 - When troubleshooting "N errors" messages from fetch
 - Before opening support issues
 
-**Common Issues Revealed:**
+### Common Issues Revealed:
 
 1. **"Token: ERROR - GITHUB_TOKEN not set"**
    - Token not configured
@@ -888,7 +888,7 @@ Success! Sample data:
    - Token lacks `repo` permission
    - Rate limit exceeded (see [Rate Limit Check](configurations/PREPARATION.md#test-4-rate-limit-check))
 
-**Related:**
+### Related:
 - `:checkhealth github_stats` for comprehensive health check
 - `:messages` to view all Neovim messages
 - [Troubleshooting Guide](troubleshooting.md)
@@ -897,13 +897,13 @@ Success! Sample data:
 
 ## GithubStats dashboard
 
-**Usage:**
+### Usage:
 ```vim
 :GithubStats dashboard
 :GithubStats! dashboard
 ```
 
-**Description:**
+### Description:
 
 Opens the interactive full-buffer traffic dashboard, listing every
 configured repository with per-repo clones, views, and a trend indicator.
@@ -915,7 +915,7 @@ per command.
 Full keybindings, sorting/time-range controls, and configuration are covered
 separately.
 
-**Related:**
+### Related:
 - [Dashboard Guide](dashboard.md) — keybindings, sorting, time ranges, configuration
 - [Bindings Reference](BINDINGS.md#dashboard-keymaps) — dashboard keymap table
 
@@ -988,7 +988,7 @@ separately.
 
 ---
 
-**For more information:**
+#### For more information:
 - [README](../README.md) – Plugin overview
 - [Configuration Guide](configurations/INTRO.md) – Setup instructions
 - [Troubleshooting](troubleshooting.md) – Common issues and solutions

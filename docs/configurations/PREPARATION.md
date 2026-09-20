@@ -63,8 +63,8 @@ Or navigate manually:
 
 ### Step 3: Select Permissions
 
-**Required permission:**
-- ✅ `repo` (Full control of private repositories)
+#### Required permission:
+- `repo` (Full control of private repositories)
 
 This automatically includes:
 - `repo:status` – Access commit status
@@ -73,7 +73,7 @@ This automatically includes:
 - `repo:invite` – Access repository invitations
 - `security_events` – Read and write security events
 
-**Why `repo` scope is needed:**
+#### Why `repo` scope is needed:
 
 GitHub traffic statistics (clones, views, referrers, paths) are only accessible with full repository permissions, even for public repositories.
 
@@ -93,7 +93,7 @@ Choose one of the following methods:
 
 ### Method 1: Environment Variable (Recommended)
 
-**Linux/macOS:**
+#### Linux/macOS:
 
 ```bash
 # Add to ~/.bashrc, ~/.zshrc, or ~/.bash_profile
@@ -105,7 +105,7 @@ source ~/.bashrc
 source ~/.zshrc
 ```
 
-**Windows (PowerShell):**
+#### Windows (PowerShell):
 
 ```powershell
 # Temporary (current session only)
@@ -119,7 +119,7 @@ $env:GITHUB_TOKEN = "ghp_your_token_here"
 )
 ```
 
-**Verification:**
+#### Verification:
 
 ```bash
 # Linux/macOS
@@ -138,7 +138,7 @@ Should output your token (or at least show it's set).
 
 ### Method 2: Token File
 
-**Create token file:**
+#### Create token file:
 
 ```bash
 # Create file with token
@@ -152,7 +152,7 @@ ls -la ~/.github_token
 # Output should show: -rw------- (owner read/write only)
 ```
 
-**Windows:**
+#### Windows:
 
 ```powershell
 # Create token file
@@ -162,7 +162,7 @@ ls -la ~/.github_token
 Get-Content "$env:USERPROFILE\.github_token"
 ```
 
-**Configuration:**
+#### Configuration:
 
 When using token file, specify in plugin config:
 
@@ -178,20 +178,20 @@ require("github_stats").setup({
 
 ### Security Considerations
 
-**DO:**
-- ✅ Use environment variables when possible
-- ✅ Restrict file permissions to owner-only (chmod 600)
-- ✅ Keep tokens out of version control (add to .gitignore)
-- ✅ Use separate tokens for different projects
-- ✅ Set expiration dates on tokens
-- ✅ Rotate tokens periodically (every 90 days recommended)
+#### DO:
+- Use environment variables when possible
+- Restrict file permissions to owner-only (chmod 600)
+- Keep tokens out of version control (add to .gitignore)
+- Use separate tokens for different projects
+- Set expiration dates on tokens
+- Rotate tokens periodically (every 90 days recommended)
 
-**DON'T:**
-- ❌ Commit tokens to Git repositories
-- ❌ Share tokens between users
-- ❌ Use tokens with broader permissions than needed
-- ❌ Store tokens in plain text in shared locations
-- ❌ Use the same token across multiple applications
+#### DON'T:
+- Commit tokens to Git repositories
+- Share tokens between users
+- Use tokens with broader permissions than needed
+- Store tokens in plain text in shared locations
+- Use the same token across multiple applications
 
 ---
 
@@ -205,7 +205,7 @@ The plugin uses `curl` to communicate with the GitHub API.
 curl --version
 ```
 
-**Expected output:**
+#### Expected output:
 ```
 curl 7.68.0 (x86_64-pc-linux-gnu)
 Release-Date: 2020-01-08
@@ -215,23 +215,23 @@ Features: AsynchDNS brotli GSS-API HTTP2 HTTPS-proxy IDN IPv6 ...
 
 ### Install if Missing
 
-**Linux (Debian/Ubuntu):**
+#### Linux (Debian/Ubuntu):
 ```bash
 sudo apt update
 sudo apt install curl
 ```
 
-**Linux (Fedora/RHEL):**
+#### Linux (Fedora/RHEL):
 ```bash
 sudo dnf install curl
 ```
 
-**macOS:**
+#### macOS:
 ```bash
 brew install curl
 ```
 
-**Windows:**
+#### Windows:
 - Windows 10 (build 1803+): curl is included by default
 - Earlier versions: Download from https://curl.se/windows/
 
@@ -244,7 +244,7 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 
 **Expected:** JSON response with your GitHub user information
 
-**If you see:**
+#### If you see:
 - `401 Unauthorized` – Token is invalid or expired
 - `403 Forbidden` – Token lacks permissions
 - Connection errors – Network/firewall issue
@@ -255,18 +255,18 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 
 ### List Your Repositories
 
-**Via GitHub Web:**
+#### Via GitHub Web:
 1. Visit: https://github.com/USERNAME?tab=repositories
 2. Note the repository names (format: `username/repo-name`)
 
-**Via API (using your token):**
+#### Via API (using your token):
 ```bash
 curl -H "Authorization: Bearer YOUR_TOKEN" \
      https://api.github.com/user/repos?per_page=100 | \
      jq -r '.[].full_name'
 ```
 
-**Output example:**
+#### Output example:
 ```
 username/repo1
 username/repo2
@@ -275,22 +275,22 @@ organization/shared-repo
 
 ### Repository Name Format
 
-**Correct:**
+#### Correct:
 - `username/repository-name`
 - `organization/project-name`
 - `StefanBartl/github_stats.nvim`
 
-**Incorrect:**
+#### Incorrect:
 - `repository-name` (missing owner)
 - `github.com/username/repo` (includes domain)
 - `username/repo.git` (includes .git suffix)
 - `username\repo` (wrong separator)
 
-**Case Sensitivity:**
+#### Case Sensitivity:
 
 Repository names are **case-sensitive**. Ensure exact match:
-- ✅ `StefanBartl/github_stats.nvim`
-- ❌ `stefanbartl/github_stats.nvim` (wrong case)
+- Correct: `StefanBartl/github_stats.nvim`
+- Incorrect: `stefanbartl/github_stats.nvim` (wrong case)
 
 ---
 
@@ -316,7 +316,7 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 ```
 
 **Success:** JSON with repository information
-**Failure:**
+#### Failure:
 - `404 Not Found` – Repository doesn't exist or no access
 - `403 Forbidden` – Token lacks `repo` permission
 
@@ -330,11 +330,11 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 ```
 
 **Success:** JSON with clone statistics
-**Failure:**
+#### Failure:
 * `404 Not Found` – Endpoint not accessible
 * `403 Forbidden` – Missing `repo` permission
 
-**Example successful response:**
+#### Example successful response:
 ```json
 {
   "count": 42,
@@ -356,7 +356,7 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
      https://api.github.com/rate_limit
 ```
 
-**Output:**
+#### Output:
 ```json
 {
   "rate": {
@@ -367,11 +367,11 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 }
 ```
 
-**Limits:**
+#### Limits:
 - With token: 5,000 requests/hour
 - Without token: 60 requests/hour
 
-**Daily fetch impact:**
+#### Daily fetch impact:
 - 4 requests per repository (clones, views, referrers, paths)
 - 10 repositories = 40 requests/day
 - Well within the 5,000/hour limit
@@ -382,11 +382,11 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 
 ### Token Not Working
 
-**Symptoms:**
+#### Symptoms:
 - `401 Unauthorized` responses
 - "Token error" in plugin
 
-**Solutions:**
+#### Solutions:
 1. Verify token is set correctly:
    ```bash
    echo $GITHUB_TOKEN  # Should show token
@@ -404,24 +404,24 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 
 ### curl Not Found
 
-**Symptoms:**
+#### Symptoms:
 - `:checkhealth github_stats` shows "curl not found"
 - Commands fail silently
 
-**Solutions:**
+#### Solutions:
 1. Install curl (see [Verifying curl Installation](#verifying-curl-installation))
 2. Restart Neovim after installation
 3. Verify: `curl --version` in terminal
 
 ### Permission Denied on Token File
 
-**Symptoms:**
+#### Symptoms:
 - "Failed to read token file" error
 - File exists but can't be read
 
-**Solutions:**
+#### Solutions:
 
-**Linux/macOS:**
+#### Linux/macOS:
 ```bash
 # Fix permissions
 chmod 600 ~/.github_token
@@ -431,7 +431,7 @@ ls -la ~/.github_token
 # Should show: -rw------- (owner only)
 ```
 
-**Windows:**
+#### Windows:
 ```powershell
 # Ensure file is readable
 Get-Content "$env:USERPROFILE\.github_token"
@@ -439,11 +439,11 @@ Get-Content "$env:USERPROFILE\.github_token"
 
 ### Repository Access Issues
 
-**Symptoms:**
+#### Symptoms:
 - `404 Not Found` for repository
 - "No data available"
 
-**Solutions:**
+#### Solutions:
 1. Verify repository exists: https://github.com/USERNAME/REPO
 2. Check exact name (case-sensitive)
 3. Ensure your account has access (for private/organization repos)

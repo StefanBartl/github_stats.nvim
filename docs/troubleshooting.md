@@ -38,7 +38,7 @@ This shows:
 - **Last Fetch Summary** with detailed error messages
 - Test API call result
 
-**Example Output:**
+#### Example Output:
 ```
 Last Fetch Summary:
 ────────────────────────────────────────────────────────────
@@ -59,18 +59,18 @@ Error Details:
 
 ### 1. 404 Not Found
 
-**Error Message:**
+#### Error Message:
 ```
 username/repo/clones: API Error: 404 Not Found
 ```
 
-**Causes:**
+#### Causes:
 - Repository name is incorrect
 - Repository was renamed or deleted
 - Repository visibility changed
 - Typo in config.json
 
-**Solutions:**
+#### Solutions:
 1. Verify repository exists: https://github.com/username/repo
 2. Check exact name in GitHub (case-sensitive)
 3. Update config.json:
@@ -87,20 +87,20 @@ username/repo/clones: API Error: 404 Not Found
 
 ### 2. 403 Forbidden
 
-**Error Message:**
+#### Error Message:
 ```
 username/repo/referrers: API Error: 403 Forbidden
 ```
 
-**Causes:**
+#### Causes:
 - Token lacks `repo` permission
 - Token expired
 - Rate limit exceeded (5,000 requests/hour)
 - Private repository without access
 
-**Solutions:**
+#### Solutions:
 
-**For Permission Issues:**
+#### For Permission Issues:
 1. Check token has `repo` scope:
    - Go to: https://github.com/settings/tokens
    - Click your token
@@ -117,12 +117,12 @@ username/repo/referrers: API Error: 403 Forbidden
    chmod 600 ~/.github_token
    ```
 
-**For Rate Limits:**
+#### For Rate Limits:
 - Wait 1 hour for reset
 - Reduce number of repositories
 - Increase `fetch_interval_hours` in config
 
-**For Private Repos:**
+#### For Private Repos:
 - Ensure token has access to the organization/user
 - Verify you have read permissions on the repository
 
@@ -130,17 +130,17 @@ username/repo/referrers: API Error: 403 Forbidden
 
 ### 3. 401 Unauthorized
 
-**Error Message:**
+#### Error Message:
 ```
 username/repo/views: API Error: 401 Unauthorized
 ```
 
-**Causes:**
+#### Causes:
 - Token is invalid or expired
 - Token not provided
 - Wrong token format
 
-**Solutions:**
+#### Solutions:
 1. Verify token is set:
    ```bash
    # Environment variable:
@@ -166,20 +166,20 @@ username/repo/views: API Error: 401 Unauthorized
 
 ### 4. Connection Timeout
 
-**Error Message:**
+#### Error Message:
 ```
 username/repo/clones: curl timeout after 30s
 ```
 
-**Causes:**
+#### Causes:
 - Network connectivity issues
 - Firewall blocking GitHub
 - Proxy configuration needed
 - GitHub API down (rare)
 
-**Solutions:**
+#### Solutions:
 
-**Check Network:**
+#### Check Network:
 ```bash
 # Test basic connectivity
 ping github.com
@@ -188,31 +188,31 @@ ping github.com
 curl https://api.github.com
 ```
 
-**Configure Proxy (if needed):**
+#### Configure Proxy (if needed):
 ```bash
 # Set proxy environment variables
 export HTTP_PROXY="http://proxy.example.com:8080"
 export HTTPS_PROXY="http://proxy.example.com:8080"
 ```
 
-**Check GitHub Status:**
+#### Check GitHub Status:
 - Visit: https://www.githubstatus.com/
 
 ---
 
 ### 5. Invalid JSON Response
 
-**Error Message:**
+#### Error Message:
 ```
 username/repo/paths: Failed to parse JSON response
 ```
 
-**Causes:**
+#### Causes:
 - GitHub API returned malformed data (rare)
 - Network interruption during fetch
 - Proxy injecting HTML
 
-**Solutions:**
+#### Solutions:
 1. Try manual fetch:
    ```vim
    :GithubStats fetch force
@@ -232,12 +232,12 @@ username/repo/paths: Failed to parse JSON response
 
 ### Missing config.json
 
-**Error Message:**
+#### Error Message:
 ```
 [github-stats] Configuration error: File not found
 ```
 
-**Solution:**
+#### Solution:
 Plugin creates it automatically, but you can create manually:
 
 ```bash
@@ -260,18 +260,18 @@ EOF
 
 ### Invalid JSON Syntax
 
-**Error Message:**
+#### Error Message:
 ```
 [github-stats] Failed to parse config JSON: Expected ','
 ```
 
-**Causes:**
+#### Causes:
 - Missing comma between array elements
 - Trailing comma before closing bracket
 - Unquoted strings
 - Comments in JSON (not allowed)
 
-**Solution:**
+#### Solution:
 Validate your JSON:
 
 ```bash
@@ -288,7 +288,7 @@ Or, without leaving Neovim: if you have
 with a clear decode-error notification instead of a silent partial rewrite,
 so it doubles as a validator.
 
-**Common mistakes:**
+#### Common mistakes:
 ```json
 // WRONG:
 {
@@ -311,22 +311,22 @@ so it doubles as a validator.
 
 ### Repository Name Format
 
-**Error Message:**
+#### Error Message:
 ```
 [github-stats] Invalid repo format: must be 'owner/repo'
 ```
 
-**Wrong Formats:**
+#### Wrong Formats:
 ```json
 "repos": [
-  "myrepo",              // ❌ Missing owner
-  "github.com/user/repo", // ❌ Include domain
-  "user/repo.git",       // ❌ Include .git
-  "user\\repo"           // ❌ Wrong separator
+  "myrepo",              // Missing owner
+  "github.com/user/repo", // Include domain
+  "user/repo.git",       // Include .git
+  "user\\repo"           // Wrong separator
 ]
 ```
 
-**Correct Format:**
+#### Correct Format:
 ```json
 "repos": [
   "username/repository-name",
@@ -341,19 +341,19 @@ so it doubles as a validator.
 
 ### Firewall Blocking
 
-**Symptoms:**
+#### Symptoms:
 - All fetch operations timeout
 - Works on other networks
 - Other GitHub tools work
 
-**Solution:**
+#### Solution:
 
 Allow GitHub domains:
 - `github.com`
 - `api.github.com`
 - Port: `443` (HTTPS)
 
-**Windows Firewall:**
+#### Windows Firewall:
 ```powershell
 New-NetFirewallRule -DisplayName "GitHub API" `
   -Direction Outbound -RemoteAddress api.github.com `
@@ -364,7 +364,7 @@ New-NetFirewallRule -DisplayName "GitHub API" `
 
 ### Proxy Configuration
 
-**For Corporate Networks:**
+#### For Corporate Networks:
 
 ```bash
 # In ~/.bashrc or ~/.zshrc
@@ -373,7 +373,7 @@ export HTTPS_PROXY="http://proxy.company.com:8080"
 export NO_PROXY="localhost,127.0.0.1"
 ```
 
-**Windows (PowerShell):**
+#### Windows (PowerShell):
 ```powershell
 $env:HTTP_PROXY = "http://proxy.company.com:8080"
 $env:HTTPS_PROXY = "http://proxy.company.com:8080"
@@ -383,18 +383,18 @@ $env:HTTPS_PROXY = "http://proxy.company.com:8080"
 
 ### Rate Limiting
 
-**Error Message:**
+#### Error Message:
 ```
 username/repo/clones: API Error: 403 rate limit exceeded
 ```
 
-**Check Rate Limit:**
+#### Check Rate Limit:
 ```bash
 curl -H "Authorization: Bearer YOUR_TOKEN" \
   https://api.github.com/rate_limit
 ```
 
-**Response:**
+#### Response:
 ```json
 {
   "rate": {
@@ -405,7 +405,7 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 }
 ```
 
-**Solutions:**
+#### Solutions:
 1. Wait until `reset` timestamp
 2. Increase `fetch_interval_hours` in config
 3. Reduce number of repositories
@@ -416,14 +416,14 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 
 ### Permission Denied
 
-**Error Message:**
+#### Error Message:
 ```
 [github-stats] Failed to write file: Permission denied
 ```
 
-**Solutions:**
+#### Solutions:
 
-**Linux/macOS:**
+#### Linux/macOS:
 ```bash
 # Check permissions
 ls -la ~/.config/nvim/lua/plugins/github-stats/
@@ -433,7 +433,7 @@ chmod 755 ~/.config/nvim/lua/plugins/github-stats/
 chmod 644 ~/.config/nvim/lua/plugins/github-stats/config.json
 ```
 
-**Windows:**
+#### Windows:
 ```powershell
 # Check current user
 whoami
@@ -446,29 +446,29 @@ icacls "%LOCALAPPDATA%\nvim\lua\plugins\github-stats"
 
 ### Disk Space
 
-**Error Message:**
+#### Error Message:
 ```
 [github-stats] Failed to save: No space left on device
 ```
 
-**Check Disk Space:**
+#### Check Disk Space:
 
-**Linux/macOS:**
+#### Linux/macOS:
 ```bash
 df -h ~/.config/nvim/
 ```
 
-**Windows:**
+#### Windows:
 ```powershell
 Get-PSDrive C
 ```
 
-**Storage Usage:**
+#### Storage Usage:
 - ~2KB per fetch per repository per metric
 - 4 metrics × 14 days × 11 repos = ~616KB
 - Growth is bounded by retention, not linear in time
 
-**Cleanup Old Data:**
+#### Cleanup Old Data:
 
 Use the plugin's own retention pass rather than deleting files by hand — it
 folds aged-out clones/views days into a per-metric `_archive.json` instead
@@ -502,7 +502,7 @@ Edit `~/.config/nvim/lua/plugins/github-stats/config.json`:
 }
 ```
 
-**Options:**
+#### Options:
 
 | Level | Behavior |
 |-------|----------|
@@ -510,9 +510,9 @@ Edit `~/.config/nvim/lua/plugins/github-stats/config.json`:
 | `errors` | Only show warnings and errors |
 | `silent` | No notifications at all |
 
-**Examples:**
+#### Examples:
 
-**Verbose (see everything):**
+#### Verbose (see everything):
 ```json
 "notification_level": "all"
 ```
@@ -522,7 +522,7 @@ Shows:
 - ⚠ Fetch errors
 - ✗ Configuration errors
 
-**Minimal (only problems):**
+#### Minimal (only problems):
 ```json
 "notification_level": "errors"
 ```
@@ -530,7 +530,7 @@ Shows:
 - ⚠ Fetch errors
 - ✗ Configuration errors
 
-**Silent (no popups):**
+#### Silent (no popups):
 ```json
 "notification_level": "silent"
 ```

@@ -17,7 +17,7 @@ Configure GitHub Stats directly in your Neovim init file using the `setup()` fun
     - [Custom Storage Paths](#custom-storage-paths)
     - [Reduced Notifications](#reduced-notifications)
     - [More Frequent Fetching](#more-frequent-fetching)
-  - [Use Cases](#use-cases)
+  - [Use Cases](#use-cases-1)
     - [1. Dynamic Repository List](#1-dynamic-repository-list)
     - [2. Conditional Configuration](#2-conditional-configuration)
     - [3. Load from External File](#3-load-from-external-file)
@@ -157,7 +157,7 @@ require("github_stats").setup({
 })
 ```
 
-**Use Cases:**
+#### Use Cases:
 - `config_dir`: Store configuration separately from Neovim config
 - `data_dir`: Use network storage or separate partition for data
 
@@ -236,7 +236,7 @@ require("github_stats").setup({
 })
 ```
 
-**Usage:**
+#### Usage:
 ```bash
 export GITHUB_STATS_REPOS="user/repo1,user/repo2,user/repo3"
 nvim
@@ -269,7 +269,7 @@ require("github_stats").setup({
 })
 ```
 
-**In `lua/github-repos.lua`:**
+#### In `lua/github-repos.lua`:
 ```lua
 return {
   list = {
@@ -355,7 +355,7 @@ local config = config_map[env] or config_map.default
 require("github_stats").setup(config)
 ```
 
-**Usage:**
+#### Usage:
 ```bash
 export NVIM_ENV=work
 nvim
@@ -373,7 +373,7 @@ After setup, verify configuration is loaded:
 :lua print(vim.inspect(require("github_stats").config.get()))
 ```
 
-**Expected output:**
+#### Expected output:
 ```lua
 {
   repos = { "username/repo1", "username/repo2" },
@@ -415,12 +415,12 @@ Shows:
 
 **Cause:** No repositories specified in setup, and no `watch_users` either
 
-**Solution:**
+##### Solution:
 ```lua
 require("github_stats").setup({
-  repos = { "username/repo" },  -- ✅ Add repositories
+  repos = { "username/repo" },  -- Add repositories
   -- or:
-  -- watch_users = { "username" },  -- ✅ auto-track all public repos of a user
+  -- watch_users = { "username" },  -- auto-track all public repos of a user
 })
 ```
 
@@ -428,7 +428,7 @@ require("github_stats").setup({
 
 **Cause:** Environment variable not set or accessible
 
-**Solutions:**
+##### Solutions:
 
 1. Set environment variable:
    ```bash
@@ -448,20 +448,20 @@ require("github_stats").setup({
 
 **Cause:** Repository name format is incorrect
 
-**Correct format:**
+##### Correct format:
 ```lua
 repos = {
-  "username/repository",     -- ✅ Correct
-  "organization/project",    -- ✅ Correct
+  "username/repository",     -- Correct
+  "organization/project",    -- Correct
 }
 ```
 
-**Incorrect formats:**
+##### Incorrect formats:
 ```lua
 repos = {
-  "repository",              -- ❌ Missing owner
-  "github.com/user/repo",    -- ❌ Includes domain
-  "user/repo.git",           -- ❌ Includes .git
+  "repository",              -- Missing owner
+  "github.com/user/repo",    -- Includes domain
+  "user/repo.git",           -- Includes .git
 }
 ```
 
@@ -477,7 +477,7 @@ If you're currently using `config.json` (Option B) and want to migrate to direct
 cat ~/.config/nvim/lua/plugins/github-stats/config.json
 ```
 
-**Example output:**
+#### Example output:
 ```json
 {
   "repos": ["user/repo1", "user/repo2"],

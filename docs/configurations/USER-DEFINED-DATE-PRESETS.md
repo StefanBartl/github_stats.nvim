@@ -21,7 +21,7 @@ This guide explains how to create and use custom date range presets in GitHub St
 
 Date presets allow quick access to common time ranges without typing full ISO dates. The plugin supports both built-in presets and user-defined custom presets.
 
-**Benefits:**
+### Benefits:
 - Faster command usage
 - Consistent date ranges across queries
 - Business-specific time periods (fiscal years, sprints, etc.)
@@ -94,7 +94,7 @@ Available built-in presets:
 | `this_quarter` | Start of quarter to today | 2025-10-01 to 2025-12-22 |
 | `this_year` | January 1st to today | 2025-01-01 to 2025-12-22 |
 
-**Usage:**
+### Usage:
 ```vim
 :GithubStats chart username/repo clones last_month
 ```
@@ -127,7 +127,7 @@ config.date_presets.custom.last_14_days = function()
 end
 ```
 
-**Usage:**
+#### Usage:
 ```vim
 :GithubStats chart username/repo clones last_14_days
 ```
@@ -156,7 +156,7 @@ config.date_presets.custom.fiscal_year = function()
 end
 ```
 
-**Result (if today is 2025-12-22):**
+#### Result (if today is 2025-12-22):
 - Start: 2025-04-01
 - End: 2026-03-31
 
@@ -189,7 +189,7 @@ config.date_presets.custom.current_sprint = function()
 end
 ```
 
-**Result (if today is Monday, 2025-12-22):**
+#### Result (if today is Monday, 2025-12-22):
 - Start: 2025-12-15 (Monday two weeks ago)
 - End: 2025-12-28 (Sunday this week)
 
@@ -288,7 +288,7 @@ end
 
 **Cause:** Preset not properly registered or config not reloaded.
 
-**Solution:**
+#### Solution:
 1. Restart Neovim
 2. Verify preset is added after `setup()`:
 ```lua
@@ -303,7 +303,7 @@ config.date_presets.custom.my_preset = function() ... end
 
 **Cause:** Preset name misspelled or config not saved.
 
-**Solution:**
+#### Solution:
 Check available presets:
 ```vim
 :lua print(vim.inspect(require("github_stats.date_presets").list()))
@@ -315,7 +315,7 @@ Check available presets:
 
 **Cause:** Function returns wrong type or format.
 
-**Solution:**
+#### Solution:
 Ensure function signature:
 ```lua
 config.date_presets.custom.example = function()
@@ -329,7 +329,7 @@ end
 
 **Cause:** Timezone or DST issues, incorrect offset calculation.
 
-**Solution:**
+#### Solution:
 Use `os.date("*t")` for reliable date components:
 ```lua
 -- Instead of manual calculation
