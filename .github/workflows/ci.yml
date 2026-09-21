@@ -32,10 +32,10 @@ jobs:
       # PUC Lua 5.4, not LuaJIT: `std = "luajit"` in .luacheckrc pins which
       # globals/stdlib luacheck checks *against* -- independent of which
       # interpreter runs the luacheck binary itself.
-      - uses: leafo/gh-actions-lua@v10
+      - uses: leafo/gh-actions-lua@v13
         with:
           luaVersion: "5.4"
-      - uses: leafo/gh-actions-luarocks@v4
+      - uses: leafo/gh-actions-luarocks@v6
       - run: luarocks install luacheck 1.2.0
       - run: luacheck .
 
