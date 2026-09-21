@@ -73,6 +73,7 @@ jobs:
         with:
           repository: StefanBartl/ui.nvim
           path: .deps/ui.nvim
+          ref: ci-verified
       # plenary.nvim: the busted-compatible test harness the specs under
       # TESTS/ are written against.
       - uses: actions/checkout@v5
