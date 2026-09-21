@@ -62,3 +62,8 @@ add_dep("LIB_NVIM_DIR", "lib.nvim", "lib.nvim.fs.read")
 -- github_stats.dashboard directly -- same hard treatment as lib.nvim above.
 add_dep("UI_NVIM_DIR", "ui.nvim", "ui.kit")
 add_dep("PLENARY_DIR", "plenary.nvim", "plenary")
+
+-- Swap and shada stay off for the whole suite, including plenary's child
+-- processes that reuse this file: stale swap files fail suites with E326.
+vim.o.swapfile = false
+vim.o.shadafile = "NONE"
