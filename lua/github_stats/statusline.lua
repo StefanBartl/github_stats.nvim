@@ -26,6 +26,9 @@
 --- because GitHub's own traffic figures update slowly and a statusline
 --- redraws many times a second.
 
+local git = require("lib.nvim.git")
+local git_remote = require("lib.nvim.git.remote")
+
 local M = {}
 
 --- How long a view count stays fresh, in seconds. GitHub's traffic API
@@ -60,16 +63,14 @@ local function resolve_slug(dir)
   end
 
   local slug = false
-  local ok, out = pcall(vim.fn.systemlist, { "git", "-C", dir, "remote", "get-url", "origin" })
-  if ok and vim.v.shell_error == 0 and out[1] then
-    -- Matches both "git@github.com:owner/repo.git" and
-    -- "https://github.com/owner/repo(.git)?". The repo half is captured
-    -- greedily rather than as "no dots": this ecosystem's own repos are
-    -- named "*.nvim", and a `[^/%.]+` capture would truncate "ui.nvim" to
-    -- "ui", which matches nothing this plugin tracks.
-    local owner, repo = out[1]:match("github%.com[:/]([^/]+)/(.+)$")
-    if owner and repo then
-      slug = owner .. "/" .. repo:gsub("%.git$", "")
+  -- lib.nvim.git.remote's grammar handles gitlab.com/codeberg.org too, but
+  -- this plugin only ever tracks github.com repos -- host is checked, the
+  -- other two kinds fall through to `slug = false` same as any non-repo.
+  local url = git.remote_url("origin", { dir = dir })
+  if url then
+    local remote = git_remote.parse_remote(url)
+    if remote and remote.host == "github.com" then
+      slug = remote.owner .. "/" .. remote.repo
     end
   end
 
