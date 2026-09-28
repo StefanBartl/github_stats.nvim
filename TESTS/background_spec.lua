@@ -111,6 +111,7 @@ describe("background", function()
     package.loaded["github_stats.api"] = real_api
     package.loaded["github_stats.fetcher"] = real_fetcher
     package.loaded["github_stats.repo_discovery"] = nil
+    package.loaded["github_stats.digest"] = nil
     for _, name in ipairs({ "github_stats.config", "github_stats.background" }) do
       package.loaded[name] = nil
     end
@@ -239,6 +240,45 @@ describe("background", function()
       assert.equals(1, #notices)
       assert.equals("warn", notices[1].level)
       assert.is_truthy(notices[1].message:find("acme", 1, true))
+      assert.equals(1, #fetch_calls)
+    end)
+
+    it("first checks whether the digest lags the synced history, without holding up the fetch", function()
+      -- Earlier specs' cycles left their own scheduled checks pending; let
+      -- them drain before the counting stub goes in.
+      vim.wait(30)
+      local checks = 0
+      package.loaded["github_stats.digest"] = {
+        refresh_if_stale = function()
+          checks = checks + 1
+        end,
+      }
+
+      start_captured()
+      deferred[1].fn()
+
+      -- The fetch is already requested; the check runs on the next loop turn.
+      assert.equals(1, #fetch_calls)
+      assert.equals(0, checks)
+      vim.wait(200, function()
+        return checks > 0
+      end, 5)
+      assert.equals(1, checks)
+    end)
+
+    it("still fetches when the digest check raises", function()
+      package.loaded["github_stats.digest"] = {
+        refresh_if_stale = function()
+          error("boom")
+        end,
+      }
+
+      start_captured()
+      assert.has_no.errors(function()
+        deferred[1].fn()
+        vim.wait(50)
+      end)
+
       assert.equals(1, #fetch_calls)
     end)
 

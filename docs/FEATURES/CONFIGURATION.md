@@ -1,7 +1,7 @@
 # Configuration: `setup()` and `config.json`
 
 - **Module:** `config/init.lua` (`init`, `get`, `get_repos`, `get_token`, `get_retention`, `get_notification_level`, `notify`), `config/DEFAULTS.lua`
-- **Config:** `opts.config_dir` (default `stdpath('config')/lua/plugins/github-stats`), `opts.data_dir` (default `config_dir/data`), `opts.token_source` (default `"env"`), `opts.token_env_var` (default `"GITHUB_TOKEN"`), `opts.token_file`, `opts.notification_level` (default `"all"`)
+- **Config:** `opts.config_dir` (default `stdpath('config')/lua/plugins/github-stats`), `opts.data_dir` (default `config_dir/data`), `opts.token_source` (default `"env"`), `opts.token_env_var` (default `"GITHUB_TOKEN"`), `opts.token_file`, `opts.notification_level` (default `"all"`), `opts.digest_dir` (default `stdpath("data")/github_stats.nvim`), `opts.digest_daily_days` (default `400`)
 - **User guide:** [configurations/README.md](../configurations/README.md)
 
 Two interchangeable configuration methods with a fixed precedence:

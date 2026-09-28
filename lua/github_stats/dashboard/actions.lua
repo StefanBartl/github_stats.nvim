@@ -145,7 +145,10 @@ function M.force_refresh_selected(on_done)
   local repo = state.repos[state.current_index]
   local fetcher = require("github_stats.fetcher")
 
-  fetcher.fetch_repo(repo, function(_, _)
+  fetcher.fetch_repo(repo, function(success, _)
+    if #success > 0 then
+      require("github_stats.digest").write_later({ repo })
+    end
     vim.schedule(function()
       if on_done then
         on_done()

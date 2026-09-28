@@ -32,6 +32,8 @@
 ---@field progress_style? "auto"|"notify"|"statusline"|"fidget"|"float"|"kit" Indicator while a manual fetch is in flight; needs lib.nvim, no-op without it. Background cycles never show one.
 ---@field config_dir? string Custom config directory (default: stdpath('config')/lua/plugins/github-stats)
 ---@field data_dir? string Custom data directory (default: config_dir/data)
+---@field digest_dir? string Where the per-repository digest for other programs is written (default: stdpath('data')/github_stats.nvim). Local to this machine on purpose; see docs/FEATURES/DIGEST.md.
+---@field digest_daily_days? integer How many days of daily values a digest keeps (default 400)
 ---@field date_presets? GHStats.DatePresetConfig Date range preset configuration
 ---@field dashboard? GHStats.DashboardConfig Dashboard configuration
 

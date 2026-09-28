@@ -13,10 +13,17 @@ distinguishing 401/403/404 from a generic failure). It reads back the
 configuration `setup()` already loaded rather than re-initializing it, so it
 reports "Configuration not loaded" if run before `setup()` has ever run.
 
+The *GitHub Stats Digest* section checks the digest that other programs read
+([DIGEST.md](DIGEST.md)): `digest_dir` and `digest_daily_days` are valid, the
+digest directory can be written, `root.json` is in place and points at the
+digest directory, and the digests are not behind the stored history (the
+synced-history case — the fix it names is `:GithubStats digest`).
+
 `:GithubStats debug` covers overlapping ground non-interactively: repo
 counts (explicit vs. discovered), token source/length,
 `fetcher.last_fetch_summary` (with per-repo/metric error detail), and its
-own live API test against the first configured repo. The division is when,
+own live API test against the first configured repository, plus where the
+digest goes and the outcome of the last digest write. The division is when,
 not what: health runs before there is any data to look at, debug runs after
 a fetch has recorded something worth reading.
 

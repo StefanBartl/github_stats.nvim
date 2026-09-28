@@ -11,7 +11,11 @@ scripts/test.sh                       # every spec under TESTS/
 scripts/test.sh TESTS/api_spec.lua    # a single spec file
 ```
 
-`scripts/test.sh` wraps `nvim --clean --headless -u scripts/minimal_init.lua`;
+`scripts/test.sh` wraps `nvim --clean --headless -u scripts/minimal_init.lua`
+under its own `NVIM_APPNAME` (default `github_stats-tests`), so the run has its
+own `stdpath("config"/"data"/"state")` and cannot touch the developer's real
+Neovim directories — the digest's `root.json`, for one, defaults to a place
+under `stdpath("data")`;
 that file documents how it finds the three checkouts the suite needs and in
 what order:
 
@@ -74,6 +78,7 @@ which resolves to the *user's own* `stdpath("config")` directory.
 | `dashboard_render_spec.lua` | the rendered buffer: line budget, index↔line round trip, header box, trend, sparkline, totals, key hints, highlights |
 | `date_presets_spec.lua` | `date_presets`: the builtin resolvers, `M.list()`'s catalogue, custom presets, and every way `resolve()` refuses |
 | `diff_spec.lua` | `diff`: period parsing (`YYYY-MM`/`YYYY`), day filtering, percentage change wording (`+50.0%`, `±0.0%`, `+∞`), `format_comparison` |
+| `digest_spec.lua` | `digest`: building from a fixture history (windows, trend, daily series and its bound, referrers/paths incl. "unknown is not empty"), the write rules (atomic, changed-only, only the asked repositories, `root.json` at the default place), `stale`/`refresh_if_stale`, deferred and never-raising `write_later`, no token in the output, and that probing it loads neither `ui.nvim` nor the dashboard |
 | `export_spec.lua` | `export`: parent-directory creation, the CSV/Markdown/summary writers' own output, `format_number`, the pdfport gate and the PDF path |
 | `fetcher_spec.lua` | `fetcher`: per-repo fan-out, the fetch-interval gate and `last_fetch.json`, the success/error summary, and which notifications a background cycle suppresses |
 | `health_spec.lua` | `health`: every branch of the `:checkhealth` report, read back through a stubbed `vim.health` |

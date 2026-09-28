@@ -76,6 +76,7 @@ each page answers.
 - [Background fetching](docs/background-fetching.md) — when it fetches, and what it costs.
 - [Workflow](docs/WORKFLOW.md) — how the pieces combine over a session, day to day.
 - [Architecture](docs/architecture.md) — module layout and the storage format.
+- [Digest](docs/FEATURES/DIGEST.md) — the small per-repository file that lets another program (a desktop app, another plugin) show this traffic without a token: where it is, what is in it, how to find it.
 - [Health check](docs/FEATURES/DIAGNOSTICS.md) — what `:checkhealth github_stats` and `:GithubStats debug` report, and how they divide the diagnostic work.
 - [Troubleshooting](docs/troubleshooting.md) — common failures, what to run to diagnose them, and the fixes.
 - [Cross-platform notes](docs/cross-platform.md)

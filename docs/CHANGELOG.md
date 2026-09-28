@@ -25,6 +25,21 @@ documented as part of the features they affect in
 [`docs/FEATURES/`](FEATURES/README.md), not repeated here.)
 
 ### Added
+- **Digest for other programs** (`github_stats.digest`,
+  [`docs/FEATURES/DIGEST.md`](FEATURES/DIGEST.md)): after a fetch — and whenever
+  the synced history is newer than the local digest — the plugin publishes one
+  small JSON file per repository (7/30/90-day views and clones with a trend,
+  the daily series, top referrers and paths) plus a `root.json` pointer, so a
+  desktop app or another plugin can show this traffic without re-implementing
+  the plugin's rules and without a token. Written atomically, only when the
+  content changed, to a **local per-machine** directory (`digest_dir`, default
+  `stdpath("data")/github_stats.nvim`; `digest_daily_days`, default `400`) —
+  never into the synced config. The module is UI-free so it can be probed
+  without `ui.nvim`, and `digest_dir()` answers before `setup()`. New
+  `:GithubStats digest` (rebuild now), a *GitHub Stats Digest* section in
+  `:checkhealth`, and a digest block in `:GithubStats debug`.
+- `scripts/test.sh` runs the suite under its own `NVIM_APPNAME`, so no spec can
+  reach the developer's real config/data directories.
 - **Read memo in `storage.read_metric_history()`**: stored metrics are read
   and decoded once per metric directory and kept until something changes them.
   Every dashboard render queried each repository three times and each query

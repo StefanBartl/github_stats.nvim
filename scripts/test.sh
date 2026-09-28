@@ -28,4 +28,11 @@ else
   cmd="PlenaryBustedDirectory $target { minimal_init = 'scripts/minimal_init.lua', sequential = true }"
 fi
 
+# A throwaway app name gives the run its own stdpath("config"/"data"/"state"):
+# without it a spec that reaches the plugin's default locations (the digest's
+# root.json under stdpath("data"), or a setup() with no config_dir) would read
+# and write the developer's real Neovim directories. Plenary's child processes
+# inherit the environment, so this covers the whole suite.
+export NVIM_APPNAME="${NVIM_APPNAME:-github_stats-tests}"
+
 exec nvim -n --clean --headless -u scripts/minimal_init.lua -c "$cmd"

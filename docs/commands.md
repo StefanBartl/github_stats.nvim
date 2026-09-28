@@ -20,6 +20,7 @@ configuration.
 - [GithubStats export](#githubstats-export)
 - [GithubStats diff](#githubstats-diff)
 - [GithubStats compact](#githubstats-compact)
+- [GithubStats digest](#githubstats-digest)
 - [GithubStats debug](#githubstats-debug)
 - [GithubStats dashboard](#githubstats-dashboard)
 - [Common Patterns](#common-patterns)
@@ -39,6 +40,7 @@ configuration.
 | `:GithubStats export` | Export to CSV/Markdown/PDF (clones/views/both) | Repos, metrics, paths |
 | `:GithubStats diff` | Period-over-period comparison | Repos, metrics, periods |
 | `:GithubStats compact` | Archive old data, prune stale snapshots | `dry-run` |
+| `:GithubStats digest` | Rebuild the digest other programs read | None |
 | `:GithubStats debug` | Diagnostic information | None |
 | `:GithubStats[!] dashboard` | Open the interactive traffic dashboard | None |
 
@@ -784,6 +786,39 @@ on demand.
 ### Related:
 - See [Configuration Guide](configurations/INTRO.md) for `opts.retention`
 - See [Data retention](FEATURES/RETENTION.md) for the full retention model
+
+---
+
+## GithubStats digest
+
+### Usage:
+```vim
+:GithubStats digest
+```
+
+### Description:
+
+Rebuilds, right now, the per-repository digest that other programs read
+(a desktop app, another Neovim plugin) from the stored history. The digest is
+written automatically after every fetch and whenever the history is newer
+than it; this command is for the case those miss — chiefly a sync from your
+other machine, whose history the local digest has not caught up with yet.
+Digests whose content did not change are left untouched.
+
+Reports how many digests were written, left unchanged, or skipped for lack
+of history, and the directory they went to.
+
+### Arguments:
+None.
+
+### Examples:
+```vim
+:GithubStats digest
+```
+
+### Related:
+- See [Digest](FEATURES/DIGEST.md) for the file contract, where it lives and how a reader finds it
+- `opts.digest_dir` and `opts.digest_daily_days` in the [Configuration Guide](configurations/INTRO.md)
 
 ---
 

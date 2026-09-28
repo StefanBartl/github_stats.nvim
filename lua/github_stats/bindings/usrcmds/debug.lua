@@ -79,6 +79,32 @@ function M.execute(_args)
   end
 
   tbl_insert(lines, "")
+  tbl_insert(lines, "Digest:")
+  tbl_insert(lines, string.rep("-", 60))
+  local digest = require("github_stats.digest")
+  tbl_insert(lines, str_format("Directory: %s", digest.digest_dir()))
+  if digest.last_error then
+    tbl_insert(lines, str_format("Last write raised: %s", digest.last_error))
+  elseif digest.last_result then
+    local result = digest.last_result
+    tbl_insert(
+      lines,
+      str_format(
+        "Last write: %d written, %d unchanged, %d without history, %d error(s)",
+        #result.written,
+        #result.unchanged,
+        #result.skipped,
+        vim.tbl_count(result.errors)
+      )
+    )
+    for repo, err in pairs(result.errors) do
+      tbl_insert(lines, str_format("  • %s: %s", repo, err))
+    end
+  else
+    tbl_insert(lines, "No digest written in this session yet")
+  end
+
+  tbl_insert(lines, "")
   tbl_insert(lines, "Testing first repository...")
 
   if #tracked_repos > 0 then

@@ -14,6 +14,7 @@ describe("health", function()
   local tmp_dir
   local report
   local real_health, real_curl, real_config, real_health_mod
+  local real_modules
   local cfg, token, token_err
   local curl_responder
 
@@ -45,6 +46,7 @@ describe("health", function()
 
   before_each(function()
     report = {}
+    real_modules = {}
     tmp_dir = vim.fn.tempname()
     vim.fn.delete(tmp_dir, "rf")
 
@@ -114,6 +116,18 @@ describe("health", function()
       notify = function() end,
     }
 
+    -- The digest section reads through github_stats.digest and .storage; both
+    -- capture the config module at load, so they are loaded fresh here, under
+    -- the stub above, and put back afterwards.
+    for _, name in ipairs({ "github_stats.digest", "github_stats.storage", "github_stats.analytics" }) do
+      real_modules[name] = package.loaded[name]
+      package.loaded[name] = nil
+    end
+    cfg.digest_dir = tmp_dir .. "/digests"
+    require("github_stats.digest").default_dir = function()
+      return tmp_dir .. "/default"
+    end
+
     real_health_mod = package.loaded["github_stats.health"]
     package.loaded["github_stats.health"] = nil
     health_mod = require("github_stats.health")
@@ -124,6 +138,9 @@ describe("health", function()
     package.loaded["lib.nvim.net.curl"] = real_curl
     package.loaded["github_stats.config"] = real_config
     package.loaded["github_stats.health"] = real_health_mod
+    for name, module in pairs(real_modules) do
+      package.loaded[name] = module
+    end
     if tmp_dir then
       vim.fn.delete(tmp_dir, "rf")
       tmp_dir = nil
@@ -248,6 +265,98 @@ describe("health", function()
       health_mod.check()
 
       assert.is_true(reported("error", "Storage path exists but is not a directory"))
+    end)
+  end)
+
+  describe("digest", function()
+    local function seed_history()
+      local dir = tmp_dir .. "/data/user_alpha/views"
+      vim.fn.mkdir(dir, "p")
+      require("lib.nvim.fs.json").write(dir .. "/2026-01-05T12-00-00.json", {
+        timestamp = "2026-01-05T12:00:00Z",
+        data = { views = {} },
+      })
+      require("github_stats.storage").invalidate()
+    end
+
+    it("reports a digest directory that can be written", function()
+      health_mod.check()
+
+      assert.is_true(reported("ok", "Digest directory writable: "))
+    end)
+
+    it("reports one that cannot be created", function()
+      vim.fn.mkdir(tmp_dir, "p")
+      vim.fn.writefile({ "a file" }, tmp_dir .. "/blocker")
+      cfg.digest_dir = tmp_dir .. "/blocker/sub"
+
+      health_mod.check()
+
+      assert.is_true(reported("error", "Digest directory cannot be created"))
+    end)
+
+    it("rejects nonsense options", function()
+      cfg.digest_dir = ""
+      cfg.digest_daily_days = 0
+
+      health_mod.check()
+
+      assert.is_true(reported("error", "digest_dir must be a non-empty string"))
+      assert.is_true(reported("error", "digest_daily_days must be a number >= 1"))
+    end)
+
+    it("says root.json is not there yet rather than failing", function()
+      health_mod.check()
+
+      assert.is_true(reported("info", "root.json not written yet"))
+      assert.is_false(#messages("error") > 0 and reported("error", "root.json"))
+    end)
+
+    it("accepts a root.json that points at the digest directory", function()
+      require("lib.nvim.fs.json").write(tmp_dir .. "/default/root.json", {
+        schema = 1,
+        digest_dir = (tmp_dir .. "/digests"):gsub("\\", "/"),
+        repos = { ["user/alpha"] = "user_alpha" },
+      })
+
+      health_mod.check()
+
+      assert.is_true(reported("ok", "root.json in place (1 repositories with a digest)"))
+    end)
+
+    it("warns about a root.json that points elsewhere", function()
+      require("lib.nvim.fs.json").write(tmp_dir .. "/default/root.json", {
+        schema = 1,
+        digest_dir = tmp_dir .. "/elsewhere",
+        repos = { ["user/alpha"] = "user_alpha" },
+      })
+
+      health_mod.check()
+
+      assert.is_true(reported("warn", "root.json points to "))
+    end)
+
+    it("reports an unreadable root.json as an error", function()
+      vim.fn.mkdir(tmp_dir .. "/default", "p")
+      vim.fn.writefile({ "{ not json" }, tmp_dir .. "/default/root.json")
+
+      health_mod.check()
+
+      assert.is_true(reported("error", "root.json unreadable"))
+    end)
+
+    it("is content while the digest is up to date", function()
+      health_mod.check()
+
+      assert.is_true(reported("ok", "Digest is up to date with the stored history"))
+    end)
+
+    it("warns when the stored history is newer than the digest", function()
+      seed_history()
+
+      health_mod.check()
+
+      assert.is_true(reported("warn", "Digest is behind the stored history (first: user/alpha)"))
     end)
   end)
 
