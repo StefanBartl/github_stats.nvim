@@ -39,6 +39,12 @@ local DEFAULT_CONFIG = {
   notification_level = "all",
   progress_style = "auto", -- indicator while a manual fetch runs; needs lib.nvim, no-op without it
 
+  -- The digest other programs read (docs/FEATURES/DIGEST.md). `digest_dir` is
+  -- deliberately not listed: unset means stdpath("data")/github_stats.nvim,
+  -- and it belongs in setup() rather than in this (synced) config.json, since
+  -- the digest is local to one machine.
+  digest_daily_days = 400,
+
   watch_users = {},
   background = {
     enabled = true,

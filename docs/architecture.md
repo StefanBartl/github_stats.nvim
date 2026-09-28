@@ -24,6 +24,14 @@ repeated same-day fetch never double-counts. Growth is bounded by
 into `_archive.json` and deletes the raw files behind them, and prunes old
 referrers/paths snapshots outright.
 
+### The digest
+
+Next to (not inside) this history the plugin publishes a derived, per-machine
+copy for other programs: `<digest_dir>/digest/<owner_repo>.json` plus a
+`root.json` pointer under `stdpath("data")/github_stats.nvim`. It is rebuilt
+from the history above and never written into the synced config directory. See
+[Digest](FEATURES/DIGEST.md).
+
 See [Configuration Guide — Storage Paths](configurations/INTRO.md#storage-paths) for how to customize these locations.
 
 ## API Endpoints

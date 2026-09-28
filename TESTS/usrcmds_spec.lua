@@ -893,6 +893,15 @@ describe("usrcmds", function()
       assert.same({ { repo = "user/alpha", metric = "clones" } }, calls.api)
     end)
 
+    it("reports where the digest goes and that none was written yet", function()
+      debug_cmd.execute({})
+
+      local text = table.concat(floats[1].lines, "\n")
+      assert.is_truthy(text:find("Digest:", 1, true))
+      assert.is_truthy(text:find("Directory: ", 1, true))
+      assert.is_truthy(text:find("No digest written in this session yet", 1, true))
+    end)
+
     it("names the token error instead of the token", function()
       local saved_token = vim.env.GITHUB_TOKEN
       vim.env.GITHUB_TOKEN = nil
@@ -996,6 +1005,7 @@ describe("usrcmds", function()
         "export",
         "diff",
         "compact",
+        "digest",
         "debug",
         "dashboard",
       }) do

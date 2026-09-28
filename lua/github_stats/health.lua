@@ -126,6 +126,84 @@ local function check_storage()
 end
 
 ---@internal
+---Nearest existing ancestor of `path` (the path itself if it exists).
+---@param path string
+---@return string? existing
+---@return table? stat
+local function nearest_existing(path)
+  local current = path
+  while current and current ~= "" do
+    local stat = vim.uv.fs_stat(current)
+    if stat then
+      return current, stat
+    end
+    local parent = vim.fs.dirname(current)
+    if not parent or parent == current then
+      break
+    end
+    current = parent
+  end
+  return nil, nil
+end
+
+---@internal
+---Report the digest other programs read (github_stats.digest): the two
+---options, whether the directory can be written, whether `root.json` is in
+---place and points where the digests are, and whether the digests lag the
+---history.
+local function check_digest()
+  local digest = require("github_stats.digest")
+  local cfg = config.get()
+
+  if cfg and cfg.digest_dir ~= nil and (type(cfg.digest_dir) ~= "string" or cfg.digest_dir == "") then
+    health.error("digest_dir must be a non-empty string", { "Set digest_dir to a directory path, or remove it" })
+  end
+  local days = cfg and cfg.digest_daily_days
+  if days ~= nil and (type(days) ~= "number" or days < 1) then
+    health.error("digest_daily_days must be a number >= 1", { "Set digest_daily_days to e.g. 400" })
+  end
+
+  local dir = digest.digest_dir()
+  local existing, stat = nearest_existing(dir)
+  if not existing or not stat or stat.type ~= "directory" then
+    health.error(str_format("Digest directory cannot be created: %s", dir), { "Check digest_dir" })
+  elseif not vim.uv.fs_access(existing, "W") then
+    health.error(str_format("Digest directory is not writable: %s (checked %s)", dir, existing), { "Check digest_dir" })
+  else
+    health.ok(str_format("Digest directory writable: %s", dir))
+  end
+
+  local root, root_err = require("lib.nvim.fs.json").read(digest.root_path())
+  if type(root) ~= "table" then
+    if vim.uv.fs_stat(digest.root_path()) then
+      health.error(str_format("root.json unreadable: %s", tostring(root_err)), { "Run :GithubStats digest to rewrite it" })
+    else
+      health.info(str_format("root.json not written yet (%s) -- it appears with the first digest", digest.root_path()))
+    end
+  elseif root.digest_dir ~= dir then
+    health.warn(
+      str_format("root.json points to %s but the digest directory is %s", tostring(root.digest_dir), dir),
+      { "Run :GithubStats digest to rewrite it" }
+    )
+  else
+    local n = type(root.repos) == "table" and vim.tbl_count(root.repos) or 0
+    health.ok(str_format("root.json in place (%d repositories with a digest)", n))
+  end
+
+  local ok_stale, stale, repo = pcall(digest.stale)
+  if not ok_stale then
+    health.warn(str_format("Could not compare the digest with the history: %s", tostring(stale)))
+  elseif stale then
+    health.warn(
+      str_format("Digest is behind the stored history (first: %s)", tostring(repo)),
+      { "Run :GithubStats digest (the history is synced between machines, the digest is not)" }
+    )
+  else
+    health.ok("Digest is up to date with the stored history")
+  end
+end
+
+---@internal
 ---Check curl availability (cross-platform)
 ---@return boolean, string # Success flag, message
 local function check_curl()
@@ -301,6 +379,9 @@ function M.check()
   else
     health.error(storage_msg)
   end
+
+  health.start("GitHub Stats Digest")
+  check_digest()
 
   health.start("GitHub Stats API Connectivity")
 

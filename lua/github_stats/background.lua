@@ -23,6 +23,17 @@ local function run_cycle()
   local config = require("github_stats.config")
   local fetcher = require("github_stats.fetcher")
 
+  -- The history is synced between machines, the digest is not: when the other
+  -- machine fetched, this one skips its own fetch for the interval and would
+  -- never rebuild its digest. So every cycle first checks whether the digest
+  -- lags the history (a directory listing per repository, cheap) and rebuilds
+  -- it if so. Scheduled and pcall-wrapped: it must not hold up the fetch below.
+  vim.schedule(function()
+    pcall(function()
+      require("github_stats.digest").refresh_if_stale()
+    end)
+  end)
+
   local cfg = config.get()
   local watch_users = cfg and cfg.watch_users or {}
 

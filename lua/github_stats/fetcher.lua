@@ -104,6 +104,24 @@ local function empty_summary()
   return { success = {}, errors = {}, timestamp = os.date("%Y-%m-%dT%H:%M:%S") }
 end
 
+---@internal
+---Repositories named by `repo/metric` success entries, in first-seen order.
+---Repository names contain one "/" themselves, so the metric is split off the
+---last one.
+---@param entries string[]
+---@return string[]
+local function repos_of(entries)
+  local seen, repos = {}, {}
+  for _, entry in ipairs(entries) do
+    local repo = entry:match("^(.*)/[^/]+$")
+    if repo and not seen[repo] then
+      seen[repo] = true
+      repos[#repos + 1] = repo
+    end
+  end
+  return repos
+end
+
 ---Fetch all repositories and metrics
 ---@param force boolean Whether to bypass interval check
 ---@param callback? fun(summary: GHStats.FetchSummary) Optional completion callback
@@ -195,6 +213,11 @@ function M.fetch_all(force, callback, opts)
           )
         end
       end
+
+      -- Publish the digest other programs read (github_stats.digest) for the
+      -- repositories that got any data this cycle. Deferred and pcall-wrapped
+      -- inside write_later: a digest problem must never fail or slow a fetch.
+      require("github_stats.digest").write_later(repos_of(all_success))
 
       -- Create summary
       local summary = {

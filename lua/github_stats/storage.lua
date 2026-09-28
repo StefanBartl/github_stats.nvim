@@ -56,6 +56,15 @@ local function sanitize_repo_name(repo)
   return safe
 end
 
+---Directory / file stem a repository is stored under (`owner_repo`, percent-
+---encoded where needed). Public so that `github_stats.digest` names its files
+---by the same rule instead of a second one.
+---@param repo string Repository in "owner/repo" format
+---@return string
+function M.sanitize_repo_name(repo)
+  return sanitize_repo_name(repo)
+end
+
 ---@internal
 ---Get metric directory path
 ---@param repo string Repository identifier

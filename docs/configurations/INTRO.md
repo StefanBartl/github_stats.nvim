@@ -23,6 +23,8 @@
       - [`config_dir`](#config_dir)
       - [`data_dir`](#data_dir)
       - [`retention`](#retention)
+      - [`digest_dir`](#digest_dir)
+      - [`digest_daily_days`](#digest_daily_days)
     - [Options With Their Own Page](#options-with-their-own-page)
   - [Token Management](#token-management)
     - [Creating a GitHub Token](#creating-a-github-token)
@@ -288,6 +290,31 @@ retention = {
 day cannot be considered final until it has aged out of it. Configuring `5`
 behaves like `14`; `:GithubStats compact dry-run` is the fast way to see
 that before assuming otherwise.
+
+#### `digest_dir`
+**Type:** `string | nil`
+**Default:** `stdpath("data") .. "/github_stats.nvim"`
+
+Where the per-repository digest is written — the small JSON file another
+program reads to show this traffic without a token (see
+[Digest](../FEATURES/DIGEST.md)). It is **local to one machine on purpose**:
+the raw history is synced with your Neovim config, the digest is derived and
+rewritten in place, so it must not sit in a synced folder. Set it in
+`setup()`, not in the synced `config.json`.
+
+A small pointer file, `root.json`, is always written at the default place and
+names wherever `digest_dir` really is, so a reader needs no setting either way.
+
+```lua
+digest_dir = "D:/local/github-stats-digest"
+```
+
+#### `digest_daily_days`
+**Type:** `integer`
+**Default:** `400`
+
+How many days of daily values each digest keeps per metric. The 7/30/90-day
+sums are unaffected. A digest with this many days is about 20 KB.
 
 ---
 

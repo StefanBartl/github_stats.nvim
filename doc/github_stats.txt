@@ -16,7 +16,8 @@ CONTENTS                                              *github_stats-contents*
    10. Date Presets ........................... |github_stats-date-presets|
    11. API .................................... |github_stats-api|
    12. Storage ................................ |github_stats-storage|
-   13. Troubleshooting ........................ |github_stats-troubleshooting|
+   13. Digest ................................. |github_stats-digest|
+   14. Troubleshooting ........................ |github_stats-troubleshooting|
 
 ==============================================================================
 INTRODUCTION                                      *github_stats-introduction*
@@ -224,6 +225,17 @@ config_dir              Custom config directory (advanced)
 data_dir                Custom data directory (advanced)
                         Type: string
                         Default: config_dir .. '/data'
+
+digest_dir              Where the per-repository digest for other programs
+                        is written (see |github_stats-digest|). Local to one
+                        machine on purpose: set it in setup(), not in the
+                        synced config.json.
+                        Type: string
+                        Default: stdpath('data') .. '/github_stats.nvim'
+
+digest_daily_days       Days of daily values each digest keeps per metric.
+                        Type: integer
+                        Default: 400
 
 Custom Storage Paths Example:~
 >lua
@@ -489,6 +501,17 @@ the dashboard subcommand.
         :GithubStats compact dry-run
         :GithubStats compact
 
+                                                     *:GithubStats-digest*
+:GithubStats digest
+    Rebuilds, now, the per-repository digest that other programs read
+    (see |github_stats-digest|). It is written automatically after every
+    fetch and whenever the synced history is newer than it; use this after
+    a sync from your other machine. Reports how many digests were written,
+    were unchanged, or had no history, and where they went.
+
+    Examples:~
+        :GithubStats digest
+
                                                       *:GithubStats-debug*
 :GithubStats debug
     Shows debug information and tests API connectivity.
@@ -513,6 +536,7 @@ the dashboard subcommand.
         • Token access
         • curl availability (cross-platform)
         • Storage paths
+        • Digest: options, writable directory, root.json, lag behind the history
         • API connectivity (with timeout)
 
 ==============================================================================
@@ -1142,6 +1166,42 @@ Storage Management:~
   • Atomic writes (temp + rename)
   • Automatic directory creation
   • No automatic cleanup (manual when needed)
+
+==============================================================================
+DIGEST                                                  *github_stats-digest*
+
+Other programs (a desktop app, another Neovim plugin) can show this traffic
+without a token and without re-implementing the plugin's rules: after each
+fetch the plugin writes one small JSON file per repository, plus a pointer.
+The file contract is docs/FEATURES/DIGEST.md.
+
+Where:~
+>
+    <stdpath('data')>/github_stats.nvim/root.json   pointer, always here
+    <digest_dir>/digest/<owner_repo>.json           one file per repository
+<
+The history lives in the (synced) Neovim config; the digest is derived and
+rewritten in place, so it is local to each machine and rebuilt from the
+history whenever that is newer. `root.json` names where the digests really
+are, so a reader needs no setting even when `digest_dir` is overridden.
+
+Contents:~
+  • 7, 30 and 90 complete days of views and clones (count and uniques) and a
+    7-day trend in percent
+  • the daily series, oldest first, at most `digest_daily_days` days
+  • GitHub's top 10 referrers and paths (absent = unknown, not "none")
+  • `generated` (when built) and `fetched` (the data it was built from)
+
+Never contained: the token, any path of yours.
+
+Reading it from Lua:~
+>lua
+    -- Probe this module, not require("github_stats"): the top-level module
+    -- loads the dashboard, which needs ui.nvim.
+    local dir = require("github_stats.digest").digest_dir()
+<
+
+Commands: |:GithubStats-digest|
 
 ==============================================================================
 TROUBLESHOOTING                              *github_stats-troubleshooting*

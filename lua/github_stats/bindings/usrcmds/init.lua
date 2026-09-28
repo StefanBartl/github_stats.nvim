@@ -23,6 +23,7 @@ local referrers = require("github_stats.bindings.usrcmds.referrers")
 local paths = require("github_stats.bindings.usrcmds.paths")
 local debug = require("github_stats.bindings.usrcmds.debug")
 local compact = require("github_stats.bindings.usrcmds.compact")
+local digest = require("github_stats.bindings.usrcmds.digest")
 local chart = require("github_stats.bindings.usrcmds.chart")
 local export = require("github_stats.bindings.usrcmds.export")
 local diff = require("github_stats.bindings.usrcmds.diff")
@@ -223,6 +224,14 @@ function M.setup()
         desc = "Archive old clones/views data and prune stale referrers/paths snapshots (use 'dry-run' to preview)",
         run = function(ctx)
           compact.execute({ args = reconstruct(ctx) })
+        end,
+      },
+
+      {
+        path = { "digest" },
+        desc = "Rebuild the per-repository digest other programs read (after a sync, the local one may lag)",
+        run = function()
+          digest.execute({})
         end,
       },
 

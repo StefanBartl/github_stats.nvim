@@ -276,6 +276,69 @@ describe("fetcher", function()
       assert.equals(0, notice_count("Fetch interval not elapsed"))
     end)
 
+    describe("digest", function()
+      local real_digest, written
+
+      before_each(function()
+        real_digest = package.loaded["github_stats.digest"]
+        written = nil
+        package.loaded["github_stats.digest"] = {
+          write_later = function(repos)
+            written = repos
+          end,
+        }
+      end)
+
+      after_each(function()
+        package.loaded["github_stats.digest"] = real_digest
+      end)
+
+      it("is published for every repository that got data, once the fetch is done", function()
+        local summary
+        fetcher.fetch_all(true, function(s)
+          summary = s
+        end)
+        wait_for(function()
+          return summary ~= nil
+        end)
+
+        assert.same({ "owner/alpha", "owner/beta" }, written)
+      end)
+
+      it("leaves out a repository whose every metric failed", function()
+        api_responder = function(repo)
+          if repo == "owner/beta" then
+            return nil, "boom"
+          end
+          return { count = 1 }, nil
+        end
+
+        local summary
+        fetcher.fetch_all(true, function(s)
+          summary = s
+        end)
+        wait_for(function()
+          return summary ~= nil
+        end)
+
+        assert.same({ "owner/alpha" }, written)
+      end)
+
+      it("is not touched when the interval has not elapsed and nothing was fetched", function()
+        require("lib.nvim.fs.json").write(tmp_dir .. "/last_fetch.json", { timestamp = os.time() })
+
+        local summary
+        fetcher.fetch_all(false, function(s)
+          summary = s
+        end)
+        wait_for(function()
+          return summary ~= nil
+        end)
+
+        assert.is_nil(written)
+      end)
+    end)
+
     it("counts errors in the summary and warns about them", function()
       api_responder = function(repo)
         if repo == "owner/beta" then
