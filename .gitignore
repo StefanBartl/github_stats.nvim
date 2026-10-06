@@ -43,7 +43,7 @@ luac.out
 
 doc/tags
 
-# scripts/minimal_init.lua's local-checkout fallback for lib.nvim/plenary.nvim
+# TESTS/minimal_init.lua's local-checkout fallback for testing.nvim/lib.nvim/ui.nvim
 /.deps/
 
 # Generated module map (documentation.nvim). Derived output, not source:
