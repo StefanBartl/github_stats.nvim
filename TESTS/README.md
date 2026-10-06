@@ -1,40 +1,41 @@
 # TESTS
 
-A `plenary.nvim` busted suite (`describe`/`it`/`before_each`, busted
-assertions). Every file under `TESTS/` ending in `_spec.lua` is picked up
-automatically — there is no aggregator to register a new file in.
+A busted-style suite (`describe`/`it`/`before_each`, busted assertions) run by
+[testing.nvim](https://github.com/StefanBartl/testing.nvim). Every file under
+`TESTS/` ending in `_spec.lua` is picked up automatically — there is no
+aggregator to register a new file in. The configuration (one nvim per spec
+file, the guards and what they let through) is `.testing.lua`.
 
 ## Running
 
 ```sh
 scripts/test.sh                       # every spec under TESTS/
-scripts/test.sh TESTS/api_spec.lua    # a single spec file
+scripts/test.sh --file api            # spec files whose name contains "api"
+scripts/test.sh --json ir.json        # also write the machine-readable result
 ```
 
-`scripts/test.sh` wraps `nvim --clean --headless -u scripts/minimal_init.lua`
-under its own `NVIM_APPNAME` (default `github_stats-tests`), so the run has its
-own `stdpath("config"/"data"/"state")` and cannot touch the developer's real
-Neovim directories — the digest's `root.json`, for one, defaults to a place
-under `stdpath("data")`;
-that file documents how it finds the three checkouts the suite needs and in
-what order:
+`scripts/test.sh` starts testing.nvim under its own `NVIM_APPNAME` (default
+`github_stats-tests`), so the run has its own `stdpath("config"/"data"/"state")`
+and cannot touch the developer's real Neovim directories — the digest's
+`root.json`, for one, defaults to a place under `stdpath("data")`. Its header
+documents how it finds the checkouts the suite needs and in what order:
 
-| Dependency      | Env var        | Fallbacks                                   |
-| --------------- | -------------- | ------------------------------------------- |
-| `lib.nvim`      | `LIB_NVIM_DIR` | `.deps/lib.nvim`, then `../lib.nvim`        |
-| `ui.nvim`       | `UI_NVIM_DIR`  | `.deps/ui.nvim`, then `../ui.nvim`          |
-| `plenary.nvim`  | `PLENARY_DIR`  | `.deps/plenary.nvim`, then `../plenary.nvim`|
+| Dependency      | Env var            | Fallbacks                                      |
+| --------------- | ------------------ | ---------------------------------------------- |
+| `testing.nvim`  | `TESTING_NVIM_DIR` | `.deps/testing.nvim`, then `../testing.nvim`   |
+| `lib.nvim`      | `LIB_NVIM_DIR`     | `.deps/lib.nvim`, then `../lib.nvim`           |
+| `ui.nvim`       | `UI_NVIM_DIR`      | `.deps/ui.nvim`, then `../ui.nvim`             |
 
 All three are hard dependencies here, not optional ones: most modules
 `require("lib.*")` directly, `github_stats/init.lua` pulls in `ui.contextmenu`
-at module level the instant anything requires `github_stats`, and plenary is
-the runner itself. `.github/workflows/ci.yml` checks all three out under
+at module level the instant anything requires `github_stats`, and testing.nvim
+is the runner itself. `.github/workflows/ci.yml` checks all three out under
 `.deps/`.
 
-Prefer the directory form (`scripts/test.sh` with no argument, which is what
-CI runs) over the single-file form: the single-file form runs the spec in the
-current process, whose runtimepath does not necessarily match the one
-`minimal_init.lua` builds for a child.
+Two cases (`dashboard_spec.lua` "initializes with default values" and
+`integration/dashboard_flow_spec.lua` "opens, navigates, and closes
+successfully") assert nothing; `.testing.lua` sets `assertions = "warn"` so the
+runner reports them instead of failing the run.
 
 ## No network, ever
 

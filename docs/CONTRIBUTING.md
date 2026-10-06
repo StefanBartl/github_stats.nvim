@@ -64,8 +64,9 @@ rate limit; everything else reads the local store.
 
 ## Tests
 
-`TESTS/` is a [plenary.nvim](https://github.com/nvim-lua/plenary.nvim)
-busted-style suite that runs against fixture data — no token, no network.
+`TESTS/` is a busted-style suite, run with `scripts/test.sh`
+([testing.nvim](https://github.com/StefanBartl/testing.nvim)), that runs
+against fixture data — no token, no network.
 [GitHub Actions](../.github/workflows/ci.yml) runs it on every push and PR to
 `main`.
 

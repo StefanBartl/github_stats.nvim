@@ -58,7 +58,7 @@ jobs:
       - uses: actions/checkout@v5
       # lib.nvim is a runtime dependency (notify, fs.json, map, window,
       # usercmd, cross.executable, ...) -- a headless run has no plugin
-      # manager, so it's checked out the same way scripts/minimal_init.lua's
+      # manager, so it's checked out the same way TESTS/minimal_init.lua's
       # `.deps/lib.nvim` fallback candidate expects.
       - uses: actions/checkout@v5
         with:
@@ -74,21 +74,27 @@ jobs:
           repository: StefanBartl/ui.nvim
           path: .deps/ui.nvim
           ref: ci-verified
-      # plenary.nvim: the busted-compatible test harness the specs under
-      # TESTS/ are written against.
-      - uses: actions/checkout@v5
-        with:
-          repository: nvim-lua/plenary.nvim
-          path: .deps/plenary.nvim
-          # Pinned to the 2026-09-20 HEAD; bump deliberately, not by drifting.
-          ref: 74b06c6c75e4eeb3108ec01852001636d85a932b
       - uses: rhysd/action-setup-vim@v1
         with:
           neovim: true
           version: stable
+      # Checked out from the branch that only moves once the dependency's own CI is green.
+      - uses: actions/checkout@v5
+        with:
+          repository: "StefanBartl/testing.nvim"
+          path: .deps/testing.nvim
+          ref: ci-verified
       - run: |
           exec > >(tee -a "$RUNNER_TEMP/test-output.log") 2>&1
-          scripts/test.sh
+          scripts/test.sh --json "$RUNNER_TEMP/testing-ir.json"
+      # The IR is what a reporter or a person reads to find out WHICH case failed on WHICH platform.
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: testing-ir-${{ matrix.os }}
+          path: ${{ runner.temp }}/testing-ir.json
+          if-no-files-found: ignore
+          retention-days: 14
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
