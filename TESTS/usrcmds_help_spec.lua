@@ -10,7 +10,11 @@
 
 describe("usrcmds help texts", function()
   local composer = require("lib.nvim.bindings.usercmd.composer")
-  local entries = require("lib.nvim.bindings.usercmd.composer.help.entries")
+  -- Absent in a lib.nvim older than the option float; the specs below then skip themselves.
+  local has_entries, entries = pcall(require, "lib.nvim.bindings.usercmd.composer.help.entries")
+  if not has_entries then
+    entries = {}
+  end
 
   before_each(function()
     -- Idempotent: registering the verb again replaces it.
@@ -28,7 +32,7 @@ describe("usrcmds help texts", function()
   it("describes every positional argument", function()
     -- A lib.nvim older than `help.undocumented` (or its `args` option) cannot answer the
     -- question; that is a missing feature of the dependency, not a defect of this plugin.
-    if type(composer.help.undocumented) ~= "function" then
+    if type(composer.help) ~= "table" or type(composer.help.undocumented) ~= "function" then
       return
     end
 
