@@ -51,6 +51,7 @@ end
 -- Dynamic completion types: config-driven repo lists and date presets can't
 -- be static `enum`/`values` snapshots, so each is looked up fresh per call.
 composer.register_type("GH_REPO", {
+  desc = "Repository as owner/repo, completed from the configured list",
   validate = function(raw)
     return true, raw, nil
   end,
@@ -63,6 +64,7 @@ composer.register_type("GH_REPO", {
 })
 
 composer.register_type("GH_REPO_OR_ALL", {
+  desc = "Repository (owner/repo), or all for every repo (.md/.pdf only)",
   validate = function(raw)
     return true, raw, nil
   end,
@@ -81,6 +83,7 @@ composer.register_type("GH_REPO_OR_ALL", {
 -- cross-slot refinement doesn't fit composer's per-slot completion model,
 -- so end_date always offers presets here. Dispatch/validation is unaffected.
 composer.register_type("GH_DATE_OR_PRESET", {
+  desc = "Date as YYYY-MM-DD, or a preset such as last_week",
   validate = function(raw)
     return true, raw, nil
   end,
@@ -93,6 +96,7 @@ composer.register_type("GH_DATE_OR_PRESET", {
 })
 
 composer.register_type("GH_PERIOD", {
+  desc = "Period as YYYY-MM (one month) or YYYY (one year)",
   validate = function(raw)
     return true, raw, nil
   end,
@@ -115,6 +119,18 @@ composer.register_type("GH_PERIOD", {
 
 local METRIC = { "clones", "views" }
 
+-- Texts of the metric values for the option float (the cheatsheet in the command line).
+local METRIC_DESC = {
+  clones = "Git clones of the repository",
+  views = "Page views of the repository",
+}
+local CHART_METRIC_DESC = vim.tbl_extend("force", METRIC_DESC, {
+  both = "Total vs unique count comparison chart",
+})
+local EXPORT_METRIC_DESC = vim.tbl_extend("force", METRIC_DESC, {
+  both = "Clones and views together in one report",
+})
+
 ---Register all user commands
 function M.setup()
   composer.verb("GithubStats", {
@@ -123,7 +139,15 @@ function M.setup()
     routes = {
       {
         path = { "fetch" },
-        args = { { name = "force", type = "STRING", optional = true, enum = { "force" } } },
+        args = {
+          {
+            name = "force",
+            type = "STRING",
+            optional = true,
+            enum = { "force" },
+            enum_desc = { force = "Fetch now, ignoring the minimum fetch interval" },
+          },
+        },
         desc = "Fetch GitHub stats (use 'force' to bypass interval)",
         run = function(ctx)
           fetch.execute({ args = reconstruct(ctx) })
@@ -134,9 +158,19 @@ function M.setup()
         path = { "show" },
         args = {
           { name = "repo", type = "GH_REPO" },
-          { name = "metric", type = "STRING", enum = METRIC },
-          { name = "start_date", type = "GH_DATE_OR_PRESET", optional = true },
-          { name = "end_date", type = "GH_DATE_OR_PRESET", optional = true },
+          { name = "metric", type = "STRING", enum = METRIC, enum_desc = METRIC_DESC },
+          {
+            name = "start_date",
+            type = "GH_DATE_OR_PRESET",
+            optional = true,
+            desc = "First day as YYYY-MM-DD, or a preset (sets both ends)",
+          },
+          {
+            name = "end_date",
+            type = "GH_DATE_OR_PRESET",
+            optional = true,
+            desc = "Last day as YYYY-MM-DD (ignored after a preset)",
+          },
         },
         desc = "Show stats for repo/metric: {repo} {metric} [start] [end]",
         run = function(ctx)
@@ -146,7 +180,7 @@ function M.setup()
 
       {
         path = { "summary" },
-        args = { { name = "metric", type = "STRING", enum = METRIC } },
+        args = { { name = "metric", type = "STRING", enum = METRIC, enum_desc = METRIC_DESC } },
         desc = "Show summary across all repos: {clones|views}",
         run = function(ctx)
           summary.execute({ args = reconstruct(ctx) })
@@ -157,7 +191,7 @@ function M.setup()
         path = { "referrers" },
         args = {
           { name = "repo", type = "GH_REPO" },
-          { name = "limit", type = "STRING", optional = true },
+          { name = "limit", type = "STRING", optional = true, desc = "How many referrers to list (default: 10)" },
         },
         desc = "Show top referrers: {repo} [limit]",
         run = function(ctx)
@@ -169,7 +203,7 @@ function M.setup()
         path = { "paths" },
         args = {
           { name = "repo", type = "GH_REPO" },
-          { name = "limit", type = "STRING", optional = true },
+          { name = "limit", type = "STRING", optional = true, desc = "How many paths to list (default: 10)" },
         },
         desc = "Show top paths: {repo} [limit]",
         run = function(ctx)
@@ -181,9 +215,24 @@ function M.setup()
         path = { "chart" },
         args = {
           { name = "repo", type = "GH_REPO" },
-          { name = "metric", type = "STRING", enum = { "clones", "views", "both" } },
-          { name = "arg3", type = "GH_DATE_OR_PRESET", optional = true },
-          { name = "arg4", type = "GH_DATE_OR_PRESET", optional = true },
+          {
+            name = "metric",
+            type = "STRING",
+            enum = { "clones", "views", "both" },
+            enum_desc = CHART_METRIC_DESC,
+          },
+          {
+            name = "arg3",
+            type = "GH_DATE_OR_PRESET",
+            optional = true,
+            desc = "Start date, or a range alone: 30d, 6m, 1y, a preset or all",
+          },
+          {
+            name = "arg4",
+            type = "GH_DATE_OR_PRESET",
+            optional = true,
+            desc = "End date YYYY-MM-DD (the start must then be a date too)",
+          },
         },
         desc = "Show sparkline chart: {repo} {clones|views|both} [start|range] [end]",
         run = function(ctx)
@@ -195,8 +244,17 @@ function M.setup()
         path = { "export" },
         args = {
           { name = "target", type = "GH_REPO_OR_ALL" },
-          { name = "metric", type = "STRING", enum = { "clones", "views", "both" } },
-          { name = "filepath", type = "PATH" },
+          {
+            name = "metric",
+            type = "STRING",
+            enum = { "clones", "views", "both" },
+            enum_desc = EXPORT_METRIC_DESC,
+          },
+          {
+            name = "filepath",
+            type = "PATH",
+            desc = "Output file; .csv, .md or .pdf decides the format",
+          },
         },
         desc = "Export to CSV/Markdown: {repo|all} {clones|views|both} {filepath}",
         run = function(ctx)
@@ -208,9 +266,13 @@ function M.setup()
         path = { "diff" },
         args = {
           { name = "repo", type = "GH_REPO" },
-          { name = "metric", type = "STRING", enum = METRIC },
-          { name = "period1", type = "GH_PERIOD" },
-          { name = "period2", type = "GH_PERIOD" },
+          { name = "metric", type = "STRING", enum = METRIC, enum_desc = METRIC_DESC },
+          { name = "period1", type = "GH_PERIOD", desc = "First period, the baseline (YYYY-MM or YYYY)" },
+          {
+            name = "period2",
+            type = "GH_PERIOD",
+            desc = "Second period; the change is shown relative to the first",
+          },
         },
         desc = "Compare periods: {repo} {metric} {YYYY-MM} {YYYY-MM}",
         run = function(ctx)
@@ -220,7 +282,15 @@ function M.setup()
 
       {
         path = { "compact" },
-        args = { { name = "mode", type = "STRING", optional = true, enum = { "dry-run" } } },
+        args = {
+          {
+            name = "mode",
+            type = "STRING",
+            optional = true,
+            enum = { "dry-run" },
+            enum_desc = { ["dry-run"] = "Only report what would be archived and removed" },
+          },
+        },
         desc = "Archive old clones/views data and prune stale referrers/paths snapshots (use 'dry-run' to preview)",
         run = function(ctx)
           compact.execute({ args = reconstruct(ctx) })
