@@ -12,5 +12,6 @@
     "stub",
     "mock"
   ],
-  "workspace.checkThirdParty": false
+  "workspace.checkThirdParty": false,
+  "workspace.ignoreDir": [".claude"]
 }
