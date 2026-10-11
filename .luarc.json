@@ -13,5 +13,5 @@
     "mock"
   ],
   "workspace.checkThirdParty": false,
-  "workspace.ignoreDir": [".claude"]
+  "workspace.ignoreDir": [".claude", ".deps"]
 }
