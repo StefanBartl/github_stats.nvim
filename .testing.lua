@@ -53,4 +53,16 @@ return {
       "git",
     },
   },
+  -- Findings the minimal conformance editor cannot avoid (docs/CONFORMANCE.md of testing.nvim); reviewed 2026-10-14.
+  conformance = {
+    waivers = {
+      {
+        check = "K6",
+        level = "error",
+        text = "GITHUB_TOKEN",
+        reason = "every API call needs a token; the conformance run has no secret by design",
+        expires = "2027-04-14",
+      },
+    },
+  },
 }
