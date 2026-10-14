@@ -53,6 +53,9 @@ return {
       "git",
     },
   },
+  -- The runner counts which commands, keymaps and autocommands the specs exercise (docs/SURFACE.md of testing.nvim);
+  -- `scripts/test.sh surface` compares that with surface.baseline.json (a regression gate, not a percentage).
+  surface = { track = true },
   -- Findings the minimal conformance editor cannot avoid (docs/CONFORMANCE.md of testing.nvim); reviewed 2026-10-14.
   conformance = {
     -- gated: a failed check makes `scripts/test.sh conformance` exit 1
