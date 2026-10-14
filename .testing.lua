@@ -65,6 +65,13 @@ return {
         reason = "every API call needs a token; the conformance run has no secret by design",
         expires = "2027-04-14",
       },
+      {
+        check = "K6",
+        level = "warn",
+        text = "Skipping API test",
+        reason = "follows from the missing GITHUB_TOKEN (waived above); the conformance run has no secret by design",
+        expires = "2027-04-14",
+      },
     },
   },
 }

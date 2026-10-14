@@ -101,6 +101,48 @@ local function load_config_file()
   return true, nil
 end
 
+---@internal
+---Expected Lua type per top-level option, checked by `validate_options`.
+---@type table<string, string>
+local OPTION_TYPES = {
+  notify_fetch = "boolean",
+  repos = "table",
+  token_source = "string",
+  token_env_var = "string",
+  token_file = "string",
+  api_timeout_ms = "number",
+  api_max_response_bytes = "number",
+  fetch_interval_hours = "number",
+  max_user_repo_pages = "number",
+  notification_level = "string",
+  progress_style = "string",
+  digest_daily_days = "number",
+  digest_dir = "string",
+  watch_users = "table",
+  background = "table",
+  retention = "table",
+  date_presets = "table",
+  dashboard = "table",
+}
+
+---@internal
+---Report options whose value has the wrong Lua type. Never rejects: the
+---value stays as given (behavior is unchanged), the user just gets told
+---instead of the wrong type passing silently.
+---@param cfg table Merged configuration
+---@return string[] problems One message per mistyped option
+local function validate_options(cfg)
+  local problems = {}
+  for key, expected in pairs(OPTION_TYPES) do
+    local value = cfg[key]
+    if value ~= nil and type(value) ~= expected then
+      problems[#problems + 1] = str_format("option '%s' should be a %s, got %s", key, expected, type(value))
+    end
+  end
+  table.sort(problems)
+  return problems
+end
+
 ---Initialize configuration from setup() or config.json
 ---@param opts? GHStats.SetupOptions Setup options
 ---@return boolean, string? # Success flag, error message
@@ -138,6 +180,10 @@ function M.init(opts)
   -- option reachable from setup().
   if next(opts) ~= nil then
     config = vim.tbl_deep_extend("force", config or DEFAULT_CONFIG, opts)
+  end
+
+  for _, problem in ipairs(validate_options(config)) do
+    M.notify("[github-stats] " .. problem, "warn")
   end
   return true, nil
 end
