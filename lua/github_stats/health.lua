@@ -370,6 +370,13 @@ function M.check()
     })
   end
 
+  -- pdfport.nvim: optional, only the PDF export variants need it
+  if pcall(require, "pdfport") then
+    health.ok("pdfport.nvim found (PDF export of reports)")
+  else
+    health.info("pdfport.nvim not installed: PDF export is unavailable (optional)")
+  end
+
   health.start("GitHub Stats Storage")
 
   -- Check storage
