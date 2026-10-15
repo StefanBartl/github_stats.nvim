@@ -942,7 +942,7 @@ reach it:
     :GithubStats show           never - the argument becomes start_date,
                                 which accepts YYYY-MM-DD only
     :GithubStats diff           never - parse_period accepts YYYY-MM or
-                                YYYY only
+                                YYYY only (completion offers just those)
 
 Where a name is not resolved it fails to parse as a date and becomes NO
 filter, silently reporting the full stored history.

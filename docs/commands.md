@@ -673,10 +673,11 @@ Compares traffic metrics between two time periods, showing absolute values and p
 - Metric types: `clones`, `views`
 - Period suggestions (current month, last month, current year, last year)
 
-> Completion at the period slots also offers **date preset names**, but
-> `diff` does not accept them: `parse_period` takes `YYYY-MM` and `YYYY`
-> only, and anything else fails with `Invalid period1/2`. Presets work at
-> the date slots of `show` and `chart`, and at the dashboard's `T` prompt.
+> Completion at the period slots offers only `YYYY-MM` and `YYYY` values.
+> `diff` does not accept **date preset names**: `parse_period` takes
+> `YYYY-MM` and `YYYY` only, and anything else fails with `Invalid
+> period1/2`. Presets work at the date slots of `show` and `chart`, and at
+> the dashboard's `T` prompt.
 
 ### Examples:
 ```vim
