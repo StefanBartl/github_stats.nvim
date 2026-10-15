@@ -39,7 +39,7 @@ them. Verified against the current source:
 | The dashboard's `T` prompt | **Yes**, always — it goes straight through `analytics.parse_time_range`, which falls back to `date_presets.resolve` |
 | `:GithubStats chart {repo} {metric} <here>` | **Only** if the name contains `last` or looks like `Nd`. `chart.lua` routes those to `time_range`; anything else it treats as a literal start date |
 | `:GithubStats show {repo} {metric} <here>` | **No.** `show.lua` passes the argument straight to `query_metric` as `start_date`, where `parse_date` accepts `YYYY-MM-DD` and nothing else |
-| `:GithubStats diff {repo} {metric} <p1> <p2>` | **No.** `parse_period` accepts `YYYY-MM` and `YYYY` only |
+| `:GithubStats diff {repo} {metric} <p1> <p2>` | **No** (and completion does not offer them here). `parse_period` accepts `YYYY-MM` and `YYYY` only |
 
 The failure mode is silent, which is why it is worth knowing: a name that
 does not resolve is parsed as a date, fails to parse, and becomes *no

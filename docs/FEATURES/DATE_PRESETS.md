@@ -26,8 +26,9 @@ that does not, does not — and completion does not follow that line:
 Where it is not reached, an unrecognised name silently means *no filter*,
 because `analytics.parse_date` returns `nil` for a non-ISO string and
 `aggregate_daily` skips the bound. Completion offers preset names at the
-`show` and `diff` slots regardless. Documented rather than fixed here — the
-fix is in code, not in prose.
+`show` slot regardless (documented rather than fixed here — the fix is in
+code, not in prose). The `diff` period slots do not offer presets: they
+complete only `YYYY-MM` and `YYYY`.
 
 `M.list()`/`M.resolve()` fall back to `config/DEFAULTS.lua` when
 `config.init()` has not run yet, the way `config.get_retention()` and
