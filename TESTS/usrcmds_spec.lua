@@ -815,10 +815,25 @@ describe("usrcmds", function()
       local period3 = diff_cmd.complete(this_month, "GithubStatsDiff user/alpha clones " .. this_month, 0)
       assert.same({ this_month }, period3)
 
+      -- Presets are not periods: parse_period takes only YYYY-MM or YYYY.
       local period4 = diff_cmd.complete("to", "GithubStatsDiff user/alpha clones 2026-01 to", 0)
-      assert.same({ "today" }, period4)
+      assert.same({}, period4)
 
       assert.same({}, diff_cmd.complete("", "GithubStatsDiff a b c d e ", 0))
+    end)
+
+    it("offers no date preset for the period slots of the composer verb", function()
+      require("github_stats.bindings.usrcmds")
+      local period = require("lib.nvim.bindings.usercmd.composer.argtypes").get("GH_PERIOD")
+      assert.same({}, period.complete("to"))
+      assert.same({}, period.complete("last"))
+      local year = tostring(os.date("*t").year)
+      assert.same(
+        { year },
+        vim.tbl_filter(function(s)
+          return s == year
+        end, period.complete(""))
+      )
     end)
   end)
 

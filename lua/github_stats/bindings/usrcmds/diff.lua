@@ -53,8 +53,6 @@ end
 ---@return string[]
 ---@diagnostic disable-next-line: unused-local
 function M.complete(arg_lead, cmd_line, _cursor_pos)
-  local date_presets = require("github_stats.date_presets")
-
   local parts = vim.split(vim.trim(cmd_line), "%s+")
   local arg_index = #parts
 
@@ -99,13 +97,10 @@ function M.complete(arg_lead, cmd_line, _cursor_pos)
       tostring(now.year - 1),
     }
 
-    -- Add presets
-    local presets = date_presets.list()
-    local all_suggestions = vim.list_extend(period_suggestions, presets)
-
+    -- No date presets: `parse_period` takes only YYYY-MM or YYYY.
     return tbl_filter(function(suggestion)
       return startswith(suggestion, arg_lead)
-    end, all_suggestions)
+    end, period_suggestions)
   end
 
   return {}

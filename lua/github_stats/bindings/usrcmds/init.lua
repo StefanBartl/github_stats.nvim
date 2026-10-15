@@ -101,7 +101,7 @@ composer.register_type("GH_PERIOD", {
     return true, raw, nil
   end,
   complete = function(arg_lead)
-    local date_presets = require("github_stats.date_presets")
+    -- Not the date presets: `parse_period` takes only YYYY-MM or YYYY.
     local now = os.date("*t")
     local current_month = string.format("%04d-%02d", now.year, now.month)
     local last_month_num, last_month_year = now.month - 1, now.year
@@ -110,7 +110,6 @@ composer.register_type("GH_PERIOD", {
     end
     local last_month = string.format("%04d-%02d", last_month_year, last_month_num)
     local suggestions = { current_month, last_month, tostring(now.year), tostring(now.year - 1) }
-    vim.list_extend(suggestions, date_presets.list())
     return vim.tbl_filter(function(s)
       return vim.startswith(s, arg_lead)
     end, suggestions)
