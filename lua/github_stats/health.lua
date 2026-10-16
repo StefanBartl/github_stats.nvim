@@ -228,6 +228,52 @@ local function check_curl()
   return true, "curl available (version unknown)"
 end
 
+--- lib.nvim commit that taught the fetch tiers of `lib.nvim.net.curl` the `max_bytes` option.
+local LIB_MAX_BYTES_SINCE = "8e9a608 (2026-09-18)"
+
+---@internal
+---Whether the installed `lib.nvim.net.curl` turns `max_bytes` into `--max-filesize <n>`.
+---
+---`api.lua` hands `api_max_response_bytes` to the client as `max_bytes`. A lib.nvim older than
+---`LIB_MAX_BYTES_SINCE` ignores that unknown option without a word, so the response cap would
+---silently be gone (fail-open). lib.nvim carries no version number, so this asks the client
+---itself, through the same tier `api.lua` uses (`fetch_json`): `vim.system` is replaced for that
+---one call and only records the argv it is handed. Nothing is spawned and the completion callback
+---never runs; `fetch_json` calls `vim.system` synchronously, so the real one is back before anything
+---else can run.
+---@return boolean ok
+---@return string message
+local function check_curl_max_bytes()
+  local curl = require("lib.nvim.net.curl")
+  local probe_bytes = "4096"
+  local argv
+  local real_system = vim.system
+  ---@diagnostic disable-next-line: duplicate-set-field
+  vim.system = function(cmd)
+    argv = cmd
+    return {}
+  end
+  local call_ok, call_err = pcall(curl.fetch_json, "https://probe.invalid/", {
+    max_bytes = tonumber(probe_bytes),
+  }, function() end)
+  vim.system = real_system
+
+  if type(argv) ~= "table" then
+    return false,
+      str_format("Could not inspect the lib.nvim curl client: %s", call_ok and "no command built" or tostring(call_err))
+  end
+  for i, arg in ipairs(argv) do
+    if arg == "--max-filesize" and argv[i + 1] == probe_bytes then
+      return true, "lib.nvim curl client enforces api_max_response_bytes (max_bytes -> --max-filesize)"
+    end
+  end
+  return false,
+    str_format(
+      "lib.nvim is too old: net.curl ignores max_bytes, so api_max_response_bytes is NOT enforced (needs lib.nvim %s or newer)",
+      LIB_MAX_BYTES_SINCE
+    )
+end
+
 ---@internal
 ---Test API connectivity synchronously with timeout
 ---
@@ -367,6 +413,15 @@ function M.check()
       "macOS: brew install curl",
       "Windows: curl is included since Windows 10 build 1803",
       "Windows (manual): Download from https://curl.se/windows/",
+    })
+  end
+
+  local cap_ok, cap_msg = check_curl_max_bytes()
+  if cap_ok then
+    health.ok(cap_msg)
+  else
+    health.warn(cap_msg, {
+      "Update StefanBartl/lib.nvim (e.g. :Lazy update lib.nvim, or move a pinned lockfile entry forward)",
     })
   end
 

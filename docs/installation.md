@@ -4,7 +4,8 @@
 
 - **Neovim** >= 0.10.0 — `vim.uv` is used unguarded in `background.lua`,
   `dashboard/init.lua`, `dashboard/state.lua` and `health.lua`
-- **[lib.nvim](https://github.com/StefanBartl/lib.nvim)** — required, not optional: notifications, JSON I/O, the curl client, the user-command composer and the cross-platform executable check all come from it
+- **[lib.nvim](https://github.com/StefanBartl/lib.nvim)** — required, not optional: notifications, JSON I/O, the curl client, the user-command composer and the cross-platform executable check all come from it.
+  **Minimum: commit `8e9a608` (2026-09-18) or newer.** The API response cap (`api_max_response_bytes`) is handed to its curl client as `max_bytes`; an older lib.nvim ignores that option without an error, so a pinned lockfile entry from before that date silently drops the cap. `:checkhealth github_stats` checks this and warns when the installed lib.nvim is too old.
 - **[ui.nvim](https://github.com/StefanBartl/ui.nvim)** — also required, not optional: `require("github_stats")` itself pulls in `ui.kit`/`ui.contextmenu` (the dashboard's note popups and right-click menu) at module load, before `setup()` even runs
 - **curl** (for API requests)
 - **GitHub Personal Access Token** with `repo` permission
