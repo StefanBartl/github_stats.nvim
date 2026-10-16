@@ -164,7 +164,49 @@ describe("api", function()
       end)
 
       assert.equals(1234, requests[1].opts.timeout_ms)
-      assert.same({ "--max-filesize", "4096" }, requests[1].opts.raw_args)
+      assert.equals(4096, requests[1].opts.max_bytes)
+      assert.is_nil(requests[1].opts.raw_args)
+    end)
+
+    it("makes the real curl command line carry --max-filesize <cap> and the timeout", function()
+      -- The seam above only shows what is handed to lib.nvim.net.curl. This one lets the real
+      -- client build the argv (vim.system is replaced, nothing is spawned) and checks the wire
+      -- format: the cap must still reach curl as `--max-filesize <n>`.
+      package.loaded["lib.nvim.net.curl"] = nil
+      package.loaded["github_stats.api"] = nil
+      config.init({ config_dir = tmp_dir, api_timeout_ms = 1234, api_max_response_bytes = 4096 })
+      api = require("github_stats.api")
+
+      local captured
+      local orig_system = vim.system
+      vim.system = function(argv, sys_opts, on_exit)
+        captured = { argv = argv, opts = sys_opts }
+        on_exit({ code = 0, stdout = "{}", stderr = "" })
+        return {}
+      end
+
+      local done = false
+      local ok_call, err_call = pcall(function()
+        api.fetch_metric_async("owner/repo", "clones", function()
+          done = true
+        end)
+        wait_for(function()
+          return done
+        end)
+      end)
+      vim.system = orig_system
+      assert.is_true(ok_call, tostring(err_call))
+      assert.is_true(done)
+
+      local pos
+      for i, arg in ipairs(captured.argv) do
+        if arg == "--max-filesize" then
+          pos = i
+        end
+      end
+      assert.is_truthy(pos, "no --max-filesize in " .. vim.inspect(captured.argv))
+      assert.equals("4096", captured.argv[pos + 1])
+      assert.equals(1234, captured.opts.timeout)
     end)
   end)
 

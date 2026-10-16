@@ -61,7 +61,7 @@ local function fetch_json(url, token, callback)
     headers = headers,
     bearer_token = token,
     timeout_ms = timeout_ms,
-    raw_args = { "--max-filesize", tostring(max_bytes) },
+    max_bytes = max_bytes,
   }, function(ok, data_or_err, obj)
     schedule(function()
       if not ok then
