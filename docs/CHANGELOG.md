@@ -214,6 +214,11 @@ documented as part of the features they affect in
 - **The header's key-hint line is built from the effective keybindings**
   rather than a hardcoded string, so a remapped key is shown correctly and a
   disabled one (`""`) is omitted.
+- **The API response cap goes to lib.nvim as `max_bytes`** instead of a raw
+  `--max-filesize` argument, which needs lib.nvim `8e9a608` (2026-09-18) or
+  newer: an older one ignores the option and the cap is silently gone.
+  `:checkhealth github_stats` asks the installed curl client whether it turns
+  `max_bytes` into `--max-filesize` and warns, naming that minimum, when not.
 
 - `config.lua` → `config/init.lua` + `config/DEFAULTS.lua`;
   `usercommands/`/`dashboard/keymaps.lua` →

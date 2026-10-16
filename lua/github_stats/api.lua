@@ -61,6 +61,7 @@ local function fetch_json(url, token, callback)
     headers = headers,
     bearer_token = token,
     timeout_ms = timeout_ms,
+    -- Needs lib.nvim 8e9a608 or newer (an older one ignores the option); health.lua checks it.
     max_bytes = max_bytes,
   }, function(ok, data_or_err, obj)
     schedule(function()

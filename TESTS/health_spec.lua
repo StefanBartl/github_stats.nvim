@@ -391,6 +391,59 @@ describe("health", function()
       cross.exists = real_exists
       assert.is_true(reported("error", "curl not found in PATH"))
     end)
+
+    describe("lib.nvim response cap (max_bytes)", function()
+      ---The real lib.nvim.net.curl, but with the stubbed fetch_raw_blocking of before_each on top,
+      ---so the API probe still sends nothing.
+      local function real_client_with_stubbed_probe()
+        package.loaded["lib.nvim.net.curl"] = nil
+        local real = require("lib.nvim.net.curl")
+        package.loaded["lib.nvim.net.curl"] = setmetatable({
+          fetch_raw_blocking = function(url, opts)
+            return curl_responder(url, opts)
+          end,
+        }, { __index = real })
+      end
+
+      it("confirms that the installed lib.nvim turns max_bytes into --max-filesize", function()
+        real_client_with_stubbed_probe()
+        local system_before = vim.system
+
+        health_mod.check()
+
+        assert.is_true(reported("ok", "lib.nvim curl client enforces api_max_response_bytes"))
+        assert.is_false(reported("warn", "lib.nvim is too old"))
+        assert.equals(system_before, vim.system, "the probe must put vim.system back")
+      end)
+
+      it("warns, naming the minimum lib.nvim, when the client ignores max_bytes", function()
+        -- What a lib.nvim before 8e9a608 does: build the argv without ever looking at max_bytes.
+        package.loaded["lib.nvim.net.curl"] = {
+          fetch_raw_blocking = function(url, opts)
+            return curl_responder(url, opts)
+          end,
+          fetch_json = function(url, _, cb)
+            vim.system({ "curl", "-sS", "-X", "GET", url }, { text = true }, cb)
+          end,
+        }
+        local system_before = vim.system
+
+        health_mod.check()
+
+        assert.is_true(reported("warn", "lib.nvim is too old: net.curl ignores max_bytes"))
+        assert.is_true(reported("warn", "8e9a608"))
+        assert.is_false(reported("ok", "lib.nvim curl client enforces"))
+        assert.equals(system_before, vim.system, "the probe must put vim.system back")
+      end)
+
+      it("warns instead of failing when the client cannot be inspected", function()
+        -- before_each's stub has no fetch_json at all.
+        health_mod.check()
+
+        assert.is_true(reported("warn", "Could not inspect the lib.nvim curl client"))
+        assert.is_true(reported("ok", "API connectivity confirmed"))
+      end)
+    end)
   end)
 
   describe("API connectivity", function()
