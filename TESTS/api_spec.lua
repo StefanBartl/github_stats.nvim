@@ -198,13 +198,20 @@ describe("api", function()
       assert.is_true(ok_call, tostring(err_call))
       assert.is_true(done)
 
+      -- assert.* does not stop the case here, so the two lookups below that the rest depends on
+      -- stop it with their own message instead of a follow-up "index/arithmetic on nil" error.
+      if not captured then
+        error("vim.system was never called")
+      end
       local pos
       for i, arg in ipairs(captured.argv) do
         if arg == "--max-filesize" then
           pos = i
         end
       end
-      assert.is_truthy(pos, "no --max-filesize in " .. vim.inspect(captured.argv))
+      if not pos then
+        error("no --max-filesize in " .. vim.inspect(captured.argv))
+      end
       assert.equals("4096", captured.argv[pos + 1])
       assert.equals(1234, captured.opts.timeout)
     end)
