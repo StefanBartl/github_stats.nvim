@@ -55,7 +55,7 @@ configuration.
 
 ### Description:
 
-Triggers a manual fetch of GitHub traffic statistics for all configured repositories. By default, respects the configured fetch interval (`fetch_interval_hours`). Use `force` to bypass the interval check.
+Triggers a manual fetch of GitHub traffic statistics for all configured repositories. By default, respects the configured fetch interval (`fetch_interval_hours`): when it has not elapsed yet, a dialog says how long ago the last fetch was and asks whether to fetch anyway ("Not now" is the default answer). `force` fetches at once without asking.
 
 ### Arguments:
 - `force` (optional) – Forces immediate fetch regardless of last fetch time

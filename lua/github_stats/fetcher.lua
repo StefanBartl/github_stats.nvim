@@ -93,6 +93,22 @@ local function should_fetch()
   return elapsed >= interval_seconds
 end
 
+---Whether a fetch without `force` would run now. `:GithubStats fetch` asks
+---before a fetch is skipped instead of telling the user to retype it with
+---`force` (UI-05). The second result says how long ago the last fetch was and
+---what the interval is, both in hours; `nil` when nothing was fetched yet.
+---@return boolean due
+---@return { since_hours: number, interval_hours: number }|nil info
+function M.fetch_due()
+  local due = should_fetch()
+  local cfg = config.get()
+  local last = load_last_fetch()
+  if not cfg or not last then
+    return due, nil
+  end
+  return due, { since_hours = (os.time() - last) / 3600, interval_hours = cfg.fetch_interval_hours }
+end
+
 ---@internal
 ---An empty completion summary for M.fetch_all's early-return paths below:
 ---nothing was fetched, but a passed `callback` must still be told the

@@ -65,6 +65,9 @@ describe("usrcmds", function()
       manual_fetch = function(force)
         calls.fetch[#calls.fetch + 1] = force
       end,
+      fetch_due = function()
+        return true, nil
+      end,
       last_fetch_summary = nil,
     })
 
@@ -244,6 +247,40 @@ describe("usrcmds", function()
       fetch.execute({ args = "forc" })
 
       assert.same({ true, false, false }, calls.fetch)
+    end)
+
+    it("asks instead of skipping when the interval has not elapsed (UI-05)", function()
+      local asked = {}
+      local answer
+      stub("lib.nvim.ui.kit", {
+        confirm = function(o)
+          asked[#asked + 1] = o
+          o.on_answer(answer)
+        end,
+      })
+      package.loaded["github_stats.fetcher"].fetch_due = function()
+        return false, { since_hours = 2, interval_hours = 24 }
+      end
+      local fetch = require("github_stats.bindings.usrcmds.fetch")
+
+      answer = "Not now"
+      fetch.execute({ args = "" })
+      assert.equals(1, #asked)
+      assert.truthy(asked[1].question:find("Last fetch 2.0 h ago, the interval is 24 h", 1, true))
+      assert.equals("Not now", asked[1].choices[1])
+      assert.same({}, calls.fetch)
+
+      answer = "Fetch anyway"
+      fetch.execute({ args = "" })
+      assert.same({ true }, calls.fetch)
+
+      answer = nil
+      fetch.execute({ args = "" })
+      assert.same({ true }, calls.fetch)
+
+      fetch.execute({ args = "force" })
+      assert.equals(3, #asked)
+      assert.same({ true, true }, calls.fetch)
     end)
 
     it("completes the force keyword only while it still matches", function()
