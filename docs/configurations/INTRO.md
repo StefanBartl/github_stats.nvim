@@ -219,9 +219,11 @@ notification_level = "errors"  -- Only show problems
 **Type:** `boolean`
 **Default:** `true`
 
-Whether a *manual* fetch that is skipped because the interval has not
-elapsed says so ("Fetch interval not elapsed (use 'force' to bypass)") or
-stays quiet. It only affects that one message; it is not a second
+Whether a manual fetch through the Lua API (`fetcher.manual_fetch(false)`)
+that is skipped because the interval has not elapsed says so ("Fetch interval
+not elapsed (use 'force' to bypass)") or stays quiet. `:GithubStats fetch`
+never gets there: it asks whether to fetch anyway. It only affects that one
+message; it is not a second
 notification gate next to `notification_level`.
 
 #### `progress_style`

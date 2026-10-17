@@ -147,7 +147,7 @@ function M.setup()
             enum_desc = { force = "Fetch now, ignoring the minimum fetch interval" },
           },
         },
-        desc = "Fetch GitHub stats (use 'force' to bypass interval)",
+        desc = "Fetch GitHub stats (asks before ignoring the interval; 'force' skips the question)",
         run = function(ctx)
           fetch.execute({ args = reconstruct(ctx) })
         end,
