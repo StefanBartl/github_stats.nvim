@@ -4,10 +4,16 @@
 
 - **Module:** `fetcher.lua` (`fetch_all`, `fetch_repo`, `should_fetch`), `api.lua`
 - **Usercmds:** `:GithubStats fetch [force]`
-- **Config:** `opts.fetch_interval_hours` (default `24`), `opts.progress_style` (default `"auto"`), `opts.notify_fetch` (default `true`)
+- **Config:** `opts.fetch_interval_hours` (default `24`), `opts.max_parallel_fetches` (default `4`), `opts.progress_style` (default `"auto"`), `opts.notify_fetch` (default `true`)
 
 Fetches clones, views, referrers, and paths (4 GitHub API calls per repo,
-run in parallel) for every configured repository. Without `force`, a fetch
+run in parallel) for every configured repository. At most
+`max_parallel_fetches` repositories are in flight at once (each one is four
+`curl` processes); the rest wait in a queue and start as slots free up.
+Starting a process is synchronous and costs roughly 10-15 ms on Windows,
+much more where AV/EDR scans every spawn, so an uncapped fan-out over dozens
+of repositories (for example via `watch_users`) blocked the UI for the whole
+burst. The dashboard's single-repository refresh is not queued. Without `force`, a fetch
 is skipped if the last one ran within `fetch_interval_hours`; `force`
 bypasses that check, and `notify_fetch` decides whether a skipped manual
 fetch says so ("Fetch interval not elapsed") or stays quiet.

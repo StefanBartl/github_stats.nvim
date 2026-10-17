@@ -32,6 +32,10 @@ local DEFAULT_CONFIG = {
   api_timeout_ms = 15000,
   api_max_response_bytes = 5 * 1024 * 1024,
   fetch_interval_hours = 24,
+  -- Repositories a fetch keeps in flight at once (4 curl processes each); the
+  -- rest queue up. Bounds the spawn burst that froze the UI with many tracked
+  -- repositories (e.g. via watch_users) on machines with slow process creation.
+  max_parallel_fetches = 4,
   -- Pages followed when listing a watched user's repositories (100 per page).
   -- Raise it only for an account with more than 3000 public repos: past the
   -- cap, later repos are silently not tracked.

@@ -113,6 +113,7 @@ local OPTION_TYPES = {
   api_timeout_ms = "number",
   api_max_response_bytes = "number",
   fetch_interval_hours = "number",
+  max_parallel_fetches = "number",
   max_user_repo_pages = "number",
   notification_level = "string",
   progress_style = "string",
