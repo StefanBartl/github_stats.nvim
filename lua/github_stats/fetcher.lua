@@ -177,7 +177,6 @@ function M.fetch_all(force, callback, opts)
     config.notify(str_format("[github-stats] Starting fetch: %d repos, force=%s", #repos, tostring(force)), "info")
   end
 
-  local completed = 0
   local all_success = {}
   local all_errors = {}
 
@@ -185,83 +184,83 @@ function M.fetch_all(force, callback, opts)
   -- indicator that appears on a timer the user didn't trigger is noise.
   local progress = (not background) and new_progress(#repos) or nil
 
-  local function check_all_complete()
-    completed = completed + 1
-    if progress then
-      progress:update({
-        text = str_format("%d of %d repositories", completed, #repos),
-        current = completed,
-        total = #repos,
-      })
+  ---@param results ({ success: string[], errors: table<string, string> }|nil)[] per repository, in list order
+  ---@param start_errors any[] per repository: what its fetch threw while starting
+  local function finish(results, start_errors)
+    for i, repo in ipairs(repos) do
+      local result = results[i]
+      if result then
+        vim.list_extend(all_success, result.success)
+        all_errors = vim.tbl_extend("force", all_errors, result.errors)
+      end
+      if start_errors[i] ~= nil then
+        all_errors[repo] = str_format("fetch failed to start: %s", tostring(start_errors[i]))
+      end
     end
-    if completed == #repos then
-      -- Save fetch timestamp
-      save_last_fetch(os.time())
 
-      -- Opportunistically fold old clones/views days into the archive and
-      -- prune stale referrers/paths snapshots. Internally rate-limited to
-      -- once/24h (github_stats.retention.maybe_run_all), so this is cheap on
-      -- every fetch that isn't the first one of the day.
-      local retention = require("github_stats.retention")
-      local retention_summary = retention.maybe_run_all()
-      if retention_summary and not background then
-        local touched = retention_summary.compacted_deleted + retention_summary.pruned_deleted
-        if touched > 0 then
-          config.notify(
-            str_format(
-              "[github-stats] Retention: archived %d day(s), removed %d files (%s freed)",
-              retention_summary.archived,
-              touched,
-              retention.format_bytes(retention_summary.freed_bytes)
-            ),
-            "info"
-          )
-        end
-        if vim.tbl_count(retention_summary.errors) > 0 then
-          config.notify(
-            str_format(
-              "[github-stats] Retention had %d error(s), see :GithubStats debug",
-              vim.tbl_count(retention_summary.errors)
-            ),
-            "warn"
-          )
-        end
+    -- Save fetch timestamp
+    save_last_fetch(os.time())
+
+    -- Opportunistically fold old clones/views days into the archive and
+    -- prune stale referrers/paths snapshots. Internally rate-limited to
+    -- once/24h (github_stats.retention.maybe_run_all), so this is cheap on
+    -- every fetch that isn't the first one of the day.
+    local retention = require("github_stats.retention")
+    local retention_summary = retention.maybe_run_all()
+    if retention_summary and not background then
+      local touched = retention_summary.compacted_deleted + retention_summary.pruned_deleted
+      if touched > 0 then
+        config.notify(
+          str_format(
+            "[github-stats] Retention: archived %d day(s), removed %d files (%s freed)",
+            retention_summary.archived,
+            touched,
+            retention.format_bytes(retention_summary.freed_bytes)
+          ),
+          "info"
+        )
       end
-
-      -- Publish the digest other programs read (github_stats.digest) for the
-      -- repositories that got any data this cycle. Deferred and pcall-wrapped
-      -- inside write_later: a digest problem must never fail or slow a fetch.
-      require("github_stats.digest").write_later(repos_of(all_success))
-
-      -- Create summary
-      local summary = {
-        success = all_success,
-        errors = all_errors,
-        timestamp = os.date("%Y-%m-%dT%H:%M:%S"),
-      }
-
-      -- Store for debug access
-      M.last_fetch_summary = summary
-
-      -- Closed before the notifications below, so the indicator is gone by
-      -- the time the summary appears rather than lingering behind it.
-      if progress then
-        progress:finish(str_format("fetched %d metrics", #all_success))
+      if vim.tbl_count(retention_summary.errors) > 0 then
+        config.notify(
+          str_format("[github-stats] Retention had %d error(s), see :GithubStats debug", vim.tbl_count(retention_summary.errors)),
+          "warn"
+        )
       end
+    end
 
-      -- Notify user: error summary always fires (still gated by
-      -- notification_level) even in background mode, so real problems
-      -- surface; the plain success message is suppressed in the background.
-      local error_count = vim.tbl_count(all_errors)
-      if error_count > 0 then
-        config.notify(str_format("[github-stats] Fetched %d metrics, %d errors", #all_success, error_count), "warn")
-      elseif not background then
-        config.notify(str_format("[github-stats] Successfully fetched %d metrics", #all_success), "info")
-      end
+    -- Publish the digest other programs read (github_stats.digest) for the
+    -- repositories that got any data this cycle. Deferred and pcall-wrapped
+    -- inside write_later: a digest problem must never fail or slow a fetch.
+    require("github_stats.digest").write_later(repos_of(all_success))
 
-      if callback then
-        callback(summary)
-      end
+    -- Create summary
+    local summary = {
+      success = all_success,
+      errors = all_errors,
+      timestamp = os.date("%Y-%m-%dT%H:%M:%S"),
+    }
+
+    -- Store for debug access
+    M.last_fetch_summary = summary
+
+    -- Closed before the notifications below, so the indicator is gone by
+    -- the time the summary appears rather than lingering behind it.
+    if progress then
+      progress:finish(str_format("fetched %d metrics", #all_success))
+    end
+
+    -- Notify user: error summary always fires (still gated by
+    -- notification_level) even in background mode, so real problems
+    -- surface; the plain success message is suppressed in the background.
+    local error_count = vim.tbl_count(all_errors)
+    if error_count > 0 then
+      config.notify(str_format("[github-stats] Fetched %d metrics, %d errors", #all_success, error_count), "warn")
+    elseif not background then
+      config.notify(str_format("[github-stats] Successfully fetched %d metrics", #all_success), "info")
+    end
+
+    if callback then
+      callback(summary)
     end
   end
 
@@ -271,24 +270,27 @@ function M.fetch_all(force, callback, opts)
   -- AV/EDR scans each one), so starting them all in one loop blocked the UI
   -- for the whole burst. Refills happen from completion callbacks, i.e. from
   -- the event loop, so the UI gets a turn between each batch of spawns.
-  local next_index = 1
-  local function start_next()
-    local repo = repos[next_index]
-    if not repo then
-      return
-    end
-    next_index = next_index + 1
+  -- lib.nvim's map_limit runs the queue: a fetch that throws while starting
+  -- (vim.system raises when a spawn fails) counts as that repository's error
+  -- instead of stranding the rest of the list and the callback.
+  local function fetch_one(repo, _, done)
     M.fetch_repo(repo, function(success, errors)
-      vim.list_extend(all_success, success)
-      all_errors = vim.tbl_extend("force", all_errors, errors)
-      check_all_complete()
-      start_next()
+      done({ success = success, errors = errors })
     end)
   end
 
-  for _ = 1, math.min(max_parallel_fetches(), #repos) do
-    start_next()
-  end
+  local on_progress = progress
+    and function(count, total)
+      progress:update({
+        text = str_format("%d of %d repositories", count, total),
+        current = count,
+        total = total,
+      })
+    end
+
+  require("lib.nvim.async").map_limit(repos, max_parallel_fetches(), fetch_one, finish, {
+    on_progress = on_progress or nil,
+  })
 end
 
 ---Automatic fetch (respects interval)

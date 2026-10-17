@@ -252,6 +252,45 @@ describe("fetcher", function()
       assert.equals(1, notice_count("Successfully fetched 28 metrics"))
     end)
 
+    -- vim.system throws when a spawn fails (curl gone, process limit, AV
+    -- blocking it). Past the first batch such a spawn runs from a completion
+    -- callback: the failure must count as that repository's error and the
+    -- queue must go on, not strand the rest of the list and the callback.
+    it("finishes the queue when a repository's fetch throws while starting", function()
+      local repos = {}
+      for i = 1, 5 do
+        repos[i] = "owner/repo" .. i
+      end
+      config.init({ config_dir = tmp_dir, repos = repos, max_parallel_fetches = 2 })
+
+      package.loaded["github_stats.api"].fetch_metric_async = function(repo, metric, callback)
+        if repo == "owner/repo4" then
+          error("spawn failed: ENOENT")
+        end
+        api_calls[#api_calls + 1] = { repo = repo, metric = metric }
+        vim.defer_fn(function()
+          callback({ count = 1, uniques = 1, clones = {} }, nil)
+        end, 5)
+      end
+
+      local calls, summary = 0, nil
+      fetcher.fetch_all(true, function(s)
+        calls = calls + 1
+        summary = s
+      end)
+      wait_for(function()
+        return summary ~= nil
+      end)
+      vim.wait(30)
+
+      assert.is_not_nil(summary)
+      assert.equals(1, calls)
+      assert.equals(16, #summary.success)
+      assert.equals(1, vim.tbl_count(summary.errors))
+      assert.truthy(tostring(summary.errors["owner/repo4"]):find("spawn failed: ENOENT", 1, true))
+      assert.equals(1, notice_count("Fetched 16 metrics, 1 errors"))
+    end)
+
     it("records the fetch timestamp so the interval gate has something to read", function()
       local done = false
       fetcher.fetch_all(true, function()
