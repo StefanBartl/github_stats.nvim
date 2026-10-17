@@ -122,6 +122,20 @@ local function repos_of(entries)
   return repos
 end
 
+---@internal
+---Repositories fetch_all keeps in flight at once (`max_parallel_fetches`,
+---default 4). Anything that is not a positive number falls back to the
+---default rather than disabling the cap or stalling the queue.
+---@return integer
+local function max_parallel_fetches()
+  local cfg = config.get()
+  local n = cfg and cfg.max_parallel_fetches
+  if type(n) ~= "number" or n < 1 then
+    return 4
+  end
+  return math.floor(n)
+end
+
 ---Fetch all repositories and metrics
 ---@param force boolean Whether to bypass interval check
 ---@param callback? fun(summary: GHStats.FetchSummary) Optional completion callback
@@ -251,13 +265,29 @@ function M.fetch_all(force, callback, opts)
     end
   end
 
-  -- Fetch all repos in parallel
-  for _, repo in ipairs(repos) do
+  -- At most `max_parallel_fetches` repositories in flight; the rest wait and
+  -- start as slots free up. Every repository is four curl spawns, and a spawn
+  -- costs ~10-15 ms of synchronous process creation on Windows (far more when
+  -- AV/EDR scans each one), so starting them all in one loop blocked the UI
+  -- for the whole burst. Refills happen from completion callbacks, i.e. from
+  -- the event loop, so the UI gets a turn between each batch of spawns.
+  local next_index = 1
+  local function start_next()
+    local repo = repos[next_index]
+    if not repo then
+      return
+    end
+    next_index = next_index + 1
     M.fetch_repo(repo, function(success, errors)
       vim.list_extend(all_success, success)
       all_errors = vim.tbl_extend("force", all_errors, errors)
       check_all_complete()
+      start_next()
     end)
+  end
+
+  for _ = 1, math.min(max_parallel_fetches(), #repos) do
+    start_next()
   end
 end
 

@@ -15,6 +15,7 @@
       - [`token_env_var`](#token_env_var)
       - [`token_file`](#token_file)
       - [`fetch_interval_hours`](#fetch_interval_hours)
+      - [`max_parallel_fetches`](#max_parallel_fetches)
       - [`max_user_repo_pages`](#max_user_repo_pages)
       - [`notification_level`](#notification_level)
       - [`notify_fetch`](#notify_fetch)
@@ -176,6 +177,18 @@ fetch_interval_hours = 168  -- Weekly
 **Related:** `background.initial_delay_ms` (default `1000`) is the delay
 before the *first* cycle — it keeps the fetch out of startup. Raise it if
 your startup is heavy enough that one second still lands inside it.
+
+#### `max_parallel_fetches`
+**Type:** `number`
+**Default:** `4`
+**Range:** `>= 1`
+
+Repositories a fetch keeps in flight at once; each one starts four `curl`
+processes, the rest wait in a queue. Process creation blocks Neovim briefly
+(about 10-15 ms per spawn on Windows, far more when a virus scanner checks
+each one), so the cap keeps a fetch over many repositories, such as one
+populated by `watch_users`, from freezing the UI. Lower it on a machine with
+slow process creation; values below 1 fall back to the default.
 
 #### `max_user_repo_pages`
 **Type:** `number`

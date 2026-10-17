@@ -208,6 +208,50 @@ describe("fetcher", function()
       assert.equals(1, notice_count("Successfully fetched 8 metrics"))
     end)
 
+    it("keeps at most max_parallel_fetches repositories in flight and still fetches all", function()
+      local repos = {}
+      for i = 1, 7 do
+        repos[i] = "owner/repo" .. i
+      end
+      config.init({ config_dir = tmp_dir, repos = repos, max_parallel_fetches = 2 })
+
+      -- Responses arrive a few ms later, so repositories genuinely overlap and
+      -- an uncapped fan-out would show all seven in flight at once.
+      local pending, in_flight, peak = {}, 0, 0
+      package.loaded["github_stats.api"].fetch_metric_async = function(repo, metric, callback)
+        api_calls[#api_calls + 1] = { repo = repo, metric = metric }
+        if not pending[repo] then
+          pending[repo] = 4
+          in_flight = in_flight + 1
+          peak = math.max(peak, in_flight)
+        end
+        vim.defer_fn(function()
+          pending[repo] = pending[repo] - 1
+          if pending[repo] == 0 then
+            in_flight = in_flight - 1
+          end
+          callback({ count = 1, uniques = 1, clones = {} }, nil)
+        end, 5)
+      end
+
+      local calls, summary = 0, nil
+      fetcher.fetch_all(true, function(s)
+        calls = calls + 1
+        summary = s
+      end)
+      wait_for(function()
+        return summary ~= nil
+      end)
+      vim.wait(30)
+
+      assert.equals(2, peak)
+      assert.equals(1, calls)
+      assert.equals(28, #api_calls)
+      assert.equals(28, #summary.success)
+      assert.equals(7, vim.tbl_count(pending))
+      assert.equals(1, notice_count("Successfully fetched 28 metrics"))
+    end)
+
     it("records the fetch timestamp so the interval gate has something to read", function()
       local done = false
       fetcher.fetch_all(true, function()
