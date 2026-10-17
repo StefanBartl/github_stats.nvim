@@ -13,7 +13,9 @@ run in parallel) for every configured repository. At most
 Starting a process is synchronous and costs roughly 10-15 ms on Windows,
 much more where AV/EDR scans every spawn, so an uncapped fan-out over dozens
 of repositories (for example via `watch_users`) blocked the UI for the whole
-burst. The dashboard's single-repository refresh is not queued. Without `force`, a fetch
+burst. A repository whose fetch fails to start (`curl` could not be spawned)
+is recorded as that repository's error and the queue moves on, so the fetch
+still completes. The dashboard's single-repository refresh is not queued. Without `force`, a fetch
 is skipped if the last one ran within `fetch_interval_hours`; `force`
 bypasses that check, and `notify_fetch` decides whether a skipped manual
 fetch says so ("Fetch interval not elapsed") or stays quiet.
