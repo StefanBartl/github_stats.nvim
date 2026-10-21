@@ -191,6 +191,11 @@ documented as part of the features they affect in
   while `os.time()` only ever reads a table as local time.
 
 ### Changed
+- **The config comes from `lib.lua.config.new`** (defaults < `config.json` < `setup()`): nothing in
+  `config.get()` shares a table with the defaults, and an option dropped from `setup()` is gone at the
+  next start. A value of the wrong type is now reported and **replaced by the default** (it used to be
+  reported and kept, so a mistyped `token_source` reached the fetcher); an unknown key is reported with a
+  did-you-mean hint and left out. `config_dir` / `data_dir` no longer appear in `config.get()`.
 - **`r` re-reads from disk**: it re-rendered from whatever was already in
   memory, which — before the read memo — meant the same thing as any other
   render. It now drops the memo first, making it the documented way to pick up

@@ -210,13 +210,14 @@ describe("dashboard", function()
       assert.is_nil(state.auto_refresh_timer)
     end)
 
-    it("starts no timer when the configured value is not a number", function()
-      -- :checkhealth already reports this; starting a timer on garbage would
-      -- only turn a config error into a runtime one.
+    it("uses the default interval when the configured value is not a number", function()
+      -- The config no longer keeps a value of the wrong type (it reports it and the default applies, see
+      -- config_spec), so the dashboard never sees garbage: the timer runs at the default interval. The guard
+      -- in start_auto_refresh stays for a config table that was written to afterwards.
       local state = open_with_interval("not-a-number")
 
       ---@diagnostic disable-next-line: undefined-field
-      assert.is_nil(state.auto_refresh_timer)
+      assert.is_not_nil(state.auto_refresh_timer)
     end)
 
     it("stops and clears the timer when the dashboard closes", function()

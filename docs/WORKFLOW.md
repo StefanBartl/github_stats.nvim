@@ -200,14 +200,21 @@ hand-adjust for period length before calling it, the command already does
 that. A zero-traffic `period1` reports `+∞`, not an error — expected for a
 repo's very first active month.
 
-## Config precedence: `setup()` wins, silently
+## Config precedence: defaults < `config.json` < `setup()`
 
-If both a `setup({ repos = {...} })` call and an existing `config.json`
-exist, `setup()`'s `opts` win outright (`config/init.lua`'s `M.init`:
-Priority 1 is `opts.repos`, Priority 2 is `config.json`, Priority 3 is
-writing a fresh default `config.json`) — the file is not merged with, and
-not updated by, `setup()` options. If you maintain `config.json` for
-cross-machine sync but also pass a `repos` table into `setup()` on one
-machine "just to test something," that machine now silently ignores
-`config.json` entirely until you remove the `opts.repos` override, not just
-for that one field.
+The configuration is three layers (`lib.lua.config.new` in `config/init.lua`),
+the highest wins **key by key**: the built-in defaults, then `config.json`
+(written with the defaults on the first run), then the table passed to
+`setup()`. A nested table merges the same way, so `setup({ dashboard = {
+header_width = 100 } })` changes that one value and keeps the rest of the
+dashboard section from the file. A list (`repos`, `watch_users`) is replaced
+whole. The file is never changed by `setup()`. If you maintain `config.json`
+for cross-machine sync and pass `repos` into `setup()` on one machine "just to
+test something," that machine uses the `repos` of `setup()`, and everything
+else from the file.
+
+An option dropped from `setup()` is gone at the next start (nothing carries
+over). A key the plugin does not know and a value of the wrong type are
+reported with a hint (`fetch_intervall_hours` -> did you mean
+`fetch_interval_hours`) and left out, so the default applies; `config_dir`
+and `data_dir` are paths, not options.
