@@ -60,7 +60,7 @@ the plugin already holds, and rebuilt from it at any time.
 The same chain for every reader, first hit wins:
 
 1. **An explicit setting** of the reader (the app: a folder chosen in its Traffic
-   section; `documentation.nvim`: `opts.traffic.digest_dir`).
+   section; `docmap.nvim`: `opts.traffic.digest_dir`).
 2. **`root.json`** at the default place.
 3. **Ask Neovim.** `require("github_stats.digest").digest_dir()` — a module of its
    own that needs only `config`, `storage`, `analytics` and `lib.nvim`, **not**
