@@ -211,7 +211,7 @@ describe("storage layout and listing", function()
 
       it("still keeps the plain owner/repo case as one readable segment", function()
         local dir = storage.get_metric_dir("WKDSteve/github_stats.nvim", "clones")
-        assert.equals(vim.fs.joinpath(root, "StefanBartl_github_stats.nvim", "clones"), dir)
+        assert.equals(vim.fs.joinpath(root, "WKDSteve_github_stats.nvim", "clones"), dir)
       end)
 
       -- Regression: both pass health.lua's "^[^/]+/[^/]+$" format check,
