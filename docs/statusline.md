@@ -36,7 +36,7 @@ set statusline+=%{v:lua.require('github_stats.statusline').status()}
 
 ### ui.nvim
 
-Nothing to do. [ui.nvim](https://github.com/StefanBartl/ui.nvim) ships a
+Nothing to do. [ui.nvim](https://github.com/WKDSteve/ui.nvim) ships a
 `github_stats_badge` segment that calls this module; enable it in your
 statusline variant and it appears for tracked repositories.
 
@@ -72,8 +72,8 @@ reached into `github_stats.analytics` and `github_stats.config` from the
 outside. That works until one of those is renamed, and no test in this
 repository would have caught it.
 
-Two siblings — [sandbox.nvim](https://github.com/StefanBartl/sandbox.nvim)
-and [sessions.nvim](https://github.com/StefanBartl/sessions.nvim) — already
+Two siblings — [sandbox.nvim](https://github.com/WKDSteve/sandbox.nvim)
+and [sessions.nvim](https://github.com/WKDSteve/sessions.nvim) — already
 shipped their own component, with ui.nvim reduced to a thin adapter over
 it. This closes the same gap here: the plugin owns how it presents itself,
 and ui.nvim only places it.

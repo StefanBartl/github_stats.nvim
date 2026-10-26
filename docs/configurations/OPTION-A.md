@@ -187,9 +187,9 @@ require("github_stats").setup({
 })
 ```
 
-Requires [`lib.nvim`](https://github.com/StefanBartl/lib.nvim), which provides
+Requires [`lib.nvim`](https://github.com/WKDSteve/lib.nvim), which provides
 the indicator via its
-[`lib.nvim.progress`](https://github.com/StefanBartl/lib.nvim/blob/main/lua/lib/nvim/progress/README.md)
+[`lib.nvim.progress`](https://github.com/WKDSteve/lib.nvim/blob/main/lua/lib/nvim/progress/README.md)
 module. Without `lib.nvim` installed the option is silently a no-op and fetching
 behaves exactly as before.
 

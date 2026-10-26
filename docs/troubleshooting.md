@@ -283,7 +283,7 @@ cat ~/.config/nvim/lua/plugins/github-stats/config.json | jq .
 ```
 
 Or, without leaving Neovim: if you have
-[`data.nvim`](https://github.com/StefanBartl/data.nvim) installed, open
+[`data.nvim`](https://github.com/WKDSteve/data.nvim) installed, open
 `config.json` and run `:JSON pretty` — a malformed file is left untouched
 with a clear decode-error notification instead of a silent partial rewrite,
 so it doubles as a validator.
@@ -331,7 +331,7 @@ so it doubles as a validator.
 "repos": [
   "username/repository-name",
   "organization/project",
-  "StefanBartl/github_stats.nvim"
+  "WKDSteve/github_stats.nvim"
 ]
 ```
 
@@ -599,7 +599,7 @@ cat ~/.config/nvim/lua/plugins/github-stats/data/username_repo/clones/*.json | t
 find ~/.config/nvim/lua/plugins/github-stats/data/ -name "*.json"
 ```
 
-If you have [`data.nvim`](https://github.com/StefanBartl/data.nvim) installed,
+If you have [`data.nvim`](https://github.com/WKDSteve/data.nvim) installed,
 opening one of these files and running `:JSON pretty` is often quicker than
 piping through `jq` — `:JSON lines` also flattens a day's metrics onto one
 `path: value` line each, useful for spotting which field actually changed
@@ -633,7 +633,7 @@ If problems persist:
    - Include output from `:GithubStats debug`
    - Include relevant error messages
    - Mention OS and Neovim version
-   - GitHub: https://github.com/StefanBartl/github_stats.nvim/issues
+   - GitHub: https://github.com/WKDSteve/github_stats.nvim/issues
 
 ---
 

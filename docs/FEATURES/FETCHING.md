@@ -21,7 +21,7 @@ bypasses that check, and `notify_fetch` decides whether a skipped manual
 fetch says so ("Fetch interval not elapsed") or stays quiet.
 `fetcher.last_fetch_summary` records per-repo/metric
 errors, surfaced by `:GithubStats debug`. Manual fetches report live
-progress through the optional [`lib.nvim.progress`](https://github.com/StefanBartl/lib.nvim)
+progress through the optional [`lib.nvim.progress`](https://github.com/WKDSteve/lib.nvim)
 dependency (`progress_style`, no-op without lib.nvim installed) — the
 silent background cycle deliberately never uses it.
 

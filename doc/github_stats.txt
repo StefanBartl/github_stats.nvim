@@ -75,8 +75,8 @@ When to use which:~
 With lazy.nvim (recommended):~
 >lua
     {
-      "StefanBartl/github_stats.nvim",
-      dependencies = { "StefanBartl/lib.nvim" },
+      "WKDSteve/github_stats.nvim",
+      dependencies = { "WKDSteve/lib.nvim" },
       event = "VimEnter",
       config = function()
         require("github_stats").setup({
@@ -89,8 +89,8 @@ With lazy.nvim (recommended):~
 With lazy.nvim (eager):~
 >lua
     {
-      "StefanBartl/github_stats.nvim",
-      dependencies = { "StefanBartl/lib.nvim" },
+      "WKDSteve/github_stats.nvim",
+      dependencies = { "WKDSteve/lib.nvim" },
       lazy = false,
       config = function()
         require("github_stats").setup({
@@ -103,8 +103,8 @@ With lazy.nvim (eager):~
 With packer.nvim:~
 >lua
     use {
-      "StefanBartl/github_stats.nvim",
-      requires = { "StefanBartl/lib.nvim" },
+      "WKDSteve/github_stats.nvim",
+      requires = { "WKDSteve/lib.nvim" },
       config = function()
         require("github_stats").setup({
           repos = { "user/repo1", "user/repo2" },
@@ -424,7 +424,7 @@ the dashboard subcommand.
                   Markdown; requires pdfport.nvim, see below)
 
     PDF export (optional dependency):~
-        Routes through pdfport.nvim (github.com/StefanBartl/pdfport.nvim,
+        Routes through pdfport.nvim (github.com/WKDSteve/pdfport.nvim,
         soft dependency, pcall-guarded): the exact same report
         export_markdown()/export_summary_markdown()/etc. would write to a
         .md file is instead handed to `pdfport.create()` as text (no

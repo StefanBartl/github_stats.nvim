@@ -210,7 +210,7 @@ describe("storage layout and listing", function()
       end)
 
       it("still keeps the plain owner/repo case as one readable segment", function()
-        local dir = storage.get_metric_dir("StefanBartl/github_stats.nvim", "clones")
+        local dir = storage.get_metric_dir("WKDSteve/github_stats.nvim", "clones")
         assert.equals(vim.fs.joinpath(root, "StefanBartl_github_stats.nvim", "clones"), dir)
       end)
 

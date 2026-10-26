@@ -4,13 +4,13 @@
 
 - **Neovim** >= 0.10.0 — `vim.uv` is used unguarded in `background.lua`,
   `dashboard/init.lua`, `dashboard/state.lua` and `health.lua`
-- **[lib.nvim](https://github.com/StefanBartl/lib.nvim)** — required, not optional: notifications, JSON I/O, the curl client, the bounded fetch queue, the user-command composer and the cross-platform executable check all come from it.
+- **[lib.nvim](https://github.com/WKDSteve/lib.nvim)** — required, not optional: notifications, JSON I/O, the curl client, the bounded fetch queue, the user-command composer and the cross-platform executable check all come from it.
   **Minimum: commit `884fe61` (2026-10-07) or newer.** `:GithubStats fetch` runs its repository queue (`max_parallel_fetches`) through `lib.nvim.async.map_limit`, which arrived in that commit; with an older lib.nvim every fetch fails with an error. The API response cap (`api_max_response_bytes`) is handed to its curl client as `max_bytes`; an older lib.nvim ignores that option without an error, so a pinned lockfile entry from before that date silently drops the cap. `:checkhealth github_stats` checks this and warns when the installed lib.nvim is too old.
-- **[ui.nvim](https://github.com/StefanBartl/ui.nvim)** — also required, not optional: `require("github_stats")` itself pulls in `ui.kit`/`ui.contextmenu` (the dashboard's note popups and right-click menu) at module load, before `setup()` even runs
+- **[ui.nvim](https://github.com/WKDSteve/ui.nvim)** — also required, not optional: `require("github_stats")` itself pulls in `ui.kit`/`ui.contextmenu` (the dashboard's note popups and right-click menu) at module load, before `setup()` even runs
 - **curl** (for API requests)
 - **GitHub Personal Access Token** with `repo` permission
 
-Optional: [pdfport.nvim](https://github.com/StefanBartl/pdfport.nvim) for
+Optional: [pdfport.nvim](https://github.com/WKDSteve/pdfport.nvim) for
 `.pdf` export, and [nvzone/menu](https://github.com/nvzone/menu) for the
 dashboard's right-click menu. Both degrade to a no-op when absent.
 
@@ -33,8 +33,8 @@ would mean it only ever collects on days you happened to open the dashboard.
 *Load after UI init (recommended, matches the plugin's own `VimEnter` auto-fetch):*
 ```lua
 {
-  "StefanBartl/github_stats.nvim",
-  dependencies = { "StefanBartl/lib.nvim", "StefanBartl/ui.nvim" },
+  "WKDSteve/github_stats.nvim",
+  dependencies = { "WKDSteve/lib.nvim", "WKDSteve/ui.nvim" },
   event = "VimEnter",
   config = function()
     require("github_stats").setup({
@@ -47,8 +47,8 @@ would mean it only ever collects on days you happened to open the dashboard.
 *Load at startup (eager):*
 ```lua
 {
-  "StefanBartl/github_stats.nvim",
-  dependencies = { "StefanBartl/lib.nvim", "StefanBartl/ui.nvim" },
+  "WKDSteve/github_stats.nvim",
+  dependencies = { "WKDSteve/lib.nvim", "WKDSteve/ui.nvim" },
   lazy = false,
   config = function()
     require("github_stats").setup({
@@ -62,8 +62,8 @@ would mean it only ever collects on days you happened to open the dashboard.
 
 ```lua
 use {
-  "StefanBartl/github_stats.nvim",
-  requires = { "StefanBartl/lib.nvim", "StefanBartl/ui.nvim" },
+  "WKDSteve/github_stats.nvim",
+  requires = { "WKDSteve/lib.nvim", "WKDSteve/ui.nvim" },
   config = function()
     require("github_stats").setup({
       repos = { "user/repo1", "user/repo2" },

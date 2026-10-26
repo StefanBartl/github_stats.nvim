@@ -62,7 +62,7 @@ jobs:
       # `.deps/lib.nvim` fallback candidate expects.
       - uses: actions/checkout@v5
         with:
-          repository: StefanBartl/lib.nvim
+          repository: WKDSteve/lib.nvim
           path: .deps/lib.nvim
           ref: ci-verified
       # ui.nvim: github_stats/init.lua's own module-top-level require pulls
@@ -71,7 +71,7 @@ jobs:
       # hard-dependency treatment as lib.nvim above.
       - uses: actions/checkout@v5
         with:
-          repository: StefanBartl/ui.nvim
+          repository: WKDSteve/ui.nvim
           path: .deps/ui.nvim
           ref: ci-verified
       - uses: rhysd/action-setup-vim@v1
@@ -81,7 +81,7 @@ jobs:
       # Checked out from the branch that only moves once the dependency's own CI is green.
       - uses: actions/checkout@v5
         with:
-          repository: "StefanBartl/testing.nvim"
+          repository: "WKDSteve/testing.nvim"
           path: .deps/testing.nvim
           ref: ci-verified
       - run: |

@@ -3,7 +3,7 @@
 Complete reference for all available user commands.
 
 One command, `:GithubStats <subcommand>` (built via
-[`lib.nvim.bindings.usercmd.composer`](https://github.com/StefanBartl/lib.nvim)), with
+[`lib.nvim.bindings.usercmd.composer`](https://github.com/WKDSteve/lib.nvim)), with
 `<Tab>` completion at every level — subcommand name, then each positional
 argument. Repository names and date presets complete dynamically from live
 configuration.
@@ -490,7 +490,7 @@ Period: 2025-11-20 to 2025-12-20 (30 days)
 
 ### Description:
 
-Exports GitHub traffic statistics to a file. Supported formats are CSV (single repository only), Markdown (single repository or all repositories), and PDF (single repository or all repositories, via [pdfport.nvim](https://github.com/StefanBartl/pdfport.nvim), optional dependency).
+Exports GitHub traffic statistics to a file. Supported formats are CSV (single repository only), Markdown (single repository or all repositories), and PDF (single repository or all repositories, via [pdfport.nvim](https://github.com/WKDSteve/pdfport.nvim), optional dependency).
 
 ### Arguments:
 - `{repo|all}` – Repository identifier or `all` for multi-repository export
@@ -512,7 +512,7 @@ Exports GitHub traffic statistics to a file. Supported formats are CSV (single r
 
 ### PDF export (optional dependency):
 
-Routes through [pdfport.nvim](https://github.com/StefanBartl/pdfport.nvim) — soft dependency, `pcall`-guarded. The exact same report the Markdown export would write to a `.md` file is instead handed to `pdfport.create()` as text (no intermediate `.md` file). Requires pdfport.nvim installed with an available Markdown producer (`pandoc` + a PDF engine — `pdfport.can_create("markdown")`); without it the export fails with a clear error rather than silently falling back to another format.
+Routes through [pdfport.nvim](https://github.com/WKDSteve/pdfport.nvim) — soft dependency, `pcall`-guarded. The exact same report the Markdown export would write to a `.md` file is instead handed to `pdfport.create()` as text (no intermediate `.md` file). Requires pdfport.nvim installed with an available Markdown producer (`pandoc` + a PDF engine — `pdfport.can_create("markdown")`); without it the export fails with a clear error rather than silently falling back to another format.
 
 ### Extension Defaulting:
 

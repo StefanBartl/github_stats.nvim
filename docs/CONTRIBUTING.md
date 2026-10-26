@@ -1,7 +1,7 @@
 # Contributing to github_stats.nvim
 
 Thank you for your interest! Bugs, ideas and questions are welcome in the
-[issue tracker](https://github.com/StefanBartl/github_stats.nvim/issues). For
+[issue tracker](https://github.com/WKDSteve/github_stats.nvim/issues). For
 major changes, please open an issue first to discuss the direction — pull
 requests very welcome.
 
@@ -65,7 +65,7 @@ rate limit; everything else reads the local store.
 ## Tests
 
 `TESTS/` is a busted-style suite, run with `scripts/test.sh`
-([testing.nvim](https://github.com/StefanBartl/testing.nvim)), that runs
+([testing.nvim](https://github.com/WKDSteve/testing.nvim)), that runs
 against fixture data — no token, no network.
 [GitHub Actions](../.github/workflows/ci.yml) runs it on every push and PR to
 `main`.

@@ -399,7 +399,7 @@ function M.check()
     health.ok("ui.nvim found (dashboard note popups, right-click context menu)")
   else
     health.error("ui.nvim not found -- require('github_stats') will fail to load", {
-      "Install StefanBartl/ui.nvim.",
+      "Install WKDSteve/ui.nvim.",
     })
   end
 
@@ -421,7 +421,7 @@ function M.check()
     health.ok(cap_msg)
   else
     health.warn(cap_msg, {
-      "Update StefanBartl/lib.nvim (e.g. :Lazy update lib.nvim, or move a pinned lockfile entry forward)",
+      "Update WKDSteve/lib.nvim (e.g. :Lazy update lib.nvim, or move a pinned lockfile entry forward)",
     })
   end
 

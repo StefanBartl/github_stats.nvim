@@ -278,7 +278,7 @@ organization/shared-repo
 #### Correct:
 - `username/repository-name`
 - `organization/project-name`
-- `StefanBartl/github_stats.nvim`
+- `WKDSteve/github_stats.nvim`
 
 #### Incorrect:
 - `repository-name` (missing owner)
@@ -289,8 +289,8 @@ organization/shared-repo
 #### Case Sensitivity:
 
 Repository names are **case-sensitive**. Ensure exact match:
-- Correct: `StefanBartl/github_stats.nvim`
-- Incorrect: `stefanbartl/github_stats.nvim` (wrong case)
+- Correct: `WKDSteve/github_stats.nvim`
+- Incorrect: `WKDSteve/github_stats.nvim` (wrong case)
 
 ---
 

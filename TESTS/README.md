@@ -1,7 +1,7 @@
 # TESTS
 
 A busted-style suite (`describe`/`it`/`before_each`, busted assertions) run by
-[testing.nvim](https://github.com/StefanBartl/testing.nvim). Every file under
+[testing.nvim](https://github.com/WKDSteve/testing.nvim). Every file under
 `TESTS/` ending in `_spec.lua` is picked up automatically — there is no
 aggregator to register a new file in. The configuration (one nvim per spec
 file, the guards and what they let through) is `.testing.lua`.

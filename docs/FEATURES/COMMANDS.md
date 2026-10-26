@@ -4,7 +4,7 @@
 - **Usercmds:** `:GithubStats fetch|show|summary|referrers|paths|chart|export|diff|compact|digest|debug|dashboard` — full reference in [commands.md](../commands.md) and [BINDINGS.md](../BINDINGS.md)
 
 A single `:GithubStats <subcommand>` verb (built with
-[`lib.nvim.bindings.usercmd.composer`](https://github.com/StefanBartl/lib.nvim)),
+[`lib.nvim.bindings.usercmd.composer`](https://github.com/WKDSteve/lib.nvim)),
 with `<Tab>` completion at every positional slot — repo names and date
 presets complete dynamically against live config (`GH_REPO`,
 `GH_REPO_OR_ALL`, `GH_DATE_OR_PRESET`, `GH_PERIOD` custom completion types

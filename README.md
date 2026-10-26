@@ -17,10 +17,10 @@
 [![Neovim](https://img.shields.io/badge/Neovim-0.10%2B-57A143?logo=neovim&logoColor=white)](https://neovim.io)
 [![Lua](https://img.shields.io/badge/Lua-5.1%2FLuaJIT-2C2D72?logo=lua&logoColor=white)](https://www.lua.org)
 ![Status](https://img.shields.io/badge/status-beta-orange)
-[![CI](https://github.com/StefanBartl/github_stats.nvim/actions/workflows/ci.yml/badge.svg)](https://github.com/StefanBartl/github_stats.nvim/actions/workflows/ci.yml)
-[![wkd](https://img.shields.io/badge/wkd-family-c6ff3d)](https://stefanbartl.github.io/wkd/p/github_stats/)
+[![CI](https://github.com/WKDSteve/github_stats.nvim/actions/workflows/ci.yml/badge.svg)](https://github.com/WKDSteve/github_stats.nvim/actions/workflows/ci.yml)
+[![wkd](https://img.shields.io/badge/wkd-family-c6ff3d)](https://wkdsteve.github.io/wkd/p/github_stats/)
 
-> Part of the [wkd](https://stefanbartl.github.io/wkd/) family — see this plugin's [page](https://stefanbartl.github.io/wkd/p/github_stats/) on the site.
+> Part of the [wkd](https://wkdsteve.github.io/wkd/) family — see this plugin's [page](https://wkdsteve.github.io/wkd/p/github_stats/) on the site.
 
 GitHub keeps clones, views, referrers and paths for **fourteen days** and then
 throws them away. This plugin collects them in the background before that
@@ -31,14 +31,14 @@ Neovim.
 
 ## Around it
 
-> **[reposcope.nvim](https://github.com/StefanBartl/reposcope.nvim)** — a
+> **[reposcope.nvim](https://github.com/WKDSteve/reposcope.nvim)** — a
 > repository browser and switcher. This plugin tells you which of your
 > repositories people are actually looking at; reposcope is how you jump into one.
 >
-> **[insights.nvim](https://github.com/StefanBartl/insights.nvim)** — traffic is
+> **[insights.nvim](https://github.com/WKDSteve/insights.nvim)** — traffic is
 > the outside view of a repository; insights is the inside one.
 >
-> **[ui.nvim](https://github.com/StefanBartl/ui.nvim)** — puts this week's
+> **[ui.nvim](https://github.com/WKDSteve/ui.nvim)** — puts this week's
 > view count for the current repository in the statusline, so the number is
 > there without opening the dashboard.
 >
@@ -46,7 +46,7 @@ Neovim.
 > unchanged. ui.nvim is not — `require("github_stats")` itself pulls in
 > `ui.kit`/`ui.contextmenu` (the dashboard's note popups and right-click
 > menu) at module load, before `setup()` even runs. It is a real dependency
-> alongside [lib.nvim](https://github.com/StefanBartl/lib.nvim) and `curl` —
+> alongside [lib.nvim](https://github.com/WKDSteve/lib.nvim) and `curl` —
 > see [Requirements](docs/installation.md#requirements).
 
 ---
@@ -81,7 +81,7 @@ each page answers.
 - [Troubleshooting](docs/troubleshooting.md) — common failures, what to run to diagnose them, and the fixes.
 - [Cross-platform notes](docs/cross-platform.md)
 - [Contributing](docs/CONTRIBUTING.md) — ground rules, project layout, and how to add a subcommand.
-- [Feedback](https://github.com/StefanBartl/github_stats.nvim/issues)
+- [Feedback](https://github.com/WKDSteve/github_stats.nvim/issues)
 
 `:help github_stats` is the same reference inside the editor.
 
