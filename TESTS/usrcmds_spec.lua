@@ -252,10 +252,10 @@ describe("usrcmds", function()
     it("asks instead of skipping when the interval has not elapsed (UI-05)", function()
       local asked = {}
       local answer
-      stub("lib.nvim.ui.kit", {
-        confirm = function(o)
-          asked[#asked + 1] = o
-          o.on_answer(answer)
+      stub("lib.nvim.ui.dialog", {
+        choose = function(question, choices, default, cb)
+          asked[#asked + 1] = { question = question, choices = choices, default = default }
+          cb(answer)
         end,
       })
       package.loaded["github_stats.fetcher"].fetch_due = function()
@@ -263,18 +263,19 @@ describe("usrcmds", function()
       end
       local fetch = require("github_stats.bindings.usrcmds.fetch")
 
-      answer = "Not now"
+      answer = 1 -- "Not now"
       fetch.execute({ args = "" })
       assert.equals(1, #asked)
+      assert.equals(1, asked[1].default, "the harmless answer is focused")
       assert.truthy(asked[1].question:find("Last fetch 2.0 h ago, the interval is 24 h", 1, true))
       assert.equals("Not now", asked[1].choices[1])
       assert.same({}, calls.fetch)
 
-      answer = "Fetch anyway"
+      answer = 2 -- "Fetch anyway"
       fetch.execute({ args = "" })
       assert.same({ true }, calls.fetch)
 
-      answer = nil
+      answer = 0 -- dismissed
       fetch.execute({ args = "" })
       assert.same({ true }, calls.fetch)
 

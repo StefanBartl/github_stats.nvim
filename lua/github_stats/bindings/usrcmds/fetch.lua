@@ -29,16 +29,12 @@ function M.execute(args)
   local question = info
       and ("Last fetch %.1f h ago, the interval is %g h. Fetch now anyway?"):format(info.since_hours, info.interval_hours)
     or "The fetch interval has not elapsed yet. Fetch now anyway?"
-  -- The harmless answer first: the dialog starts on it.
-  require("lib.nvim.ui.kit").confirm({
-    question = "[github-stats] " .. question,
-    choices = { KEEP, FETCH_ANYWAY },
-    on_answer = function(choice)
-      if choice == FETCH_ANYWAY then
-        fetcher.manual_fetch(true)
-      end
-    end,
-  })
+  -- The harmless answer first: the dialog starts on it (`choose`: index 0 is a dismissal, which fetches nothing).
+  require("lib.nvim.ui.dialog").choose("[github-stats] " .. question, { KEEP, FETCH_ANYWAY }, 1, function(index)
+    if index == 2 then
+      fetcher.manual_fetch(true)
+    end
+  end)
 end
 
 ---Get completion candidates
