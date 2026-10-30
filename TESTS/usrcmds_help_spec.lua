@@ -30,11 +30,12 @@ describe("usrcmds help texts", function()
   end)
 
   it("describes every positional argument", function()
-    -- A lib.nvim older than `help.undocumented` (or its `args` option) cannot answer the
-    -- question; that is a missing feature of the dependency, not a defect of this plugin.
-    if type(composer.help) ~= "table" or type(composer.help.undocumented) ~= "function" then
-      return
-    end
+    -- The case needs `help.undocumented` from lib.nvim: an older checkout fails here by name
+    -- instead of skipping the case silently (NEW-43).
+    assert(
+      type(composer.help) == "table" and type(composer.help.undocumented) == "function",
+      "lib.nvim lacks composer.help.undocumented: update lib.nvim, this case cannot run without it"
+    )
 
     local missing = {}
     for _, m in ipairs(composer.help.undocumented("GithubStats", { args = true })) do
