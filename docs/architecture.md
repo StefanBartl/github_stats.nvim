@@ -50,6 +50,10 @@ decisions: the `cutoff_days` floor of 14, why dashboard auto-refresh
 re-renders rather than fetches, and why today's data is excluded from every
 aggregation as incomplete.
 
-Requests go through `lib.nvim.net.curl`; nothing in this plugin shells out
-to `curl` itself. The background cycle that drives them is described in
+Requests go through `lib.nvim.net.github` (on `lib.nvim.net.curl`), the
+GitHub client shared with other plugins: it owns the API headers, the token
+handling (`-K -`, never argv) and the error rules (4xx/5xx, a `200` that is a
+`{"message": ...}` error object, an exhausted rate limit). The token itself
+still comes from this plugin's `config.get_token()`. Nothing in this plugin
+shells out to `curl` itself. The background cycle that drives them is described in
 [background-fetching.md](background-fetching.md).

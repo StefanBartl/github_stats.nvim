@@ -191,6 +191,15 @@ documented as part of the features they affect in
   while `os.time()` only ever reads a table as local time.
 
 ### Changed
+- **API requests go through `lib.nvim.net.github`**, the GitHub client shared with other plugins,
+  instead of a GitHub layer of its own on `net.curl`. Needs lib.nvim `ccd30b5` (2026-10-31) or newer;
+  `:checkhealth` reports an error on an older one. An HTTP 4xx/5xx is now an error even when its body
+  is not a GitHub error object (it used to surface as a JSON parse error, or a 5xx with a JSON body as
+  data), an exhausted rate limit says when it resets, and the error texts carry the HTTP status:
+  `GitHub API error: HTTP 200: Bad credentials`, `GitHub request failed: <curl's error>`,
+  `GitHub API error: HTTP 200: invalid JSON response` (were `GitHub API error: Bad credentials`,
+  `curl failed with code N: ...`, `JSON parse error: ...`). The token still comes from
+  `token_source`.
 - **The config comes from `lib.lua.config.new`** (defaults < `config.json` < `setup()`): nothing in
   `config.get()` shares a table with the defaults, and an option dropped from `setup()` is gone at the
   next start. A value of the wrong type is now reported and **replaced by the default** (it used to be

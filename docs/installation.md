@@ -4,8 +4,8 @@
 
 - **Neovim** >= 0.10.0 — `vim.uv` is used unguarded in `background.lua`,
   `dashboard/init.lua`, `dashboard/state.lua` and `health.lua`
-- **[lib.nvim](https://github.com/WKDSteve/lib.nvim)** — required, not optional: notifications, JSON I/O, the curl client, the bounded fetch queue, the user-command composer and the cross-platform executable check all come from it.
-  **Minimum: commit `884fe61` (2026-10-07) or newer.** `:GithubStats fetch` runs its repository queue (`max_parallel_fetches`) through `lib.nvim.async.map_limit`, which arrived in that commit; with an older lib.nvim every fetch fails with an error. The API response cap (`api_max_response_bytes`) is handed to its curl client as `max_bytes`; an older lib.nvim ignores that option without an error, so a pinned lockfile entry from before that date silently drops the cap. `:checkhealth github_stats` checks this and warns when the installed lib.nvim is too old.
+- **[lib.nvim](https://github.com/WKDSteve/lib.nvim)** — required, not optional: notifications, JSON I/O, the GitHub API client (and the curl client under it), the bounded fetch queue, the user-command composer and the cross-platform executable check all come from it.
+  **Minimum: commit `ccd30b5` (2026-10-31) or newer.** Every API request goes through `lib.nvim.net.github`, which arrived in that commit; with an older lib.nvim the API module does not load at all. (`:GithubStats fetch` also needs `lib.nvim.async.map_limit` from `884fe61`, which the newer commit includes.) The API response cap (`api_max_response_bytes`) is handed to that client as `max_bytes`. `:checkhealth github_stats` reports an error when `lib.nvim.net.github` is missing and a warning when the client ignores the cap.
 - **[ui.nvim](https://github.com/WKDSteve/ui.nvim)** — also required, not optional: `require("github_stats")` itself pulls in `ui.kit`/`ui.contextmenu` (the dashboard's note popups and right-click menu) at module load, before `setup()` even runs
 - **curl** (for API requests)
 - **GitHub Personal Access Token** with `repo` permission

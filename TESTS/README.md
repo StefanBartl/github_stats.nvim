@@ -43,7 +43,8 @@ Nothing in this suite talks to github.com. Every path that would issue a
 request is cut at a seam that is replaced in `package.loaded` *before* the
 module under test is required:
 
-- `lib.nvim.net.curl` — replaced in `api_spec.lua` (async `fetch_json`) and in
+- `lib.nvim.net.curl` — replaced in `api_spec.lua` (async `fetch_raw`, under the
+  real `lib.nvim.net.github`, which is reloaded on top of the fake) and in
   `health_spec.lua` (blocking `fetch_raw_blocking`), so the request/response
   contract is scripted rather than performed.
 - `github_stats.api` — replaced in `fetcher_spec.lua`, `background_spec.lua`

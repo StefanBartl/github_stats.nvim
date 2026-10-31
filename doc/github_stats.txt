@@ -45,11 +45,12 @@ Features:~
 REQUIREMENTS                                      *github_stats-requirements*
 
 • Neovim >= 0.10.0 (vim.uv is used unguarded)
-• lib.nvim (required: notify, fs.json, net.curl, usercmd composer,
-  cross.executable), commit 8e9a608 (2026-09-18) or newer: an older one
-  ignores the `max_bytes` option of net.curl, so the API response cap
-  (`api_max_response_bytes`) would silently be gone. |:checkhealth| warns
-  when the installed lib.nvim is too old.
+• lib.nvim (required: notify, fs.json, net.github, net.curl, usercmd
+  composer, cross.executable), commit ccd30b5 (2026-10-31) or newer: every
+  API request goes through its net.github client, which an older lib.nvim
+  does not have. |:checkhealth| reports an error when the installed
+  lib.nvim is too old, and a warning when its client ignores the API
+  response cap (`api_max_response_bytes`).
 • curl (for API requests)
 • GitHub Personal Access Token with `repo` permission
 

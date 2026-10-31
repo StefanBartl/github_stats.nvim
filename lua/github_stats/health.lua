@@ -228,23 +228,35 @@ local function check_curl()
   return true, "curl available (version unknown)"
 end
 
---- lib.nvim commit that taught the fetch tiers of `lib.nvim.net.curl` the `max_bytes` option.
-local LIB_MAX_BYTES_SINCE = "8e9a608 (2026-09-18)"
+--- lib.nvim commit that added `lib.nvim.net.github`, the client `api.lua` sends every request
+--- through (its `max_bytes` handling in net.curl dates from 8e9a608, which is older).
+local LIB_NET_GITHUB_SINCE = "ccd30b5 (2026-10-31)"
 
 ---@internal
----Whether the installed `lib.nvim.net.curl` turns `max_bytes` into `--max-filesize <n>`.
+---Whether the installed lib.nvim has `lib.nvim.net.github` and its requests turn `max_bytes`
+---into `--max-filesize <n>`.
 ---
----`api.lua` hands `api_max_response_bytes` to the client as `max_bytes`. A lib.nvim older than
----`LIB_MAX_BYTES_SINCE` ignores that unknown option without a word, so the response cap would
----silently be gone (fail-open). lib.nvim carries no version number, so this asks the client
----itself, through the same tier `api.lua` uses (`fetch_json`): `vim.system` is replaced for that
----one call and only records the argv it is handed. Nothing is spawned and the completion callback
----never runs; `fetch_json` calls `vim.system` synchronously, so the real one is back before anything
----else can run.
+---`api.lua` hands every request to `lib.nvim.net.github` and `api_max_response_bytes` to it as
+---`max_bytes`. A lib.nvim older than `LIB_NET_GITHUB_SINCE` has no such module, so no request can
+---be sent at all; a client that ignores `max_bytes` would silently drop the response cap
+---(fail-open). lib.nvim carries no version number, so this asks the client itself, through the
+---same call `api.lua` uses (`request`): `vim.system` is replaced for that one call and only records
+---the argv it is handed. Nothing is spawned and the completion callback never runs; `request`
+---reaches `vim.system` synchronously (via net.curl's `fetch_raw`), so the real one is back before
+---anything else can run.
 ---@return boolean ok
 ---@return string message
+---@return "warn"|"error"|nil level How to report a failure: `error` when requests cannot work at all.
 local function check_curl_max_bytes()
-  local curl = require("lib.nvim.net.curl")
+  local has_github, github = pcall(require, "lib.nvim.net.github")
+  if not has_github then
+    return false,
+      str_format(
+        "lib.nvim is too old: lib.nvim.net.github is missing, so no GitHub request can be sent (needs lib.nvim %s or newer)",
+        LIB_NET_GITHUB_SINCE
+      ),
+      "error"
+  end
   local probe_bytes = "4096"
   local argv
   local real_system = vim.system
@@ -253,14 +265,15 @@ local function check_curl_max_bytes()
     argv = cmd
     return {}
   end
-  local call_ok, call_err = pcall(curl.fetch_json, "https://probe.invalid/", {
+  local call_ok, call_err = pcall(github.request, "https://probe.invalid/", {
     max_bytes = tonumber(probe_bytes),
   }, function() end)
   vim.system = real_system
 
   if type(argv) ~= "table" then
     return false,
-      str_format("Could not inspect the lib.nvim curl client: %s", call_ok and "no command built" or tostring(call_err))
+      str_format("Could not inspect the lib.nvim curl client: %s", call_ok and "no command built" or tostring(call_err)),
+      "warn"
   end
   for i, arg in ipairs(argv) do
     if arg == "--max-filesize" and argv[i + 1] == probe_bytes then
@@ -270,15 +283,16 @@ local function check_curl_max_bytes()
   return false,
     str_format(
       "lib.nvim is too old: net.curl ignores max_bytes, so api_max_response_bytes is NOT enforced (needs lib.nvim %s or newer)",
-      LIB_MAX_BYTES_SINCE
-    )
+      LIB_NET_GITHUB_SINCE
+    ),
+    "warn"
 end
 
 ---@internal
 ---Test API connectivity synchronously with timeout
 ---
----Goes through `lib.nvim.net.curl` (the same client `api.lua` uses for every
----live request) instead of hand-building a curl command: an earlier version
+---Goes through `lib.nvim.net.curl` (the transport under `lib.nvim.net.github`,
+---which `api.lua` uses for every live request) instead of hand-building a curl command: an earlier version
 ---interpolated the token straight into a shell string executed via
 ---`fn.system(string)`, which both ran through a shell unnecessarily (a repo
 ---name in `url` was interpolated right along with it) and put the token in
@@ -416,11 +430,11 @@ function M.check()
     })
   end
 
-  local cap_ok, cap_msg = check_curl_max_bytes()
+  local cap_ok, cap_msg, cap_level = check_curl_max_bytes()
   if cap_ok then
     health.ok(cap_msg)
   else
-    health.warn(cap_msg, {
+    health[cap_level or "warn"](cap_msg, {
       "Update WKDSteve/lib.nvim (e.g. :Lazy update lib.nvim, or move a pinned lockfile entry forward)",
     })
   end

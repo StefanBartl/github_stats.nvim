@@ -3,16 +3,14 @@
 ---@description
 --- Fetches traffic statistics from GitHub REST API.
 --- Supports clones, views, referrers, and paths endpoints.
---- All operations are async via vim.system to avoid blocking UI.
+--- All operations are async (lib.nvim.net.github on net.curl) to avoid blocking UI.
 
 local config = require("github_stats.config")
+local github = require("lib.nvim.net.github")
 
 local M = {}
 
 local schedule = vim.schedule
-
----GitHub API base URL
-local API_BASE = "https://api.github.com"
 
 ---Available metric endpoints
 ---@type table<string, string>
@@ -24,63 +22,43 @@ local ENDPOINTS = {
 }
 
 ---@internal
----Build request URL for metric
+---Build the request path for a metric
 ---@param repo string Repository in "owner/repo" format
 ---@param metric string Metric type
----@return string|nil, string? # URL or nil, error message
-local function build_url(repo, metric)
+---@return string|nil, string? # API path or nil, error message
+local function build_path(repo, metric)
   local endpoint = ENDPOINTS[metric]
   if not endpoint then
     return nil, string.format("Unknown metric: %s", metric)
   end
 
-  return API_BASE .. string.format(endpoint, repo), nil
+  return string.format(endpoint, repo), nil
 end
 
-local curl = require("lib.nvim.net.curl")
-
 ---@internal
----Fetch `url` via lib.nvim.net.curl and decode it into this module's own
----(data, err) contract: GitHub returns HTTP 200 with a `{"message": "..."}`
----body for many auth/API-level errors, which curl itself sees as success —
----that check has no equivalent in the generic curl client, so it stays here.
----@param url string
----@param token string|nil GitHub token; omits Authorization/API-Version headers when nil
+---Request `path` via lib.nvim.net.github and reduce its result to this
+---module's own (data, err) contract. The shared client carries the GitHub
+---rules (a 4xx/5xx, a 200 whose body is a `{"message": ...}` error object,
+---an exhausted rate limit and an undecodable body are all errors; the token
+---goes through curl's `-K -`, never argv); its error text is passed on as is.
+---Needs lib.nvim ccd30b5 or newer (health.lua checks it).
+---@param path string API path (`/repos/...`), resolved against the GitHub API base
+---@param token string|nil GitHub token; the request is unauthenticated when nil
 ---@param callback fun(data: table|nil, err: string|nil)
-local function fetch_json(url, token, callback)
-  local headers = { Accept = "application/vnd.github+json" }
-  if token then
-    headers["X-GitHub-Api-Version"] = "2022-11-28"
-  end
-
+local function fetch_json(path, token, callback)
   local cfg = config.get() or {}
-  local timeout_ms = cfg.api_timeout_ms or 15000
-  local max_bytes = cfg.api_max_response_bytes or (5 * 1024 * 1024)
 
-  curl.fetch_json(url, {
-    headers = headers,
-    bearer_token = token,
-    timeout_ms = timeout_ms,
-    -- Needs lib.nvim 8e9a608 or newer (an older one ignores the option); health.lua checks it.
-    max_bytes = max_bytes,
-  }, function(ok, data_or_err, obj)
-    schedule(function()
-      if not ok then
-        if obj.code ~= 0 then
-          callback(nil, string.format("curl failed with code %d: %s", obj.code, tostring(data_or_err)))
-        else
-          callback(nil, string.format("JSON parse error: %s", tostring(data_or_err)))
-        end
-        return
-      end
-
-      if type(data_or_err) == "table" and data_or_err.message then
-        callback(nil, string.format("GitHub API error: %s", data_or_err.message))
-        return
-      end
-
-      callback(data_or_err, nil)
-    end)
+  github.request(path, {
+    token = token,
+    timeout_ms = cfg.api_timeout_ms or 15000,
+    max_bytes = cfg.api_max_response_bytes or (5 * 1024 * 1024),
+  }, function(result, err)
+    -- github.request already runs this on the main loop.
+    if not result then
+      callback(nil, err)
+      return
+    end
+    callback(result.data, nil)
   end)
 end
 
@@ -113,16 +91,16 @@ function M.fetch_metric_async(repo, metric, callback)
     return
   end
 
-  -- Build URL
-  local url, url_err = build_url(repo, metric)
-  if not url then
+  -- Build path
+  local path, path_err = build_path(repo, metric)
+  if not path then
     schedule(function()
-      callback(nil, url_err)
+      callback(nil, path_err)
     end)
     return
   end
 
-  fetch_json(url, token, callback)
+  fetch_json(path, token, callback)
 end
 
 --- CDX: no in-repo callers (fetcher.lua fetches metrics individually); kept
@@ -177,9 +155,9 @@ end
 ---  authenticated request gets a much higher rate limit)
 ---@param callback fun(repo_names: string[]|nil, err: string?, page_count: integer)
 local function fetch_user_repos_page(username, page, token, callback)
-  local url = string.format("%s/users/%s/repos?per_page=100&page=%d", API_BASE, username, page)
+  local path = string.format("/users/%s/repos?per_page=100&page=%d", username, page)
 
-  fetch_json(url, token, function(data, err)
+  fetch_json(path, token, function(data, err)
     if not data then
       callback(nil, err, 0)
       return
@@ -266,8 +244,7 @@ function M.get_rate_limit(callback)
     return
   end
 
-  local url = API_BASE .. "/rate_limit"
-  fetch_json(url, token, callback)
+  fetch_json("/rate_limit", token, callback)
 end
 
 return M

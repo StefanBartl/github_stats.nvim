@@ -128,6 +128,11 @@ describe("health", function()
       return tmp_dir .. "/default"
     end
 
+    -- net.github captures net.curl at load: loaded fresh, it sits on the stub above (or on
+    -- whatever client a case puts there before calling check()).
+    real_modules["lib.nvim.net.github"] = package.loaded["lib.nvim.net.github"]
+    package.loaded["lib.nvim.net.github"] = nil
+
     real_health_mod = package.loaded["github_stats.health"]
     package.loaded["github_stats.health"] = nil
     health_mod = require("github_stats.health")
@@ -138,6 +143,8 @@ describe("health", function()
     package.loaded["lib.nvim.net.curl"] = real_curl
     package.loaded["github_stats.config"] = real_config
     package.loaded["github_stats.health"] = real_health_mod
+    -- Never leave the copy bound to this file's curl stub behind (pairs skips a nil original).
+    package.loaded["lib.nvim.net.github"] = nil
     for name, module in pairs(real_modules) do
       package.loaded[name] = module
     end
@@ -417,13 +424,13 @@ describe("health", function()
       end)
 
       it("warns, naming the minimum lib.nvim, when the client ignores max_bytes", function()
-        -- What a lib.nvim before 8e9a608 does: build the argv without ever looking at max_bytes.
+        -- A client that builds the argv without ever looking at max_bytes.
         package.loaded["lib.nvim.net.curl"] = {
           fetch_raw_blocking = function(url, opts)
             return curl_responder(url, opts)
           end,
-          fetch_json = function(url, _, cb)
-            vim.system({ "curl", "-sS", "-X", "GET", url }, { text = true }, cb)
+          fetch_raw = function(url, _, cb)
+            vim.system({ "curl", "-sS", "-i", "-X", "GET", url }, { text = true }, cb)
           end,
         }
         local system_before = vim.system
@@ -431,13 +438,29 @@ describe("health", function()
         health_mod.check()
 
         assert.is_true(reported("warn", "lib.nvim is too old: net.curl ignores max_bytes"))
-        assert.is_true(reported("warn", "8e9a608"))
+        assert.is_true(reported("warn", "ccd30b5"))
         assert.is_false(reported("ok", "lib.nvim curl client enforces"))
         assert.equals(system_before, vim.system, "the probe must put vim.system back")
       end)
 
+      it("reports an error, naming the minimum lib.nvim, when lib.nvim.net.github is missing", function()
+        -- What a lib.nvim before ccd30b5 does: the module api.lua sends every request through
+        -- does not exist. package.preload is consulted before any searcher, so this stands in
+        -- for the missing file.
+        package.preload["lib.nvim.net.github"] = function()
+          error("module 'lib.nvim.net.github' not found")
+        end
+        local ok, err = pcall(health_mod.check)
+        package.preload["lib.nvim.net.github"] = nil
+        assert.is_true(ok, tostring(err))
+
+        assert.is_true(reported("error", "lib.nvim is too old: lib.nvim.net.github is missing"))
+        assert.is_true(reported("error", "ccd30b5"))
+        assert.is_false(reported("ok", "lib.nvim curl client enforces"))
+      end)
+
       it("warns instead of failing when the client cannot be inspected", function()
-        -- before_each's stub has no fetch_json at all.
+        -- before_each's stub has no fetch_raw at all.
         health_mod.check()
 
         assert.is_true(reported("warn", "Could not inspect the lib.nvim curl client"))

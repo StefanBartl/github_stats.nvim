@@ -4,11 +4,13 @@
 -- github.com.
 --
 -- Nothing here goes near the network: `lib.nvim.net.curl` is replaced in
--- package.loaded before the module under test is (re-)required, so every
--- request is answered by a scripted responder instead of by curl. That is the
--- whole point of the seam -- api.lua's own contract (the (data, err) pair, the
--- "HTTP 200 with a {message=...} body is still an error" rule, the pagination
--- loop) is what these specs pin, and none of it needs a real socket.
+-- package.loaded before `lib.nvim.net.github` and the module under test are
+-- (re-)required, so every request is answered by a scripted raw response
+-- (status, headers, body) instead of by curl. The real lib.nvim.net.github
+-- sits in between on purpose: api.lua's contract (the (data, err) pair, the
+-- "HTTP 200 with a {message=...} body is still an error" rule, the
+-- pagination loop) is what these specs pin, through the client it actually
+-- uses, and none of it needs a real socket.
 
 describe("api", function()
   local api
@@ -18,6 +20,14 @@ describe("api", function()
   local requests
   local responder
   local saved_token
+
+  ---A raw curl response whose body is `data` as JSON.
+  ---@param data any
+  ---@param status integer|nil HTTP status, default 200
+  ---@return boolean ok, Lib.Net.Curl.RawResponse response
+  local function reply(data, status)
+    return true, { status = status or 200, status_text = "", headers = {}, body = vim.json.encode(data) }
+  end
 
   ---Run the event loop until `pred` holds (api.lua schedules every callback).
   ---@param pred fun(): boolean
@@ -29,19 +39,19 @@ describe("api", function()
     requests = {}
     -- Default: an empty successful JSON body.
     responder = function()
-      return true, {}, { code = 0 }
+      return reply({})
     end
 
     real_curl = package.loaded["lib.nvim.net.curl"]
     package.loaded["lib.nvim.net.curl"] = {
-      fetch_json = function(url, opts, cb)
+      fetch_raw = function(url, opts, cb)
         requests[#requests + 1] = { url = url, opts = opts }
-        local ok, data_or_err, obj = responder(url, opts, #requests)
-        cb(ok, data_or_err, obj)
+        cb(responder(url, opts, #requests))
       end,
     }
 
-    for _, name in ipairs({ "github_stats.config", "github_stats.api" }) do
+    -- net.github captures net.curl at load, so it is loaded fresh on top of the fake.
+    for _, name in ipairs({ "github_stats.config", "lib.nvim.net.github", "github_stats.api" }) do
       package.loaded[name] = nil
     end
 
@@ -60,6 +70,7 @@ describe("api", function()
   after_each(function()
     vim.env.GITHUB_TOKEN = saved_token
     package.loaded["lib.nvim.net.curl"] = real_curl
+    package.loaded["lib.nvim.net.github"] = nil
     package.loaded["github_stats.api"] = nil
     if tmp_dir then
       vim.fn.delete(tmp_dir, "rf")
@@ -173,6 +184,7 @@ describe("api", function()
       -- client build the argv (vim.system is replaced, nothing is spawned) and checks the wire
       -- format: the cap must still reach curl as `--max-filesize <n>`.
       package.loaded["lib.nvim.net.curl"] = nil
+      package.loaded["lib.nvim.net.github"] = nil
       package.loaded["github_stats.api"] = nil
       config.init({ config_dir = tmp_dir, api_timeout_ms = 1234, api_max_response_bytes = 4096 })
       api = require("github_stats.api")
@@ -181,7 +193,7 @@ describe("api", function()
       local orig_system = vim.system
       vim.system = function(argv, sys_opts, on_exit)
         captured = { argv = argv, opts = sys_opts }
-        on_exit({ code = 0, stdout = "{}", stderr = "" })
+        on_exit({ code = 0, stdout = "HTTP/1.1 200 OK\r\n\r\n{}", stderr = "" })
         return {}
       end
 
@@ -220,7 +232,7 @@ describe("api", function()
   describe("response decoding", function()
     it("hands decoded data through untouched on success", function()
       responder = function()
-        return true, { count = 7, uniques = 3 }, { code = 0 }
+        return reply({ count = 7, uniques = 3 })
       end
 
       local data, err
@@ -237,7 +249,7 @@ describe("api", function()
 
     it("treats a 200 body carrying a GitHub 'message' as an error", function()
       responder = function()
-        return true, { message = "Not Found" }, { code = 0 }
+        return reply({ message = "Not Found" })
       end
 
       local data, err
@@ -249,12 +261,12 @@ describe("api", function()
       end)
 
       assert.is_nil(data)
-      assert.equals("GitHub API error: Not Found", err)
+      assert.equals("GitHub API error: HTTP 200: Not Found", err)
     end)
 
-    it("distinguishes a curl failure from a JSON parse failure by the exit code", function()
+    it("distinguishes a transport failure from an undecodable body", function()
       responder = function()
-        return false, "connection refused", { code = 7 }
+        return false, "connection refused"
       end
 
       local err
@@ -264,10 +276,10 @@ describe("api", function()
       wait_for(function()
         return err ~= nil
       end)
-      assert.equals("curl failed with code 7: connection refused", err)
+      assert.equals("GitHub request failed: connection refused", err)
 
       responder = function()
-        return false, "unexpected token", { code = 0 }
+        return true, { status = 200, status_text = "OK", headers = {}, body = "{not json" }
       end
 
       err = nil
@@ -277,7 +289,40 @@ describe("api", function()
       wait_for(function()
         return err ~= nil
       end)
-      assert.equals("JSON parse error: unexpected token", err)
+      assert.equals("GitHub API error: HTTP 200: invalid JSON response", err)
+    end)
+
+    it("treats an HTTP error status and an exhausted rate limit as errors", function()
+      local cases = {
+        -- A 404 carries GitHub's error object; its message is quoted.
+        {
+          { reply({ message = "Not Found", documentation_url = "https://docs.github.com" }, 404) },
+          "^GitHub API error: HTTP 404: Not Found$",
+        },
+        -- A 502 from a proxy has no JSON body at all; the status alone is the error.
+        { { true, { status = 502, status_text = "", headers = {}, body = "" } }, "^GitHub API error: HTTP 502$" },
+        -- A 403 with no requests left is reported as the rate limit, not as a bare 403.
+        {
+          { true, { status = 403, status_text = "", headers = { ["x-ratelimit-remaining"] = "0" }, body = "{}" } },
+          "^GitHub API rate limit exhausted %(HTTP 403%)",
+        },
+      }
+      for _, case in ipairs(cases) do
+        local response, pattern = case[1], case[2]
+        responder = function()
+          return response[1], response[2]
+        end
+
+        local data, err
+        api.fetch_metric_async("owner/repo", "clones", function(d, e)
+          data, err = d, e
+        end)
+        wait_for(function()
+          return err ~= nil
+        end)
+        assert.is_nil(data)
+        assert.is_truthy(tostring(err):match(pattern), tostring(err))
+      end
     end)
   end)
 
@@ -285,9 +330,9 @@ describe("api", function()
     it("reports every metric once, mixing successes and failures", function()
       responder = function(url)
         if url:match("views") then
-          return true, { message = "Forbidden" }, { code = 0 }
+          return reply({ message = "Forbidden" })
         end
-        return true, { ok = true }, { code = 0 }
+        return reply({ ok = true })
       end
 
       local results
@@ -301,7 +346,7 @@ describe("api", function()
       assert.equals(4, vim.tbl_count(results))
       assert.is_nil(results.clones.error)
       assert.is_true(results.clones.data.ok)
-      assert.equals("GitHub API error: Forbidden", results.views.error)
+      assert.equals("GitHub API error: HTTP 200: Forbidden", results.views.error)
       assert.is_nil(results.views.data)
     end)
   end)
@@ -342,9 +387,9 @@ describe("api", function()
     it("stops at the first short page", function()
       responder = function(url)
         if page_number(url) == 1 then
-          return true, page("acme", 100), { code = 0 }
+          return reply(page("acme", 100))
         end
-        return true, page("acme", 3), { code = 0 }
+        return reply(page("acme", 3))
       end
 
       local names, err
@@ -363,7 +408,7 @@ describe("api", function()
 
     it("skips entries without a string full_name", function()
       responder = function()
-        return true, { { full_name = "acme/one" }, { id = 5 }, "junk", { full_name = "acme/two" } }, { code = 0 }
+        return reply({ { full_name = "acme/one" }, { id = 5 }, "junk", { full_name = "acme/two" } })
       end
 
       local names
@@ -379,7 +424,7 @@ describe("api", function()
 
     it("propagates a first-page failure as an error with no partial list", function()
       responder = function()
-        return true, { message = "Bad credentials" }, { code = 0 }
+        return reply({ message = "Bad credentials" })
       end
 
       local names, err
@@ -391,15 +436,15 @@ describe("api", function()
       end)
 
       assert.is_nil(names)
-      assert.equals("GitHub API error: Bad credentials", err)
+      assert.equals("GitHub API error: HTTP 200: Bad credentials", err)
     end)
 
     it("returns what it already has when a later page fails", function()
       responder = function(url)
         if page_number(url) == 1 then
-          return true, page("acme", 100), { code = 0 }
+          return reply(page("acme", 100))
         end
-        return false, "boom", { code = 7 }
+        return false, "boom"
       end
 
       local names, err
@@ -416,7 +461,7 @@ describe("api", function()
 
     it("reports an unexpected response shape rather than iterating it", function()
       responder = function()
-        return true, "not an array", { code = 0 }
+        return reply("not an array")
       end
 
       local names, err
@@ -437,7 +482,7 @@ describe("api", function()
       api = require("github_stats.api")
 
       responder = function()
-        return true, page("acme", 100), { code = 0 }
+        return reply(page("acme", 100))
       end
 
       local names
@@ -471,7 +516,7 @@ describe("api", function()
 
     it("queries /rate_limit and passes the decoded payload on", function()
       responder = function()
-        return true, { rate = { remaining = 4999 } }, { code = 0 }
+        return reply({ rate = { remaining = 4999 } })
       end
 
       local data
