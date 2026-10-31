@@ -44,11 +44,23 @@ describe("github_stats.statusline", function()
   --- several cases below want a buffer in the same directory.
   local seq = 0
 
+  --- Every buffer a case creates, wiped in `after_each` so no case leaves
+  --- a buffer behind (the `state` guard of testing.nvim checks that).
+  ---@type integer[]
+  local created = {}
+
+  ---@return integer
+  local function new_buf()
+    local buf = vim.api.nvim_create_buf(true, false)
+    created[#created + 1] = buf
+    return buf
+  end
+
   ---@param dir string
   ---@return integer
   local function buf_in(dir)
     seq = seq + 1
-    local buf = vim.api.nvim_create_buf(true, false)
+    local buf = new_buf()
     vim.api.nvim_buf_set_name(buf, ("%s/spec_%d.lua"):format(dir, seq))
     vim.api.nvim_set_current_buf(buf)
     return buf
@@ -64,13 +76,19 @@ describe("github_stats.statusline", function()
       real_query = nil
     end
     statusline.invalidate()
+    for _, buf in ipairs(created) do
+      if vim.api.nvim_buf_is_valid(buf) then
+        vim.api.nvim_buf_delete(buf, { force = true })
+      end
+    end
+    created = {}
   end)
 
   -- plenary's busted shim has no `teardown`, so the temp config dir is
   -- removed at the end of the file instead of from a hook.
 
   it("renders empty for a buffer with no file name", function()
-    local buf = vim.api.nvim_create_buf(true, false)
+    local buf = new_buf()
     vim.api.nvim_set_current_buf(buf)
     assert.equals("", statusline.status(buf))
   end)

@@ -28,12 +28,17 @@ return {
   guards = {
     -- No spec writes outside its sandbox.
     fs = "error",
-    -- Specs leave things behind within one spec file: statusline_spec leaves one scratch buffer
-    -- per case, bindings_spec (show_float) makes ui.nvim define its Kit* highlight groups,
-    -- health_spec leaves the :KitPreview command and a VimResized autocmd, and
-    -- dashboard_render_spec changes vim.g.have_nerd_font without restoring it. Harmless under
-    -- isolated = "file"; fixing it needs spec changes, so it stays a warning.
-    state = "warn",
+    -- The suite leaves no state behind: every spec wipes the buffers it creates and restores the
+    -- globals it changes. What remains is library state a dependency sets up once and keeps on
+    -- purpose, the same in a real session:
+    state = {
+      mode = "error",
+      -- ui.nvim defines its Kit* highlight groups the first time a float is shown (bindings_spec).
+      ignore_highlights = { "Kit" },
+      -- lib.nvim exports $NVIM_CONFIG_DIR (with its marker) when lib.nvim.fs.roots is first
+      -- required, so child processes resolve it too (export_spec, health_spec, usrcmds_spec).
+      ignore_env = { "NVIM_CONFIG_DIR", "LIB_NVIM_ROOTS_EXPORTED" },
+    },
     -- A scheduled callback that throws after its case ended is a real failure.
     scheduled_error = "error",
     -- A blocking prompt (getchar/input) in a headless run would hang; none occurs.
