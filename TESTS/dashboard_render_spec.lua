@@ -69,7 +69,15 @@ describe("dashboard render", function()
     return vim.api.nvim_buf_get_lines(buf, 0, -1, false)
   end
 
+  -- Several cases pick a sparkline ramp through `vim.g.have_nerd_font`; put
+  -- back what the host had so no case inherits another's choice.
+  local saved_nerd_font
+  before_each(function()
+    saved_nerd_font = vim.g.have_nerd_font
+  end)
+
   after_each(function()
+    vim.g.have_nerd_font = saved_nerd_font
     pcall(function()
       require("github_stats.dashboard").close()
     end)
@@ -486,17 +494,23 @@ describe("dashboard render", function()
       assert.is_true(groups_on(views_line).GithubStatsValue)
     end)
 
-    it("highlights the sparkline tail on the Period line and dims the label", function()
-      render_lines({ "user/a" }, { time_range = "max" })
-      seed_trend("user/a", 10, 5)
-      dashboard.schedule_render(true)
+    -- Both ramps: the highlighter used to find the sparkline by the UTF-8
+    -- prefix of the block elements, so an ASCII sparkline (no Nerd Font)
+    -- stayed dimmed as part of the label.
+    for _, case in ipairs({ { "block", true }, { "ASCII", false } }) do
+      it(("highlights the %s sparkline tail on the Period line and dims the label"):format(case[1]), function()
+        vim.g.have_nerd_font = case[2]
+        render_lines({ "user/a" }, { time_range = "max" })
+        seed_trend("user/a", 10, 5)
+        dashboard.schedule_render(true)
 
-      local period_line = dashboard_state.get_repo_line(1) + 2
-      local groups = groups_on(period_line)
+        local period_line = dashboard_state.get_repo_line(1) + 2
+        local groups = groups_on(period_line)
 
-      assert.is_true(groups.GithubStatsLabel)
-      assert.is_true(groups.GithubStatsSparkline)
-    end)
+        assert.is_true(groups.GithubStatsLabel)
+        assert.is_true(groups.GithubStatsSparkline)
+      end)
+    end
 
     it("leaves the Period line dimmed with no sparkline group when there is no data", function()
       render_lines({ "user/a" })

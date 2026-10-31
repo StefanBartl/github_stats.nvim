@@ -148,11 +148,11 @@ local function highlight_entry(buf, lines, first_line, is_selected, trend_token,
   -- Period line: dim, except the sparkline tail.
   local period = lines[first_line + 3]
   if period then
-    -- Block elements U+2581..U+2588 all start E2 96; the period line holds
-    -- nothing else outside ASCII, so this two-byte prefix locates the
-    -- sparkline without needing a multi-byte character class, which Lua
-    -- patterns cannot express.
-    local sparkline_start = period:find("\226\150", 1, true)
+    -- The renderer writes "  Period:  <start> to <end>  <sparkline>", with
+    -- ISO dates on both ends. The sparkline is whatever follows the end date
+    -- and its two spaces, block elements or the ASCII ramp alike (no Nerd
+    -- Font); "No data available" does not match, so it stays all label.
+    local sparkline_start = period:match("^%s*Period:%s+%S+ to %S+  ()%S")
     mark(buf, first_line + 2, 0, sparkline_start and (sparkline_start - 1) or #period, "GithubStatsLabel")
     if sparkline_start then
       mark(buf, first_line + 2, sparkline_start - 1, #period, "GithubStatsSparkline")
