@@ -38,10 +38,11 @@ end
 ---@internal
 ---Request `path` via lib.nvim.net.github and reduce its result to this
 ---module's own (data, err) contract. The shared client carries the GitHub
----rules (a 4xx/5xx, a 200 whose body is a `{"message": ...}` error object,
----an exhausted rate limit and an undecodable body are all errors; the token
----goes through curl's `-K -`, never argv); its error text is passed on as is.
----Needs lib.nvim ccd30b5 or newer (health.lua checks it).
+---rules (a 3xx other than 304, a 4xx/5xx, a 200 whose body is a
+---`{"message": ...}` error object, an exhausted rate limit and an
+---undecodable body are all errors; the token goes through curl's `-K -`,
+---never argv); its error text is passed on as is. Needs lib.nvim ccd30b5 or
+---newer (health.lua checks it); a redirect is an error since 7ab808d.
 ---@param path string API path (`/repos/...`), resolved against the GitHub API base
 ---@param token string|nil GitHub token; the request is unauthenticated when nil
 ---@param callback fun(data: table|nil, err: string|nil)

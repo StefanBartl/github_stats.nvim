@@ -306,6 +306,24 @@ describe("api", function()
           { true, { status = 403, status_text = "", headers = { ["x-ratelimit-remaining"] = "0" }, body = "{}" } },
           "^GitHub API rate limit exhausted %(HTTP 403%)",
         },
+        -- A renamed repository answers 301 with a redirect object curl does not follow; it is an
+        -- error, not empty statistics (a071ab5 returned the object as data).
+        {
+          {
+            true,
+            {
+              status = 301,
+              status_text = "",
+              headers = { location = "https://api.github.com/repositories/42/traffic/clones" },
+              body = vim.json.encode({
+                message = "Moved Permanently",
+                url = "https://api.github.com/repositories/42/traffic/clones",
+                documentation_url = "https://docs.github.com",
+              }),
+            },
+          },
+          "^GitHub API error: HTTP 301: Moved Permanently %(location: https://api.github.com/repositories/42/",
+        },
       }
       for _, case in ipairs(cases) do
         local response, pattern = case[1], case[2]
