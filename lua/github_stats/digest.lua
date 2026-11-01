@@ -153,6 +153,11 @@ function M.digest_file(repo)
 end
 
 ---@internal
+---Per repository: the directory signature of the last listing and what it found (`newest_fetch`).
+---@type table<string, { key: string, fetched: string? }>
+local fetch_memo = {}
+
+---@internal
 ---Turn a history file stamp (`2026-09-25T10-30-00`, UTC) into ISO 8601.
 ---@param stamp string
 ---@return string
@@ -168,6 +173,20 @@ end
 ---@param repo string
 ---@return string? # ISO 8601 (UTC), nil when nothing was ever fetched
 local function newest_fetch(repo)
+  -- A directory whose mtime did not move gained no snapshot file: the listing of the history (hundreds of files
+  -- per repository, every `stale` check of the background cycle) is only repeated when one of them moved. A
+  -- changed mtime only costs the listing again, so a sync tool rewriting mtimes cannot make the answer wrong.
+  local signature = {}
+  for _, metric in ipairs(SNAPSHOT_METRICS) do
+    local dir = storage.get_metric_dir(repo, metric)
+    local st = uv.fs_stat(dir)
+    signature[#signature + 1] = dir .. (st and st.mtime and (":%d.%d"):format(st.mtime.sec, st.mtime.nsec) or ":none")
+  end
+  local key = table.concat(signature, "|")
+  local memo = fetch_memo[repo]
+  if memo and memo.key == key then
+    return memo.fetched
+  end
   local newest
   for _, metric in ipairs(SNAPSHOT_METRICS) do
     local handle = uv.fs_scandir(storage.get_metric_dir(repo, metric))
@@ -182,7 +201,9 @@ local function newest_fetch(repo)
       end
     end
   end
-  return newest and stamp_to_iso(newest) or nil
+  local fetched = newest and stamp_to_iso(newest) or nil
+  fetch_memo[repo] = { key = key, fetched = fetched }
+  return fetched
 end
 
 ---@internal

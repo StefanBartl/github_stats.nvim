@@ -521,6 +521,27 @@ describe("digest", function()
       assert.is_true((digest.stale()))
     end)
 
+    it("lists the history again only when a snapshot directory changed", function()
+      seed(REPO)
+      digest.write_all()
+      assert.is_false((digest.stale())) -- the listing is memoized now
+
+      local real, listings = vim.uv.fs_scandir, 0
+      vim.uv.fs_scandir = function(...)
+        listings = listings + 1
+        return real(...)
+      end
+      local ok, err = pcall(function()
+        assert.is_false((digest.stale()))
+        assert.equals(0, listings, "an unchanged history is not listed again")
+        write_daily_fetch(REPO, "views", date_str(0) .. "T23-59-58", 10)
+        assert.is_true((digest.stale()))
+        assert.is_true(listings > 0, "a new snapshot file makes the next check list it")
+      end)
+      vim.uv.fs_scandir = real
+      assert(ok, err)
+    end)
+
     it("treats a digest from before `fetched` existed as stale", function()
       seed(REPO)
       digest.write_all()
