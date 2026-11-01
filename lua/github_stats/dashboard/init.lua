@@ -1,4 +1,5 @@
 ---@module 'github_stats.dashboard'
+-- handrolled-ok: leading render when the last one is old enough, otherwise one restarted trailing render; the clock lives in dashboard.state
 ---@brief Dashboard initialization and lifecycle
 ---@description
 --- Main entry point for the GitHub Stats dashboard.

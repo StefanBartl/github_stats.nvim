@@ -1,4 +1,5 @@
 ---@module 'github_stats.dashboard.state'
+-- handrolled-ok: the last-render clock read by dashboard.init's hybrid leading/trailing render; not a standalone throttle
 ---@brief Dashboard state management
 ---@description
 --- Manages the internal state of the dashboard including repository list,
