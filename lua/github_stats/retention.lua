@@ -311,7 +311,11 @@ function M.run_all_sliced(opts, on_done)
       on_done(summary)
       return
     end
-    run_job(summary, job[1], job[2], opts)
+    -- a job that throws is an error of its repository, not the end of every later run
+    local ok, err = pcall(run_job, summary, job[1], job[2], opts)
+    if not ok then
+      summary.errors[job[1] .. "/" .. job[2]] = tostring(err)
+    end
     vim.schedule(step)
   end
   vim.schedule(step)

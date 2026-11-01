@@ -355,6 +355,25 @@ describe("retention scheduling", function()
     end)
   end)
 
+  describe("a job that throws", function()
+    it("is reported, the run ends and the next one may start", function()
+      local real = retention.compact_metric
+      retention.compact_metric = function()
+        error("boom")
+      end
+      local got
+      retention.run_all_sliced({}, function(summary)
+        got = summary
+      end)
+      vim.wait(2000, function()
+        return got ~= nil
+      end, 1)
+      retention.compact_metric = real
+      assert.is_not_nil(got)
+      assert.is_truthy(got.errors["user/a/clones"])
+    end)
+  end)
+
   describe("maybe_run_all", function()
     it("runs on the first call and records when it did", function()
       local summary = retention.maybe_run_all()
