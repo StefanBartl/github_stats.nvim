@@ -240,47 +240,81 @@ function M.prune_metric(repo, metric, opts)
   return { archived = 0, deleted = deleted, freed_bytes = freed }, nil
 end
 
+---@return GHStats.RetentionSummary
+local function empty_summary()
+  return { archived = 0, compacted_deleted = 0, pruned_deleted = 0, freed_bytes = 0, errors = {} }
+end
+
+---One unit of retention work: a repository's metric, compacted or pruned.
+---@param summary GHStats.RetentionSummary
+---@param repo string
+---@param metric string
+---@param opts table
+local function run_job(summary, repo, metric, opts)
+  if metric == "clones" or metric == "views" then
+    local result, err = M.compact_metric(repo, metric, opts)
+    if err then
+      summary.errors[repo .. "/" .. metric] = err
+    else
+      summary.archived = summary.archived + result.archived
+      summary.compacted_deleted = summary.compacted_deleted + result.deleted
+      summary.freed_bytes = summary.freed_bytes + result.freed_bytes
+    end
+  else
+    local result, err = M.prune_metric(repo, metric, opts)
+    if err then
+      summary.errors[repo .. "/" .. metric] = err
+    else
+      summary.pruned_deleted = summary.pruned_deleted + result.deleted
+      summary.freed_bytes = summary.freed_bytes + result.freed_bytes
+    end
+  end
+end
+
+---@return { [1]: string, [2]: string }[]
+local function all_jobs()
+  local jobs = {}
+  for _, repo in ipairs(config.get_repos()) do
+    for _, metric in ipairs({ "clones", "views", "referrers", "paths" }) do
+      jobs[#jobs + 1] = { repo, metric }
+    end
+  end
+  return jobs
+end
+
 ---Run compaction (clones/views) and pruning (referrers/paths) across all
 ---configured repositories.
 ---@param opts? { cutoff_days?: integer, prune_days?: integer, dry_run?: boolean }
 ---@return GHStats.RetentionSummary
 function M.run_all(opts)
   opts = opts or {}
-  local repos = config.get_repos()
-
-  ---@type GHStats.RetentionSummary
-  local summary = {
-    archived = 0,
-    compacted_deleted = 0,
-    pruned_deleted = 0,
-    freed_bytes = 0,
-    errors = {},
-  }
-
-  for _, repo in ipairs(repos) do
-    for _, metric in ipairs({ "clones", "views" }) do
-      local result, err = M.compact_metric(repo, metric, opts)
-      if err then
-        summary.errors[repo .. "/" .. metric] = err
-      else
-        summary.archived = summary.archived + result.archived
-        summary.compacted_deleted = summary.compacted_deleted + result.deleted
-        summary.freed_bytes = summary.freed_bytes + result.freed_bytes
-      end
-    end
-
-    for _, metric in ipairs({ "referrers", "paths" }) do
-      local result, err = M.prune_metric(repo, metric, opts)
-      if err then
-        summary.errors[repo .. "/" .. metric] = err
-      else
-        summary.pruned_deleted = summary.pruned_deleted + result.deleted
-        summary.freed_bytes = summary.freed_bytes + result.freed_bytes
-      end
-    end
+  local summary = empty_summary()
+  for _, job in ipairs(all_jobs()) do
+    run_job(summary, job[1], job[2], opts)
   end
-
   return summary
+end
+
+---`run_all`, one repository metric per event-loop turn: a whole run took ~1.1 s in the
+---editor thread, this keeps each turn to a fraction of that. `on_done` gets the summary.
+---@param opts? { cutoff_days?: integer, prune_days?: integer, dry_run?: boolean }
+---@param on_done fun(summary: GHStats.RetentionSummary)
+function M.run_all_sliced(opts, on_done)
+  opts = opts or {}
+  local summary = empty_summary()
+  local jobs = all_jobs()
+  local i = 0
+  local function step()
+    i = i + 1
+    local job = jobs[i]
+    if not job then
+      on_done(summary)
+      return
+    end
+    run_job(summary, job[1], job[2], opts)
+    vim.schedule(step)
+  end
+  vim.schedule(step)
 end
 
 ---@internal
@@ -332,6 +366,31 @@ function M.maybe_run_all()
   local summary = M.run_all({ cutoff_days = cfg.cutoff_days, prune_days = cfg.prune_days })
   save_last_run(now)
   return summary
+end
+
+---`maybe_run_all`, sliced (see `run_all_sliced`): `on_done` gets the summary, or nil when
+---retention is off or ran within 24h. The 24h mark is saved when the run is done.
+---@param on_done fun(summary: GHStats.RetentionSummary|nil)
+local running = false
+
+function M.maybe_run_all_async(on_done)
+  local cfg = config.get_retention()
+  if running or not cfg.enabled then
+    on_done(nil)
+    return
+  end
+  local last_run = load_last_run()
+  local now = os.time()
+  if last_run and (now - last_run) < 24 * 3600 then
+    on_done(nil)
+    return
+  end
+  running = true
+  M.run_all_sliced({ cutoff_days = cfg.cutoff_days, prune_days = cfg.prune_days }, function(summary)
+    running = false
+    save_last_run(now)
+    on_done(summary)
+  end)
 end
 
 ---Format a byte count for user-facing messages.

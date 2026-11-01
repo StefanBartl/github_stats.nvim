@@ -222,32 +222,34 @@ function M.fetch_all(force, callback, opts)
     -- once/24h (github_stats.retention.maybe_run_all), so this is cheap on
     -- every fetch that isn't the first one of the day.
     local retention = require("github_stats.retention")
-    local retention_summary = retention.maybe_run_all()
-    if retention_summary and not background then
-      local touched = retention_summary.compacted_deleted + retention_summary.pruned_deleted
-      if touched > 0 then
-        config.notify(
-          str_format(
-            "[github-stats] Retention: archived %d day(s), removed %d files (%s freed)",
-            retention_summary.archived,
-            touched,
-            retention.format_bytes(retention_summary.freed_bytes)
-          ),
-          "info"
-        )
+    retention.maybe_run_all_async(function(retention_summary)
+      if retention_summary and not background then
+        local touched = retention_summary.compacted_deleted + retention_summary.pruned_deleted
+        if touched > 0 then
+          config.notify(
+            str_format(
+              "[github-stats] Retention: archived %d day(s), removed %d files (%s freed)",
+              retention_summary.archived,
+              touched,
+              retention.format_bytes(retention_summary.freed_bytes)
+            ),
+            "info"
+          )
+        end
+        if vim.tbl_count(retention_summary.errors) > 0 then
+          config.notify(
+            str_format("[github-stats] Retention had %d error(s), see :GithubStats debug", vim.tbl_count(retention_summary.errors)),
+            "warn"
+          )
+        end
       end
-      if vim.tbl_count(retention_summary.errors) > 0 then
-        config.notify(
-          str_format("[github-stats] Retention had %d error(s), see :GithubStats debug", vim.tbl_count(retention_summary.errors)),
-          "warn"
-        )
-      end
-    end
 
-    -- Publish the digest other programs read (github_stats.digest) for the
-    -- repositories that got any data this cycle. Deferred and pcall-wrapped
-    -- inside write_later: a digest problem must never fail or slow a fetch.
-    require("github_stats.digest").write_later(repos_of(all_success))
+      -- Publish the digest other programs read (github_stats.digest) for the
+      -- repositories that got any data this cycle. Deferred and pcall-wrapped
+      -- inside write_later: a digest problem must never fail or slow a fetch.
+      -- After retention, which moves days into the archive the digest reads.
+      require("github_stats.digest").write_later(repos_of(all_success))
+    end)
 
     -- Create summary
     local summary = {

@@ -319,6 +319,42 @@ describe("retention scheduling", function()
     vim.fn.delete(tmp_dir, "rf")
   end)
 
+  describe("maybe_run_all_async", function()
+    it("hands the editor back between jobs and gives the same summary", function()
+      local done, got
+      retention.maybe_run_all_async(function(summary)
+        done, got = true, summary
+      end)
+      assert.is_nil(done, "nothing ran inside the call itself")
+      vim.wait(2000, function()
+        return done
+      end, 1)
+      assert.is_true(done)
+      assert.are.same(retention.run_all({ dry_run = true }).errors, got.errors)
+      assert.equals(1, vim.fn.filereadable(last_run_path()))
+    end)
+
+    it("does not start a second run while one is going, nor inside 24 hours", function()
+      local calls = {}
+      retention.maybe_run_all_async(function(summary)
+        calls[#calls + 1] = summary
+      end)
+      retention.maybe_run_all_async(function(summary)
+        calls[#calls + 1] = summary or "skipped"
+      end)
+      vim.wait(2000, function()
+        return #calls == 2
+      end, 1)
+      assert.equals("skipped", calls[1])
+      assert.is_table(calls[2])
+      local again
+      retention.maybe_run_all_async(function(summary)
+        again = summary or "skipped"
+      end)
+      assert.equals("skipped", again)
+    end)
+  end)
+
   describe("maybe_run_all", function()
     it("runs on the first call and records when it did", function()
       local summary = retention.maybe_run_all()
