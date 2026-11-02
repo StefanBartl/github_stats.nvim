@@ -482,8 +482,9 @@ end
 ---history is skipped, not an error. One repository failing never stops the
 ---others.
 ---@param repos string[]
+---@param opts? { skip_root?: boolean }  `skip_root`: leave `root.json` and `last_result` to the caller (`write_later` writes slice by slice)
 ---@return GHStats.Digest.WriteResult
-function M.write(repos)
+function M.write(repos, opts)
   ---@type GHStats.Digest.WriteResult
   local result = { written = {}, unchanged = {}, skipped = {}, errors = {} }
 
@@ -504,6 +505,10 @@ function M.write(repos)
         bucket[#bucket + 1] = repo
       end
     end
+  end
+
+  if opts and opts.skip_root then
+    return result
   end
 
   local _, root_err = M.write_root(repos)
@@ -555,22 +560,55 @@ function M.refresh_if_stale()
   return nil
 end
 
----Write the digests of `repos` on the next event-loop turn, and never raise.
+---Write the digests of `repos` on later turns of the event loop, and never raise.
 ---@description
 --- What the fetch paths call. A digest failure must not fail or slow a fetch,
 --- so this is deferred out of the fetch's own callback and wrapped in `pcall`;
 --- what went wrong is kept in `M.last_result` / `M.last_error` for
---- `:GithubStats debug`, not notified.
+--- `:GithubStats debug`, not notified. Building a digest reads a repository's
+--- whole history, so the work is cut into slices: one repository per loop turn
+--- (the 836 ms the editor thread used to lose in one go, measured by the
+--- telemetry of 2026-11-01), then `root.json`.
 ---@param repos string[]
 ---@return nil
 function M.write_later(repos)
   if #repos == 0 then
     return
   end
-  vim.schedule(function()
-    local ok, err = pcall(M.write, repos)
-    M.last_error = (not ok) and tostring(err) or nil
-  end)
+  ---@type GHStats.Digest.WriteResult
+  local result = { written = {}, unchanged = {}, skipped = {}, errors = {} }
+  local failure ---@type string?
+  local index = 0
+
+  local function step()
+    index = index + 1
+    if index > #repos then
+      local ok, err = pcall(function()
+        local _, root_err = M.write_root(repos)
+        if root_err then
+          result.errors["root.json"] = root_err
+        end
+      end)
+      if not ok then
+        failure = failure or tostring(err)
+      end
+      M.last_result = result
+      M.last_error = failure
+      return
+    end
+    local ok, part = pcall(M.write, { repos[index] }, { skip_root = true })
+    if ok and type(part) == "table" then
+      for _, key in ipairs({ "written", "unchanged", "skipped" }) do
+        vim.list_extend(result[key], part[key])
+      end
+      result.errors = vim.tbl_extend("force", result.errors, part.errors)
+    elseif not ok then
+      failure = failure or tostring(part)
+    end
+    vim.schedule(step)
+  end
+
+  vim.schedule(step)
 end
 
 return M

@@ -470,6 +470,57 @@ describe("digest", function()
       assert.equals(1, vim.fn.filereadable(digest.digest_file(REPO)))
     end)
 
+    it("writes one repository per loop turn, then root.json", function()
+      local other = "owner/beta"
+      seed(REPO)
+      seed(other)
+      local real_write = digest.write
+      local calls, seen_at_first_turn_end = 0, nil
+      digest.write = function(repos, opts)
+        calls = calls + 1
+        if calls == 1 then
+          -- queued before the slice schedules the next one: runs when the first turn is over
+          vim.schedule(function()
+            seen_at_first_turn_end = calls
+          end)
+        end
+        return real_write(repos, opts)
+      end
+
+      digest.write_later({ REPO, other })
+      vim.wait(2000, function()
+        return digest.last_result ~= nil
+      end, 5)
+
+      assert.equals(2, calls)
+      assert.equals(1, seen_at_first_turn_end)
+      assert.same({ REPO, other }, digest.last_result.written)
+      assert.equals(1, vim.fn.filereadable(digest.digest_file(other)))
+      assert.equals(1, vim.fn.filereadable(digest.root_path()))
+      assert.is_nil(digest.last_error)
+    end)
+
+    it("keeps going after one repository raised, and reports it", function()
+      local other = "owner/beta"
+      seed(REPO)
+      seed(other)
+      local real_write = digest.write
+      digest.write = function(repos, opts)
+        if repos[1] == REPO then
+          error("boom")
+        end
+        return real_write(repos, opts)
+      end
+
+      digest.write_later({ REPO, other })
+      vim.wait(2000, function()
+        return digest.last_result ~= nil
+      end, 5)
+
+      assert.is_truthy(digest.last_error:find("boom", 1, true))
+      assert.same({ other }, digest.last_result.written)
+    end)
+
     it("does nothing for an empty list", function()
       digest.write_later({})
 
