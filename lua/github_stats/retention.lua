@@ -372,11 +372,12 @@ function M.maybe_run_all()
   return summary
 end
 
+---True while a sliced run is under way: a second call must not start another one.
+local running = false
+
 ---`maybe_run_all`, sliced (see `run_all_sliced`): `on_done` gets the summary, or nil when
 ---retention is off or ran within 24h. The 24h mark is saved when the run is done.
 ---@param on_done fun(summary: GHStats.RetentionSummary|nil)
-local running = false
-
 function M.maybe_run_all_async(on_done)
   local cfg = config.get_retention()
   if running or not cfg.enabled then
