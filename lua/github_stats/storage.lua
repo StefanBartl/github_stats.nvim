@@ -280,6 +280,32 @@ function M.list_metric_files(repo, metric)
   return results, nil
 end
 
+---Whether anything is stored for `repo`: some metric directory holds at least one entry (a raw
+---fetch file, or the archive retention folded old days into). One directory scan per metric,
+---no file is read. `fetcher.fetch_all` uses it to tell a repository that was just added to the
+---list from one that merely is not due yet.
+---@param repo string Repository identifier
+---@return boolean
+function M.has_data(repo)
+  local root = fs.joinpath(config.get_storage_root(), sanitize_repo_name(repo))
+  local handle = loop.fs_scandir(root)
+  if not handle then
+    return false
+  end
+  while true do
+    local name, kind = loop.fs_scandir_next(handle)
+    if not name then
+      return false
+    end
+    if kind == "directory" then
+      local sub = loop.fs_scandir(fs.joinpath(root, name))
+      if sub and loop.fs_scandir_next(sub) then
+        return true
+      end
+    end
+  end
+end
+
 ---Permanently delete a raw metric file. Not a `lib.nvim.fs.trash` call on
 ---purpose: retention can touch thousands of files in one pass, and a
 ---per-file OS-trash round trip (a subprocess on Windows/macOS) would be far

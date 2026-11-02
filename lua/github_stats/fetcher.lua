@@ -179,17 +179,43 @@ function M.fetch_all(force, callback, opts)
   local cfg = config.get()
   local notify_fetch = cfg ~= nil and cfg.notify_fetch
 
+  -- Inside the interval only the repositories without any stored data are fetched (a repository
+  -- that was just added to the list, or found through `watch_users`); the rest waits for its
+  -- interval. Such a partial fetch leaves last_fetch.json alone, so it never pushes the regular
+  -- full fetch out by a day.
+  local partial = false
   if not force and not should_fetch() then
-    if notify_fetch == true and not background then
-      config.notify("[github-stats] Fetch interval not elapsed (use 'force' to bypass)", "info")
+    local storage = require("github_stats.storage")
+    local fresh = {}
+    for _, repo in ipairs(repos) do
+      if not storage.has_data(repo) then
+        fresh[#fresh + 1] = repo
+      end
     end
-    if callback then
-      callback(empty_summary())
+    if #fresh == 0 then
+      if notify_fetch == true and not background then
+        config.notify("[github-stats] Fetch interval not elapsed (use 'force' to bypass)", "info")
+      end
+      if callback then
+        callback(empty_summary())
+      end
+      return
     end
-    return
+    repos, partial = fresh, true
   end
 
-  if not background then
+  if partial then
+    -- Also in a background cycle: something new is being fetched, which is worth one line.
+    config.notify(
+      str_format(
+        "[github-stats] Fetching %d new repositor%s: %s",
+        #repos,
+        #repos == 1 and "y" or "ies",
+        table.concat(repos, ", ")
+      ),
+      "info"
+    )
+  elseif not background then
     config.notify(str_format("[github-stats] Starting fetch: %d repos, force=%s", #repos, tostring(force)), "info")
   end
 
@@ -214,8 +240,11 @@ function M.fetch_all(force, callback, opts)
       end
     end
 
-    -- Save fetch timestamp
-    save_last_fetch(os.time())
+    -- Save fetch timestamp (not for a partial fetch of new repositories only: the interval of
+    -- everything else is still running)
+    if not partial then
+      save_last_fetch(os.time())
+    end
 
     -- Opportunistically fold old clones/views days into the archive and
     -- prune stale referrers/paths snapshots. Internally rate-limited to
@@ -238,7 +267,10 @@ function M.fetch_all(force, callback, opts)
         end
         if vim.tbl_count(retention_summary.errors) > 0 then
           config.notify(
-            str_format("[github-stats] Retention had %d error(s), see :GithubStats debug", vim.tbl_count(retention_summary.errors)),
+            str_format(
+              "[github-stats] Retention had %d error(s), see :GithubStats debug",
+              vim.tbl_count(retention_summary.errors)
+            ),
             "warn"
           )
         end

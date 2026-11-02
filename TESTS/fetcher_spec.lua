@@ -37,6 +37,15 @@ describe("fetcher", function()
     return n
   end
 
+  ---Give `repos` (default: the two of the default config) stored data, so that they count as
+  ---"already fetched" for the interval gate.
+  ---@param repos? string[]
+  local function seed_data(repos)
+    for _, repo in ipairs(repos or { "owner/alpha", "owner/beta" }) do
+      assert.is_true((storage.write_metric(repo, "clones", { count = 1 })))
+    end
+  end
+
   before_each(function()
     api_calls = {}
     -- Default: every metric comes back with a plausible traffic payload.
@@ -306,6 +315,7 @@ describe("fetcher", function()
     end)
 
     it("skips an unforced fetch while the interval has not elapsed", function()
+      seed_data()
       require("lib.nvim.fs.json").write(tmp_dir .. "/last_fetch.json", { timestamp = os.time() })
 
       fetcher.fetch_all(false)
@@ -315,9 +325,95 @@ describe("fetcher", function()
       assert.equals(1, notice_count("Fetch interval not elapsed"))
     end)
 
+    describe("a newly added repository inside the interval", function()
+      local function stamp_now()
+        require("lib.nvim.fs.json").write(tmp_dir .. "/last_fetch.json", { timestamp = os.time() })
+      end
+
+      it("is fetched at once, an existing one is left alone", function()
+        seed_data({ "owner/alpha" })
+        stamp_now()
+
+        local summary
+        fetcher.fetch_all(false, function(s)
+          summary = s
+        end)
+        wait_for(function()
+          return summary ~= nil
+        end)
+
+        assert.equals(4, #api_calls)
+        for _, call in ipairs(api_calls) do
+          assert.equals("owner/beta", call.repo)
+        end
+        assert.equals(4, #summary.success)
+        assert.equals(1, #storage.read_metric_history("owner/beta", "clones"))
+      end)
+
+      it("names the new repositories in one info message", function()
+        seed_data({ "owner/alpha" })
+        stamp_now()
+
+        local done = false
+        fetcher.fetch_all(false, function()
+          done = true
+        end)
+        wait_for(function()
+          return done
+        end)
+
+        assert.equals(1, notice_count("Fetching 1 new repository: owner/beta"))
+        assert.equals(0, notice_count("Fetch interval not elapsed"))
+      end)
+
+      it("does not move the regular interval: last_fetch.json stays as it was", function()
+        seed_data({ "owner/alpha" })
+        local before = os.time() - 3600
+        require("lib.nvim.fs.json").write(tmp_dir .. "/last_fetch.json", { timestamp = before })
+
+        local done = false
+        fetcher.fetch_all(false, function()
+          done = true
+        end)
+        wait_for(function()
+          return done
+        end)
+
+        local stamp = require("lib.nvim.fs.json").read(tmp_dir .. "/last_fetch.json")
+        assert.equals(before, stamp.timestamp)
+      end)
+
+      it("is announced in a background cycle too, but nothing else is", function()
+        seed_data({ "owner/alpha" })
+        stamp_now()
+
+        local done = false
+        fetcher.fetch_all(false, function()
+          done = true
+        end, { background = true })
+        wait_for(function()
+          return done
+        end)
+
+        assert.equals(1, notice_count("new repository"))
+        assert.equals(0, notice_count("Starting fetch"))
+        assert.equals(0, notice_count("Successfully fetched"))
+      end)
+
+      it("fetches nothing when every repository already has data", function()
+        seed_data()
+        stamp_now()
+        fetcher.fetch_all(false, nil, { background = true })
+        vim.wait(50)
+        assert.equals(0, #api_calls)
+        assert.equals(0, notice_count("new repository"))
+      end)
+    end)
+
     -- Same ERR-03 callback-completion guarantee as the "no repositories"
     -- case above, for the other early-return path.
     it("still invokes the callback when the interval has not elapsed", function()
+      seed_data()
       require("lib.nvim.fs.json").write(tmp_dir .. "/last_fetch.json", { timestamp = os.time() })
 
       local summary
@@ -368,6 +464,7 @@ describe("fetcher", function()
     end)
 
     it("stays quiet about the interval when notify_fetch is off", function()
+      seed_data()
       config.init({ config_dir = tmp_dir, repos = { "owner/alpha", "owner/beta" }, notify_fetch = false })
       require("lib.nvim.fs.json").write(tmp_dir .. "/last_fetch.json", { timestamp = os.time() })
 
@@ -426,6 +523,7 @@ describe("fetcher", function()
       end)
 
       it("is not touched when the interval has not elapsed and nothing was fetched", function()
+        seed_data()
         require("lib.nvim.fs.json").write(tmp_dir .. "/last_fetch.json", { timestamp = os.time() })
 
         local summary
@@ -503,6 +601,7 @@ describe("fetcher", function()
       end)
 
       it("suppresses the interval notice", function()
+        seed_data()
         require("lib.nvim.fs.json").write(tmp_dir .. "/last_fetch.json", { timestamp = os.time() })
 
         fetcher.fetch_all(false, nil, { background = true })

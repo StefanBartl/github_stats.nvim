@@ -19,6 +19,12 @@ still completes. The dashboard's single-repository refresh is not queued. Withou
 is skipped if the last one ran within `fetch_interval_hours`; `force`
 bypasses that check, and `notify_fetch` decides whether a skipped manual
 fetch says so ("Fetch interval not elapsed") or stays quiet.
+Inside the interval, a repository **without any stored data** (just added to `repos`, or newly
+found through `watch_users`) is still fetched at once, with one info line naming it ("Fetching 1 new
+repository: owner/name"; shown in a background cycle too). Everything else keeps waiting for its
+interval, and such a partial fetch leaves `last_fetch.json` alone, so it never pushes the regular
+full fetch out. A repository whose fetch keeps failing has no data and is therefore retried by every
+unforced fetch; fix or remove it from `repos`.
 `fetcher.last_fetch_summary` records per-repo/metric
 errors, surfaced by `:GithubStats debug`. Manual fetches report live
 progress through the optional [`lib.nvim.progress`](https://github.com/WKDSteve/lib.nvim)
